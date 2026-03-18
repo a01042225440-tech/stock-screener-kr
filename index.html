@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>종가매수 스크리너</title>
+<style>
+:root {
+  --bg: #F8FAFC;
+  --bg2: #FFFFFF;
+  --bg3: #F1F5F9;
+  --border: #E2E8F0;
+  --border2: #CBD5E1;
+  --text: #0F172A;
+  --text2: #334155;
+  --text3: #64748B;
+  --text4: #94A3B8;
+  --blue: #2563EB;
+  --blue-bg: #EFF6FF;
+  --blue-light: #3B82F6;
+  --green: #16A34A;
+  --green-bg: #F0FDF4;
+  --red: #DC2626;
+  --red-bg: #FEF2F2;
+  --yellow: #D97706;
+  --yellow-bg: #FFFBEB;
+  --purple: #7C3AED;
+  --purple-bg: #F5F3FF;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow2: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --radius: 12px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { font-size: 15px; -webkit-text-size-adjust: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+/* ── Header ── */
+.header {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.header-inner {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.logo {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--blue), var(--purple));
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.header-stats {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 0.65rem;
+  color: var(--text4);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.stat-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+/* ── Controls ── */
+.controls {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+
+.controls-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.date-input {
+  background: var(--bg3);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--text);
+  width: 170px;
+  transition: border-color 0.2s;
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: var(--blue);
+  background: var(--bg2);
+}
+
+.btn {
+  padding: 10px 24px;
+  border-radius: 10px;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--blue), #1D4ED8);
+  color: white;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-demo {
+  background: var(--purple-bg);
+  color: var(--purple);
+  border: 2px solid transparent;
+}
+
+.btn-demo:hover {
+  border-color: var(--purple);
+}
+
+.mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.mode-live {
+  background: var(--green-bg);
+  color: var(--green);
+}
+
+.mode-demo {
+  background: var(--purple-bg);
+  color: var(--purple);
+}
+
+.scan-info {
+  font-size: 0.78rem;
+  color: var(--text3);
+  margin-left: auto;
+}
+
+/* ── Sort & Filter ── */
+.toolbar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.toolbar-label {
+  font-size: 0.72rem;
+  color: var(--text4);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-right: 2px;
+}
+
+.toolbar-sep {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+  margin: 0 6px;
+}
+
+.chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 2px solid var(--border);
+  background: var(--bg2);
+  color: var(--text3);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.chip:hover {
+  border-color: var(--border2);
+  background: var(--bg3);
+}
+
+.chip.active-sort {
+  background: var(--blue);
+  color: white;
+  border-color: var(--blue);
+}
+
+.chip.active-filter {
+  background: var(--purple);
+  color: white;
+  border-color: var(--purple);
+}
+
+/* ── Loading ── */
+.loading-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(248, 250, 252, 0.92);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  justify-content: center;
+  align-items: center;
+}
+
+.loading-overlay.show {
+  display: flex;
+}
+
+.loading-box {
+  background: var(--bg2);
+  border-radius: 20px;
+  padding: 40px 50px;
+  text-align: center;
+  box-shadow: var(--shadow2);
+  border: 1px solid var(--border);
+  max-width: 360px;
+  width: 90%;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--border);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.loading-progress {
+  width: 100%;
+  height: 8px;
+  background: var(--bg3);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 12px 0 8px;
+}
+
+.loading-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue), var(--purple));
+  border-radius: 4px;
+  transition: width 0.3s;
+  width: 0%;
+}
+
+.loading-text {
+  font-size: 0.82rem;
+  color: var(--text3);
+}
+
+/* ── Card ── */
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: all 0.2s;
+}
+
+.card:hover {
+  box-shadow: var(--shadow2);
+  border-color: var(--border2);
+}
+
+.card-header {
+  padding: 14px 18px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.rank {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--bg2);
+  background: var(--text3);
+  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rank-top { background: linear-gradient(135deg, var(--blue), var(--purple)); }
+.rank-mid { background: var(--blue-light); }
+
+.stock-info {
+  min-width: 0;
+}
+
+.stock-name {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.stock-code {
+  font-size: 0.72rem;
+  color: var(--text4);
+  margin-left: 6px;
+  font-weight: 600;
+}
+
+.stock-meta {
+  font-size: 0.72rem;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.card-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.price-block {
+  text-align: right;
+}
+
+.price-value {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.price-unit {
+  font-size: 0.7rem;
+  color: var(--text4);
+  font-weight: 500;
+}
+
+.price-change {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.change-up { color: var(--red); }
+.change-down { color: var(--blue); }
+
+.mini-stat {
+  text-align: center;
+  min-width: 50px;
+}
+
+.mini-label {
+  font-size: 0.62rem;
+  color: var(--text4);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.mini-value {
+  font-size: 0.85rem;
+  font-weight: 800;
+  margin-top: 1px;
+}
+
+.momentum-bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.momentum-track {
+  width: 50px;
+  height: 6px;
+  background: var(--bg3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.momentum-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.momentum-num {
+  font-size: 0.78rem;
+  font-weight: 800;
+  min-width: 28px;
+}
+
+.arrow {
+  font-size: 0.8rem;
+  color: var(--text4);
+  transition: transform 0.25s;
+  margin-left: 4px;
+}
+
+.arrow.open {
+  transform: rotate(180deg);
+}
+
+/* ── Detail ── */
+.card-detail {
+  display: none;
+  padding: 0 18px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.card-detail.show {
+  display: block;
+}
+
+.price-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 14px 0 12px;
+}
+
+.price-item {
+  background: var(--bg3);
+  border-radius: 10px;
+  padding: 12px 14px;
+  border-top: 3px solid transparent;
+}
+
+.price-item .pi-label {
+  font-size: 0.68rem;
+  color: var(--text3);
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+
+.price-item .pi-value {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.price-item .pi-sub {
+  font-size: 0.68rem;
+  color: var(--text4);
+  margin-top: 1px;
+}
+
+.pi-buy { border-top-color: var(--blue); }
+.pi-buy .pi-value { color: var(--blue); }
+.pi-t1 { border-top-color: var(--green); }
+.pi-t1 .pi-value { color: var(--green); }
+.pi-t2 { border-top-color: var(--yellow); }
+.pi-t2 .pi-value { color: var(--yellow); }
+.pi-sl { border-top-color: var(--red); }
+.pi-sl .pi-value { color: var(--red); }
+
+/* ── Price Bar ── */
+.price-bar-container {
+  position: relative;
+  height: 52px;
+  margin: 8px 16px 10px;
+}
+
+.price-bar-track {
+  position: absolute;
+  top: 22px;
+  height: 5px;
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.price-bar-fill {
+  position: absolute;
+  top: 22px;
+  height: 5px;
+  background: rgba(22, 163, 74, 0.25);
+  border-radius: 3px;
+}
+
+.price-bar-dot {
+  position: absolute;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.price-bar-dot .dot-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.price-bar-dot .dot-circle {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin: 0 auto;
+  border: 2px solid var(--bg2);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.price-bar-dot .dot-value {
+  font-size: 0.6rem;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+/* ── OHLC ── */
+.ohlc-row {
+  display: flex;
+  gap: 16px;
+  font-size: 0.75rem;
+  color: var(--text3);
+  margin: 8px 0 10px;
+}
+
+.ohlc-row b {
+  font-weight: 700;
+}
+
+/* ── Badges ── */
+.badge-group {
+  margin-top: 8px;
+}
+
+.badge-title {
+  font-size: 0.72rem;
+  color: var(--text4);
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: white;
+  margin: 2px 3px 2px 0;
+}
+
+/* ── Legend ── */
+.legend {
+  margin-top: 20px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+}
+
+.legend-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.legend-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--text2);
+  line-height: 1.7;
+}
+
+.legend-note {
+  margin-top: 10px;
+  font-size: 0.72rem;
+  color: var(--text4);
+  line-height: 1.6;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Empty ── */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text3);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+.empty-text {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.empty-sub {
+  font-size: 0.82rem;
+  color: var(--text4);
+  margin-top: 6px;
+}
+
+/* ── Initial ── */
+.initial-state {
+  text-align: center;
+  padding: 80px 20px;
+}
+
+.initial-icon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+}
+
+.initial-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.initial-desc {
+  font-size: 0.9rem;
+  color: var(--text3);
+  max-width: 400px;
+  margin: 0 auto 20px;
+  line-height: 1.6;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  html { font-size: 14px; }
+  .container { padding: 10px; }
+  .header { padding: 12px; }
+
+  .header-top { flex-direction: column; align-items: flex-start; }
+  .header-stats { gap: 12px; }
+
+  .controls-row { flex-direction: column; align-items: stretch; }
+  .date-input { width: 100%; }
+  .btn { width: 100%; justify-content: center; }
+  .scan-info { margin-left: 0; text-align: center; }
+
+  .price-grid { grid-template-columns: repeat(2, 1fr); }
+
+  .card-header { padding: 12px 14px; flex-direction: column; align-items: flex-start; }
+  .card-right { width: 100%; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+
+  .toolbar { gap: 4px; }
+  .chip { padding: 5px 10px; font-size: 0.72rem; }
+  .toolbar-sep { display: none; }
+}
+
+@media (max-width: 380px) {
+  .card-right { gap: 8px; }
+  .mini-stat { min-width: 40px; }
+}
+
+/* ── PWA safe-area ── */
+@supports (padding: max(0px)) {
+  .header { padding-top: max(16px, env(safe-area-inset-top)); }
+  body { padding-bottom: max(0px, env(safe-area-inset-bottom)); }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-inner">
+    <div class="header-top">
+      <div class="logo">
+        <div class="logo-icon">S</div>
+        <span>종가매수 스크리너</span>
+      </div>
+      <div class="header-stats" id="headerStats">
+        <div class="stat-item">
+          <div class="stat-label">발굴</div>
+          <div class="stat-value" style="color:var(--blue)" id="statCount">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">평균점수</div>
+          <div class="stat-value" style="color:var(--yellow)" id="statAvgScore">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">평균 R/R</div>
+          <div class="stat-value" id="statAvgRR">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">12+조건</div>
+          <div class="stat-value" style="color:var(--green)" id="stat11">-</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Controls -->
+  <div class="controls">
+    <div class="controls-row">
+      <input type="date" class="date-input" id="dateInput">
+      <button class="btn btn-primary" id="btnScan" onclick="doScan(false)">
+        <span id="btnScanText">KRX 전종목 검색</span>
+      </button>
+      <button class="btn btn-demo" onclick="doScan(true)">데모</button>
+      <span class="scan-info" id="scanInfo">Minervini SEPA + O'Neil + Weinstein 기반 · 위험종목 자동제외</span>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar" id="toolbar" style="display:none;"></div>
+
+  <!-- Card List -->
+  <div id="cardList">
+    <div class="initial-state">
+      <div class="initial-icon">S</div>
+      <div class="initial-title">전문가급 종목 스크리너</div>
+      <div class="initial-desc">
+        <b>Minervini SEPA</b> + <b>O'Neil CANSLIM</b> + <b>Weinstein Stage</b> 기반<br>
+        16개 전문가 조건 + ATR 기반 매매가 + 위험종목 자동제외<br>
+        관리종목·투자경고·우선주·SPAC·ETF·ETN 등 자동 필터링
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-title">전문가 조건 범례 (16개 + 필수 4개)</div>
+    <div class="legend-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+      <div><b style="color:var(--red)">필수</b> 양봉 (종가 &gt; 시가)</div>
+      <div><b style="color:var(--red)">필수</b> 전일대비 상승</div>
+      <div><b style="color:var(--red)">필수</b> 거래량 &ge; 1.2배</div>
+      <div><b style="color:var(--red)">필수</b> 상한가 아님</div>
+      <div>A. 추세상위 (&gt;150&amp;200MA)</div>
+      <div>B. 중기정배열 (150&gt;200MA)</div>
+      <div>C. 장기상승 (200MA 1개월전 대비)</div>
+      <div>D. 완전정배열 (50&gt;150&gt;200MA)</div>
+      <div>E. 트리플스택 (10E&gt;21E&gt;50S)</div>
+      <div>F. 52주저점 +25% (Minervini)</div>
+      <div>G. 52주고점 근접75% (Minervini)</div>
+      <div>H. 거래량 급증 (기관 매집)</div>
+      <div>I. OBV 매집 (20일 기준)</div>
+      <div>J. RSI 45~75 (건전 상승)</div>
+      <div>K. MACD 양전 &amp; 가속</div>
+      <div>L. 스토캐스틱 골든크로스</div>
+      <div>M. 20EMA 3일 연속 상승</div>
+      <div>N. 볼린저 중심~상단</div>
+      <div>O. 장대양봉/연속양봉</div>
+      <div>P. 상대강도 RS (200MA 이격)</div>
+    </div>
+    <div class="legend-note">
+      <b>전문가 매매법</b>: 매수 = 종가+0.3% | 손절 = ATR x2 (최대 -8%, O'Neil 철칙) | 목표1 = 2R | 목표2 = 3R<br>
+      <b>제외종목</b>: 관리종목 / 투자경고·위험·주의 / 우선주 / 거래정지 / 정리매매 / 환기종목 / 불성실공시 / 단기과열 / ETN / SPAC / ETF
+    </div>
+  </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <div class="loading-title" id="loadingTitle">종목 스캔 중</div>
+    <div class="loading-progress">
+      <div class="loading-bar" id="loadingBar"></div>
+    </div>
+    <div class="loading-text" id="loadingText">준비 중...</div>
+  </div>
+</div>
+
+<script>
+// ── State ──
+let DATA = [];
+let sortBy = "momentum";
+let filterBy = "all";
+let openCards = new Set();
+
+const BADGE_COLORS = {
+  A: "#2563EB", B: "#7C3AED", C: "#059669", D: "#16A34A",
+  E: "#D97706", F: "#CA8A04", G: "#DC2626", H: "#8B5CF6",
+  I: "#0891B2", J: "#DB2777", K: "#0D9488", L: "#EA580C",
+  M: "#65A30D", N: "#64748B"
+};
+
+// ── Init ──
+document.addEventListener("DOMContentLoaded", () => {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  document.getElementById("dateInput").value = `${yyyy}-${mm}-${dd}`;
+});
+
+// ── Helpers ──
+const fmt = n => n != null ? n.toLocaleString("ko-KR") : "-";
+const pct = (a, b) => (((b - a) / a) * 100).toFixed(1);
+const mktCap = v => v >= 10000 ? (v / 10000).toFixed(1) + "조" : fmt(v) + "억";
+
+function momentumColor(v) {
+  if (v >= 80) return "var(--red)";
+  if (v >= 60) return "var(--yellow)";
+  return "var(--blue)";
+}
+
+function condColor(n) {
+  if (n >= 13) return "var(--green)";
+  if (n >= 10) return "var(--yellow)";
+  return "var(--text3)";
+}
+
+function rrColor(r) {
+  if (r >= 1.5) return "var(--green)";
+  if (r >= 1.0) return "var(--yellow)";
+  return "var(--text3)";
+}
+
+// ── Scan ──
+let pollTimer = null;
+
+async function doScan(demo) {
+  const dateVal = document.getElementById("dateInput").value;
+  const btn = document.getElementById("btnScan");
+  const btnText = document.getElementById("btnScanText");
+
+  btn.disabled = true;
+  btnText.textContent = "스캔 중...";
+
+  // Show loading
+  document.getElementById("loadingOverlay").classList.add("show");
+  document.getElementById("loadingBar").style.width = "0%";
+  document.getElementById("loadingText").textContent = "서버에 요청 중...";
+
+  // Start polling status
+  pollTimer = setInterval(async () => {
+    try {
+      const res = await fetch("/api/status");
+      const st = await res.json();
+      const titleEl = document.getElementById("loadingTitle");
+      if (st.phase === "krx") titleEl.textContent = "KRX 전종목 시세 조회 중";
+      else if (st.phase === "filter") titleEl.textContent = "기본 조건 필터링 중";
+      else if (st.phase === "detail") titleEl.textContent = "상세 기술 분석 중";
+      else if (st.phase === "demo") titleEl.textContent = "데모 데이터 생성 중";
+      if (st.total > 0) {
+        const pct = ((st.progress / st.total) * 100).toFixed(0);
+        document.getElementById("loadingBar").style.width = pct + "%";
+        document.getElementById("loadingText").textContent =
+          `${st.progress}/${st.total} 분석 (${st.found}개 발견) — ${st.message}`;
+      }
+    } catch (e) {}
+  }, 500);
+
+  try {
+    const url = `/api/scan?date=${dateVal}&demo=${demo}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    clearInterval(pollTimer);
+
+    if (data.error) {
+      alert(data.error);
+      return;
+    }
+
+    DATA = data.results;
+    openCards = new Set(DATA.length > 0 ? [DATA[0].code] : []);
+
+    // Update header stats
+    updateStats(data);
+    document.getElementById("scanInfo").innerHTML =
+      `<span class="mode-badge ${data.mode === 'live' ? 'mode-live' : 'mode-demo'}">${data.mode === 'live' ? '● LIVE' : '◆ DEMO'}</span> &nbsp;${data.date} · ${data.timestamp}`;
+
+    // Show toolbar & render
+    document.getElementById("toolbar").style.display = "flex";
+    renderToolbar();
+    renderCards();
+
+  } catch (err) {
+    clearInterval(pollTimer);
+    alert("서버 연결 실패: " + err.message + "\n\npython app.py 가 실행 중인지 확인하세요.");
+  } finally {
+    document.getElementById("loadingOverlay").classList.remove("show");
+    btn.disabled = false;
+    btnText.textContent = "KRX 전종목 검색";
+  }
+}
+
+function updateStats(data) {
+  const d = data.results;
+  const cnt = d.length;
+  const avgScore = cnt > 0 ? (d.reduce((s, x) => s + x.momentum, 0) / cnt).toFixed(1) : "-";
+  const avgRR = cnt > 0 ? (d.reduce((s, x) => s + x.rrRatio, 0) / cnt).toFixed(2) : "-";
+  const hi = d.filter(x => parseInt(x.conditionsDetail) >= 12).length;
+
+  document.getElementById("statCount").textContent = cnt;
+  document.getElementById("statAvgScore").textContent = avgScore;
+  document.getElementById("statAvgRR").textContent = avgRR !== "-" ? "1:" + avgRR : "-";
+  document.getElementById("stat11").textContent = hi + "개";
+}
+
+// ── Filter & Sort ──
+function getFiltered() {
+  let d = [...DATA];
+  if (filterBy === "r1") d = d.filter(s => s.rrRatio >= 1.0);
+  if (filterBy === "r15") d = d.filter(s => s.rrRatio >= 1.5);
+  if (filterBy === "c11") d = d.filter(s => parseInt(s.conditionsDetail) >= 12);
+
+  if (sortBy === "momentum") d.sort((a, b) => b.momentum - a.momentum);
+  if (sortBy === "rr") d.sort((a, b) => b.rrRatio - a.rrRatio);
+  if (sortBy === "cond") d.sort((a, b) => parseInt(b.conditionsDetail) - parseInt(a.conditionsDetail));
+  if (sortBy === "vol") d.sort((a, b) => b.volume - a.volume);
+  return d;
+}
+
+function setSort(v) { sortBy = v; renderToolbar(); renderCards(); }
+function setFilter(v) { filterBy = v; renderToolbar(); renderCards(); }
+
+function renderToolbar() {
+  const sorts = [["momentum", "모멘텀순"], ["rr", "R/R순"], ["cond", "조건순"], ["vol", "거래량순"]];
+  const filters = [["all", "전체"], ["r1", "R/R≥1.0"], ["r15", "R/R≥1.5"], ["c11", "12+조건"]];
+
+  let h = '<span class="toolbar-label">정렬</span>';
+  sorts.forEach(([k, l]) => {
+    h += `<button class="chip${sortBy === k ? ' active-sort' : ''}" onclick="setSort('${k}')">${l}</button>`;
+  });
+  h += '<span class="toolbar-sep"></span><span class="toolbar-label">필터</span>';
+  filters.forEach(([k, l]) => {
+    h += `<button class="chip${filterBy === k ? ' active-filter' : ''}" onclick="setFilter('${k}')">${l}</button>`;
+  });
+  document.getElementById("toolbar").innerHTML = h;
+}
+
+// ── Render Cards ──
+function renderCards() {
+  const list = getFiltered();
+
+  if (!list.length) {
+    document.getElementById("cardList").innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-text">해당 필터 조건에 맞는 종목이 없습니다</div>
+        <div class="empty-sub">필터를 변경하거나 다른 날짜로 검색해보세요</div>
+      </div>`;
+    return;
+  }
+
+  let h = '<div class="card-list">';
+  list.forEach((s, i) => {
+    const cr = (((s.close - s.open) / s.open) * 100).toFixed(2);
+    const isUp = cr >= 0;
+    const pn = parseInt(s.conditionsDetail);
+    const isOpen = openCards.has(s.code);
+    const mc = momentumColor(s.momentum);
+    const rankClass = i < 3 ? "rank-top" : i < 10 ? "rank-mid" : "";
+
+    h += `<div class="card">
+      <div class="card-header" onclick="toggleCard('${s.code}')">
+        <div class="card-left">
+          <span class="rank ${rankClass}">${i + 1}</span>
+          <div class="stock-info">
+            <div>
+              <span class="stock-name">${s.name}</span>
+              <span class="stock-code">${s.code}</span>
+            </div>
+            <div class="stock-meta">${s.market ? s.market + ' · ' : ''}시총 ${mktCap(s.marketCap)} · 거래량 ${(s.volume / 10000).toFixed(0)}만주</div>
+          </div>
+        </div>
+        <div class="card-right">
+          <div class="price-block">
+            <div class="price-value">${fmt(s.close)}<span class="price-unit">원</span></div>
+            <div class="price-change ${isUp ? 'change-up' : 'change-down'}">${isUp ? '▲' : '▼'} ${Math.abs(cr)}%</div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-label">모멘텀</div>
+            <div class="momentum-bar">
+              <div class="momentum-track"><div class="momentum-fill" style="width:${Math.min(s.momentum, 100)}%;background:${mc}"></div></div>
+              <span class="momentum-num" style="color:${mc}">${s.momentum}</span>
+            </div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-label">조건</div>
+            <div class="mini-value" style="color:${condColor(pn)}">${s.conditionsDetail}</div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-label">R/R</div>
+            <div class="mini-value" style="color:${rrColor(s.rrRatio)}">1:${s.rrRatio}</div>
+          </div>
+          <span class="arrow${isOpen ? ' open' : ''}">▼</span>
+        </div>
+      </div>`;
+
+    // Detail
+    h += `<div class="card-detail${isOpen ? ' show' : ''}">
+      <div class="price-grid">
+        ${priceItem("매수가", s.buyPrice, "종가+0.3%", "pi-buy")}
+        ${priceItem("1차 목표(2R)", s.target1, "+" + pct(s.buyPrice, s.target1) + "%", "pi-t1")}
+        ${priceItem("2차 목표(3R)", s.target2, "+" + pct(s.buyPrice, s.target2) + "%", "pi-t2")}
+        ${priceItem("손절(ATR)", s.stoploss, pct(s.buyPrice, s.stoploss) + "% | ATR:" + fmt(s.atr || 0), "pi-sl")}
+      </div>
+      ${priceBarHTML(s.buyPrice, s.target1, s.target2, s.stoploss)}
+      <div class="ohlc-row">
+        <span>시가 <b>${fmt(s.open)}</b></span>
+        <span>고가 <b style="color:var(--red)">${fmt(s.high)}</b></span>
+        <span>저가 <b style="color:var(--blue)">${fmt(s.low)}</b></span>
+        <span>RSI <b>${s.rsi || '-'}</b></span>
+        <span>거래배율 <b style="color:var(--red)">${s.volumeRatio || '-'}x</b></span>
+      </div>
+      <div class="badge-group">
+        <div class="badge-title">충족 조건</div>
+        <div>${s.conditionsMet.map(c => `<span class="badge" style="background:${BADGE_COLORS[c.charAt(0)] || '#6B7280'}">${c}</span>`).join("")}</div>
+      </div>
+    </div></div>`;
+  });
+
+  h += '</div>';
+  document.getElementById("cardList").innerHTML = h;
+}
+
+function priceItem(label, value, sub, cls) {
+  return `<div class="price-item ${cls}">
+    <div class="pi-label">${label}</div>
+    <div class="pi-value">${fmt(value)}<span style="font-size:0.68rem;color:var(--text4)">원</span></div>
+    <div class="pi-sub">${sub}</div>
+  </div>`;
+}
+
+function priceBarHTML(buy, t1, t2, sl) {
+  const mn = sl * 0.996;
+  const mx = t2 * 1.004;
+  const rn = mx - mn;
+  const pos = v => ((v - mn) / rn) * 100;
+  const dots = [
+    { v: sl, c: "var(--red)", l: "손절" },
+    { v: buy, c: "var(--blue)", l: "매수" },
+    { v: t1, c: "var(--green)", l: "T1" },
+    { v: t2, c: "var(--yellow)", l: "T2" }
+  ];
+
+  let h = `<div class="price-bar-container">
+    <div class="price-bar-track" style="left:${pos(sl)}%;right:${100 - pos(t2)}%"></div>
+    <div class="price-bar-fill" style="left:${pos(buy)}%;right:${100 - pos(t1)}%"></div>`;
+  dots.forEach(d => {
+    h += `<div class="price-bar-dot" style="left:${pos(d.v)}%">
+      <div class="dot-label" style="color:${d.c}">${d.l}</div>
+      <div class="dot-circle" style="background:${d.c}"></div>
+      <div class="dot-value">${fmt(d.v)}</div>
+    </div>`;
+  });
+  return h + '</div>';
+}
+
+function toggleCard(code) {
+  if (openCards.has(code)) openCards.delete(code);
+  else openCards.add(code);
+  renderCards();
+}
+</script>
+</body>
+</html>

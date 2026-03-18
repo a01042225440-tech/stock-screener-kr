@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+.cache/
+*.pkl
+screener_result.csv
+screener_result.html
+screener_log.txt
+email_draft.html
+*.bat
+*.vbs
+*.ps1
+.env
