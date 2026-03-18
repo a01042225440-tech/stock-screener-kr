@@ -26,6 +26,22 @@ from requests.adapters import HTTPAdapter
 from datetime import datetime, timedelta
 from flask import Flask, render_template, jsonify, request as flask_request
 
+# 클라우드 환경 감지 (Render는 RENDER 환경변수가 있음)
+IS_CLOUD = os.environ.get("RENDER") is not None
+
+def check_naver_api():
+    """네이버 API 접근 가능 여부 빠르게 확인"""
+    try:
+        r = requests.get(
+            "https://m.stock.naver.com/api/stocks/up/KOSPI?page=1&pageSize=1",
+            timeout=5
+        )
+        return r.status_code == 200 and len(r.json().get("stocks", [])) > 0
+    except:
+        return False
+
+NAVER_OK = None  # 첫 스캔 때 확인
+
 app = Flask(__name__, template_folder=".", static_folder=".", static_url_path="/static")
 
 # =============================================
@@ -530,8 +546,17 @@ def calc_price_pro(cl, lo, atr):
 scan_status = {"running": False, "progress": 0, "total": 0, "found": 0, "message": "", "phase": ""}
 
 def run_scan(date_str, demo=False):
-    global scan_status
+    global scan_status, NAVER_OK
     results = []
+
+    # 클라우드에서 네이버 API 차단 여부 확인 (최초 1회)
+    if not demo and NAVER_OK is None:
+        print("  [CLOUD CHECK] Naver API 접근 테스트 중...")
+        NAVER_OK = check_naver_api()
+        print(f"  [CLOUD CHECK] Naver API: {'OK' if NAVER_OK else 'BLOCKED - 데모모드로 전환'}")
+    if not demo and NAVER_OK is False:
+        demo = True
+        print("  [AUTO] 해외서버 감지 → 데모모드 자동 전환")
 
     if demo:
         scan_status = {"running": True, "progress": 0, "total": 60, "found": 0,
