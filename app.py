@@ -719,6 +719,11 @@ def api_scan():
         return jsonify({"error": "Date format error"}), 400
 
     results = run_scan(date_str, demo=demo)
+    # Naver API가 해외 서버에서 막힌 경우 자동으로 demo 모드로 재시도
+    if not results and not demo:
+        print("  [INFO] Naver API returned 0 results. Falling back to demo mode.")
+        results = run_scan(date_str, demo=True)
+        demo = True
     return jsonify({
         "results": results,
         "date": date_str,
