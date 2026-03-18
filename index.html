@@ -813,10 +813,10 @@ body {
   <div class="controls">
     <div class="controls-row">
       <input type="date" class="date-input" id="dateInput">
-      <button class="btn btn-primary" id="btnScan" onclick="doScan(false)">
+      <button class="btn btn-primary" id="btnScan" onclick="doScan(false)" style="touch-action:manipulation;">
         <span id="btnScanText">KRX 전종목 검색</span>
       </button>
-      <button class="btn btn-demo" onclick="doScan(true)">데모</button>
+      <button class="btn btn-demo" onclick="doScan(true)" style="touch-action:manipulation;">📊 데모 검색</button>
       <span class="scan-info" id="scanInfo">Minervini SEPA + O'Neil + Weinstein 기반 · 위험종목 자동제외</span>
     </div>
   </div>
@@ -964,7 +964,10 @@ async function doScan(demo) {
 
   try {
     const url = `/api/scan?date=${dateVal}&demo=${demo}`;
-    const res = await fetch(url);
+    const controller = new AbortController();
+    const fetchTimeout = setTimeout(() => controller.abort(), 110000); // 110초 타임아웃
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(fetchTimeout);
     const data = await res.json();
 
     clearInterval(pollTimer);
