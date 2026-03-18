@@ -169,6 +169,10 @@ body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkM
       <div class="summary-label">Score</div>
       <div class="summary-val c-blue" id="sumScore">-</div>
     </div>
+    <div class="summary-card">
+      <div class="summary-label">환율(USD)</div>
+      <div class="summary-val c-green" id="sumFx" style="font-size:1rem">-</div>
+    </div>
   </div>
 
   <div id="resultsArea">
@@ -239,19 +243,21 @@ function pollStatus() {
     .catch(() => {});
 }
 
-function fmt(n, dec=2) {
+function fmt(n) {
   if (n === null || n === undefined) return '-';
-  return '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+  return '₩' + Math.round(n).toLocaleString('ko-KR');
 }
 
 function renderResults(data) {
   const results = (data.results || []).slice(0, 5);
 
   document.getElementById('summaryBar').style.display = 'flex';
+  const usdkrw = results[0]?.usdkrw || '-';
   document.getElementById('sumDate').textContent = data.date || '-';
   document.getElementById('sumFound').textContent = data.count || 0;
   document.getElementById('sumTop').textContent = results[0]?.ticker || '-';
   document.getElementById('sumScore').textContent = results[0]?.momentum?.toFixed(1) || '-';
+  document.getElementById('sumFx').textContent = usdkrw ? `₩${Number(usdkrw).toLocaleString()}` : '-';
 
   if (!results.length) {
     document.getElementById('resultsArea').innerHTML =
@@ -265,11 +271,11 @@ function renderResults(data) {
 
   let html = `<div class="results-wrap"><table class="results-table">
     <thead><tr>
-      <th>#</th><th>Ticker</th>
-      <th>Close</th><th>Chg%</th>
-      <th>Buy</th><th>Target1</th><th>Target2</th><th>StopLoss</th>
-      <th>R/R</th><th>Risk%</th><th>Score</th><th>RSI</th><th>Vol×</th>
-      <th>Conditions</th>
+      <th>#</th><th>종목</th>
+      <th>종가(원)</th><th>등락%</th>
+      <th>매수가</th><th>1차목표</th><th>2차목표</th><th>손절가</th>
+      <th>R/R</th><th>리스크%</th><th>점수</th><th>RSI</th><th>거래량×</th>
+      <th>조건</th>
     </tr></thead><tbody>`;
 
   results.forEach((s, idx) => {
@@ -287,7 +293,7 @@ function renderResults(data) {
         <div class="ticker-cell">
           <div>
             <div class="ticker-name">${s.ticker}</div>
-            <div class="ticker-sub">${s.name}</div>
+            <div class="ticker-sub">${s.name} ($${s.closeUsd})</div>
           </div>
         </div>
       </td>

@@ -214,6 +214,32 @@ def calc_price_us(cl, lo, atr):
 
 
 # =============================================
+#  환율 조회 (USD → KRW)
+# =============================================
+def get_usdkrw(date_str=None):
+    """USD/KRW 환율 조회 - 지정 날짜 기준"""
+    try:
+        if date_str:
+            end_dt = datetime.strptime(date_str, "%Y-%m-%d")
+            start_dt = end_dt - timedelta(days=7)
+            fx = yf.download("USDKRW=X",
+                             start=start_dt.strftime("%Y-%m-%d"),
+                             end=(end_dt+timedelta(days=1)).strftime("%Y-%m-%d"),
+                             progress=False, auto_adjust=True)
+        else:
+            fx = yf.download("USDKRW=X", period="5d", progress=False, auto_adjust=True)
+        if fx is not None and len(fx) > 0:
+            if isinstance(fx.columns, pd.MultiIndex):
+                fx.columns = fx.columns.get_level_values(0)
+            rate = float(fx["Close"].iloc[-1])
+            if 900 < rate < 2000:
+                return round(rate, 1)
+    except Exception as e:
+        print(f"  [FX] 환율 조회 실패: {e}")
+    return 1380.0  # 조회 실패시 기본값
+
+
+# =============================================
 #  배치 다운로드 스캔
 # =============================================
 def run_us_scan(date_str):
@@ -223,8 +249,9 @@ def run_us_scan(date_str):
     total = len(tickers)
 
     us_scan_status = {"running":True,"progress":0,"total":total,
-                      "found":0,"message":"Downloading data...","phase":"download"}
-    print(f"\n[US SCAN] {date_str} | Batch download {total} tickers...")
+                      "found":0,"message":"환율 조회 중...","phase":"download"}
+    usdkrw = get_usdkrw(date_str)
+    print(f"\n[US SCAN] {date_str} | USD/KRW={usdkrw} | Batch download {total} tickers...")
 
     try:
         end_dt = datetime.strptime(date_str, "%Y-%m-%d")
@@ -277,13 +304,18 @@ def run_us_scan(date_str):
             p = calc_price_us(last_close, last_low, r["atr"])
             if p is None: continue
 
+            def to_krw(usd): return int(round(usd * usdkrw, -1))  # 10원 단위 반올림
+
             results.append({
                 "ticker":ticker, "name":name,
-                "close":round(last_close,2), "open":round(last_open,2),
-                "high":round(last_high,2), "low":round(last_low,2),
+                "close":to_krw(last_close), "open":to_krw(last_open),
+                "high":to_krw(last_high), "low":to_krw(last_low),
+                "closeUsd":round(last_close,2),
                 "volume":last_vol,
-                "buyPrice":p["buy"],"target1":p["t1"],"target2":p["t2"],
-                "stoploss":p["sl"],"rrRatio":p["rr"],"riskPct":p["risk_pct"],"atr":p["atr"],
+                "buyPrice":to_krw(p["buy"]),"target1":to_krw(p["t1"]),"target2":to_krw(p["t2"]),
+                "stoploss":to_krw(p["sl"]),"rrRatio":p["rr"],"riskPct":p["risk_pct"],
+                "atr":to_krw(p["atr"]),
+                "usdkrw":usdkrw,
                 "momentum":r["momentum"],"conditionsMet":r["passed"],
                 "conditionsDetail":f'{r["pass_count"]}/{r["total"]}',
                 "rsi":r["rsi"],"macdHist":r["macd_hist"],"volumeRatio":r["volume_ratio"],
