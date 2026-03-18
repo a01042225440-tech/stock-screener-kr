@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>US Stock Screener</title>
+<style>
+:root {
+  --bg: #F8FAFC; --bg2: #FFFFFF; --bg3: #F1F5F9;
+  --border: #E2E8F0; --text: #0F172A; --text2: #334155; --text3: #64748B;
+  --blue: #2563EB; --blue-bg: #EFF6FF;
+  --green: #16A34A; --green-bg: #F0FDF4;
+  --red: #DC2626; --red-bg: #FEF2F2;
+  --yellow: #D97706; --yellow-bg: #FFFBEB;
+  --purple: #7C3AED; --purple-bg: #F5F3FF;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow2: 0 4px 12px rgba(0,0,0,0.08);
+  --radius: 12px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { font-size:15px; -webkit-text-size-adjust:100%; }
+body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; min-height:100vh; padding-bottom:env(safe-area-inset-bottom,0); }
+.container { max-width:960px; margin:0 auto; padding:16px; }
+
+/* Header */
+.header { background:var(--bg2); border-bottom:1px solid var(--border); padding:14px 16px; position:sticky; top:0; z-index:100; box-shadow:var(--shadow); }
+.header-inner { max-width:960px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.logo { display:flex; align-items:center; gap:8px; }
+.logo-icon { width:32px; height:32px; background:linear-gradient(135deg,#1d4ed8,#3b82f6); border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px; font-weight:800; }
+.logo-text { font-size:1.1rem; font-weight:700; color:var(--text); }
+.logo-sub { font-size:0.72rem; color:var(--text3); }
+.nav-link { font-size:0.82rem; color:var(--blue); text-decoration:none; padding:6px 12px; border:1px solid var(--blue); border-radius:8px; white-space:nowrap; }
+.nav-link:hover { background:var(--blue-bg); }
+
+/* Control panel */
+.control-panel { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-top:16px; box-shadow:var(--shadow); }
+.control-row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+.form-group { display:flex; flex-direction:column; gap:4px; flex:1; min-width:140px; }
+.form-label { font-size:0.75rem; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.04em; }
+.form-input { border:1px solid var(--border); border-radius:8px; padding:9px 12px; font-size:0.9rem; color:var(--text); background:var(--bg); outline:none; transition:border .2s; }
+.form-input:focus { border-color:var(--blue); background:#fff; }
+.btn { padding:9px 18px; border-radius:8px; font-size:0.9rem; font-weight:600; border:none; cursor:pointer; transition:all .2s; white-space:nowrap; }
+.btn-primary { background:var(--blue); color:#fff; }
+.btn-primary:hover { background:#1d4ed8; }
+.btn-primary:disabled { opacity:.6; cursor:not-allowed; }
+.top5-badge { background:var(--purple-bg); color:var(--purple); border:1px solid #ddd6fe; border-radius:8px; padding:8px 14px; font-size:0.82rem; font-weight:600; display:flex; align-items:center; gap:6px; }
+
+/* Progress */
+.progress-box { background:var(--blue-bg); border:1px solid #bfdbfe; border-radius:var(--radius); padding:14px 16px; margin-top:12px; display:none; }
+.progress-bar-wrap { background:#dbeafe; border-radius:99px; height:6px; margin-top:10px; overflow:hidden; }
+.progress-bar { background:var(--blue); height:100%; border-radius:99px; transition:width .3s; width:0%; }
+.progress-msg { font-size:0.82rem; color:var(--blue); margin-top:6px; }
+
+/* Summary */
+.summary-bar { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+.summary-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:12px 16px; flex:1; min-width:110px; box-shadow:var(--shadow); }
+.summary-label { font-size:0.72rem; color:var(--text3); font-weight:600; text-transform:uppercase; }
+.summary-val { font-size:1.4rem; font-weight:800; margin-top:2px; }
+.c-blue { color:var(--blue); }
+.c-green { color:var(--green); }
+.c-purple { color:var(--purple); }
+
+/* Table */
+.results-wrap { margin-top:16px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.results-table { width:100%; border-collapse:collapse; background:var(--bg2); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow2); font-size:0.83rem; }
+.results-table th { background:#1e3a8a; color:#fff; padding:10px 12px; text-align:right; font-weight:600; font-size:0.75rem; white-space:nowrap; }
+.results-table th:first-child { text-align:left; }
+.results-table td { padding:10px 12px; border-bottom:1px solid var(--border); text-align:right; vertical-align:top; white-space:nowrap; }
+.results-table td:first-child { text-align:left; }
+.results-table tr:last-child td { border-bottom:none; }
+.results-table tr:hover td { background:var(--bg3); }
+
+.rank-badge { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; font-size:0.72rem; font-weight:800; flex-shrink:0; }
+.rank-1 { background:#fef08a; color:#713f12; }
+.rank-2 { background:#e2e8f0; color:#334155; }
+.rank-3 { background:#fed7aa; color:#7c2d12; }
+.rank-n { background:var(--bg3); color:var(--text3); }
+
+.ticker-cell { display:flex; align-items:center; gap:8px; min-width:130px; }
+.ticker-name { font-weight:700; font-size:0.9rem; }
+.ticker-sub { font-size:0.72rem; color:var(--text3); }
+
+.score-bar { display:inline-flex; align-items:center; gap:6px; }
+.score-num { font-weight:800; font-size:0.95rem; }
+.score-mini { width:44px; height:5px; background:var(--bg3); border-radius:99px; overflow:hidden; }
+.score-fill { height:100%; border-radius:99px; background:linear-gradient(90deg,#3b82f6,#7c3aed); }
+
+.price-buy { color:var(--blue); font-weight:700; }
+.price-t1 { color:var(--green); font-weight:600; }
+.price-t2 { color:#059669; font-weight:600; }
+.price-sl { color:var(--red); font-weight:600; }
+.rr-good { color:var(--green); font-weight:700; }
+.rr-ok { color:var(--yellow); font-weight:700; }
+
+.chg-up { color:var(--green); font-weight:600; }
+.chg-dn { color:var(--red); font-weight:600; }
+
+.cond-wrap { display:flex; flex-wrap:wrap; gap:3px; max-width:280px; }
+.cond-tag { padding:2px 6px; border-radius:4px; font-size:0.68rem; font-weight:600; background:var(--blue-bg); color:var(--blue); }
+
+.empty-state { text-align:center; padding:60px 20px; color:var(--text3); }
+.empty-icon { font-size:3rem; margin-bottom:12px; }
+
+/* Mobile */
+@media(max-width:600px) {
+  .control-row { gap:8px; }
+  .form-group { min-width:100%; }
+  .btn { width:100%; justify-content:center; }
+  .summary-card { min-width:80px; }
+  .results-table { font-size:0.78rem; }
+  .results-table th, .results-table td { padding:8px 8px; }
+  .cond-wrap { max-width:180px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">US</div>
+      <div>
+        <div class="logo-text">US Stock Screener</div>
+        <div class="logo-sub">Minervini SEPA · End-of-Day Buy</div>
+      </div>
+    </div>
+    <a href="/" class="nav-link">🇰🇷 한국 주식</a>
+  </div>
+</div>
+
+<div class="container">
+  <div class="control-panel">
+    <div class="control-row">
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" id="dateInput" class="form-input">
+      </div>
+      <button class="btn btn-primary" id="scanBtn" onclick="startScan()">
+        🔍 Scan US Stocks
+      </button>
+      <div class="top5-badge">⭐ Top 5 Only</div>
+    </div>
+  </div>
+
+  <div class="progress-box" id="progressBox">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:0.85rem;font-weight:600;color:var(--blue)">Scanning S&P500 / NASDAQ...</span>
+      <span id="progressPct" style="font-size:0.85rem;font-weight:700;color:var(--blue)">0%</span>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="progress-msg" id="progressMsg">Initializing...</div>
+  </div>
+
+  <div class="summary-bar" id="summaryBar" style="display:none">
+    <div class="summary-card">
+      <div class="summary-label">Date</div>
+      <div class="summary-val c-blue" id="sumDate" style="font-size:1rem">-</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Found</div>
+      <div class="summary-val c-green" id="sumFound">0</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Top Pick</div>
+      <div class="summary-val c-purple" id="sumTop">-</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Score</div>
+      <div class="summary-val c-blue" id="sumScore">-</div>
+    </div>
+  </div>
+
+  <div id="resultsArea">
+    <div class="empty-state">
+      <div class="empty-icon">🇺🇸</div>
+      <div style="font-size:1rem;font-weight:600;margin-bottom:8px">US Stock End-of-Day Screener</div>
+      <div style="font-size:0.85rem">Select a date and click Scan to find top momentum stocks</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const TODAY = new Date().toISOString().split('T')[0];
+document.getElementById('dateInput').value = TODAY;
+document.getElementById('dateInput').max = TODAY;
+
+let pollTimer = null;
+
+function startScan() {
+  const date = document.getElementById('dateInput').value;
+  if (!date) { alert('Please select a date'); return; }
+
+  const btn = document.getElementById('scanBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Scanning...';
+
+  document.getElementById('progressBox').style.display = 'block';
+  document.getElementById('summaryBar').style.display = 'none';
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('progressMsg').textContent = 'Starting...';
+  document.getElementById('progressPct').textContent = '0%';
+  document.getElementById('resultsArea').innerHTML = '';
+
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(pollStatus, 1500);
+
+  fetch(`/api/us/scan?date=${date}`)
+    .then(r => r.json())
+    .then(data => {
+      clearInterval(pollTimer);
+      document.getElementById('progressBox').style.display = 'none';
+      btn.disabled = false;
+      btn.textContent = '🔍 Scan US Stocks';
+      renderResults(data);
+    })
+    .catch(err => {
+      clearInterval(pollTimer);
+      document.getElementById('progressBox').style.display = 'none';
+      btn.disabled = false;
+      btn.textContent = '🔍 Scan US Stocks';
+      document.getElementById('resultsArea').innerHTML =
+        `<div class="empty-state"><div class="empty-icon">⚠️</div><div>Connection error: ${err.message}</div></div>`;
+    });
+}
+
+function pollStatus() {
+  fetch('/api/us/status')
+    .then(r => r.json())
+    .then(s => {
+      if (s.total > 0) {
+        const pct = Math.round(s.progress / s.total * 100);
+        document.getElementById('progressBar').style.width = pct + '%';
+        document.getElementById('progressPct').textContent = pct + '%';
+      }
+      document.getElementById('progressMsg').textContent =
+        s.message || 'Scanning...';
+    })
+    .catch(() => {});
+}
+
+function fmt(n, dec=2) {
+  if (n === null || n === undefined) return '-';
+  return '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+}
+
+function renderResults(data) {
+  const results = (data.results || []).slice(0, 5);
+
+  document.getElementById('summaryBar').style.display = 'flex';
+  document.getElementById('sumDate').textContent = data.date || '-';
+  document.getElementById('sumFound').textContent = data.count || 0;
+  document.getElementById('sumTop').textContent = results[0]?.ticker || '-';
+  document.getElementById('sumScore').textContent = results[0]?.momentum?.toFixed(1) || '-';
+
+  if (!results.length) {
+    document.getElementById('resultsArea').innerHTML =
+      `<div class="empty-state"><div class="empty-icon">😔</div>
+      <div style="font-size:1rem;font-weight:600">No stocks found for this date</div>
+      <div style="font-size:0.85rem;margin-top:8px">Try a recent trading day (Mon–Fri)</div></div>`;
+    return;
+  }
+
+  const ranks = ['rank-1','rank-2','rank-3','rank-n','rank-n'];
+
+  let html = `<div class="results-wrap"><table class="results-table">
+    <thead><tr>
+      <th>#</th><th>Ticker</th>
+      <th>Close</th><th>Chg%</th>
+      <th>Buy</th><th>Target1</th><th>Target2</th><th>StopLoss</th>
+      <th>R/R</th><th>Risk%</th><th>Score</th><th>RSI</th><th>Vol×</th>
+      <th>Conditions</th>
+    </tr></thead><tbody>`;
+
+  results.forEach((s, idx) => {
+    const rc = ranks[idx] || 'rank-n';
+    const chgCls = s.changeRate >= 0 ? 'chg-up' : 'chg-dn';
+    const chgSign = s.changeRate >= 0 ? '+' : '';
+    const rrCls = s.rrRatio >= 2 ? 'rr-good' : 'rr-ok';
+    const scorePct = Math.min(s.momentum, 100);
+    const conds = (s.conditionsMet || []).map(c =>
+      `<span class="cond-tag">${c}</span>`).join('');
+
+    html += `<tr>
+      <td><span class="rank-badge ${rc}">${idx+1}</span></td>
+      <td>
+        <div class="ticker-cell">
+          <div>
+            <div class="ticker-name">${s.ticker}</div>
+            <div class="ticker-sub">${s.name}</div>
+          </div>
+        </div>
+      </td>
+      <td>${fmt(s.close)}</td>
+      <td class="${chgCls}">${chgSign}${s.changeRate?.toFixed(2)}%</td>
+      <td class="price-buy">${fmt(s.buyPrice)}</td>
+      <td class="price-t1">${fmt(s.target1)}</td>
+      <td class="price-t2">${fmt(s.target2)}</td>
+      <td class="price-sl">${fmt(s.stoploss)}</td>
+      <td class="${rrCls}">${s.rrRatio?.toFixed(2)}</td>
+      <td>${s.riskPct?.toFixed(1)}%</td>
+      <td>
+        <div class="score-bar">
+          <span class="score-num c-purple">${s.momentum?.toFixed(1)}</span>
+          <div class="score-mini"><div class="score-fill" style="width:${scorePct}%"></div></div>
+        </div>
+      </td>
+      <td>${s.rsi?.toFixed(1)}</td>
+      <td>${s.volumeRatio?.toFixed(1)}x</td>
+      <td><div class="cond-wrap">${conds}</div></td>
+    </tr>`;
+  });
+
+  html += `</tbody></table></div>`;
+  document.getElementById('resultsArea').innerHTML = html;
+}
+</script>
+</body>
+</html>

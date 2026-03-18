@@ -761,6 +761,39 @@ def api_scan():
 def api_status():
     return jsonify(scan_status)
 
+# =============================================
+#  미국 주식 라우트
+# =============================================
+@app.route("/us")
+def index_us():
+    return render_template("index_us.html")
+
+@app.route("/api/us/scan")
+def api_us_scan():
+    from us_screener import run_us_scan
+    date_str = flask_request.args.get("date", "")
+    if not date_str:
+        date_str = datetime.now().strftime("%Y-%m-%d")
+    try:
+        tgt = datetime.strptime(date_str, "%Y-%m-%d")
+        if tgt > datetime.now():
+            date_str = datetime.now().strftime("%Y-%m-%d")
+    except ValueError:
+        return jsonify({"error": "Date format error"}), 400
+
+    results = run_us_scan(date_str)
+    return jsonify({
+        "results": results,
+        "date": date_str,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "count": len(results)
+    })
+
+@app.route("/api/us/status")
+def api_us_status():
+    from us_screener import us_scan_status
+    return jsonify(us_scan_status)
+
 if __name__ == "__main__":
     import os as _os
     _port = int(_os.environ.get("PORT", 5000))
