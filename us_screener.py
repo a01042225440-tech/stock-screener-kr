@@ -101,11 +101,16 @@ def screen_us(df, name="", ticker=""):
 
     if c[i] <= o[i] or c[i] <= c[i-1]: return None
     chg = (c[i]-c[i-1])/c[i-1]*100
-    if chg >= 15: return None
+    if chg >= 20: return None          # 미국은 상한선 없음 → 20%로 완화
+
+    if c[i] < 10: return None          # 페니스톡 제외 ($10 미만)
+
+    daily_value_m = c[i] * v[i] / 1_000_000  # 일 거래대금 (백만달러)
+    if daily_value_m < 50: return None  # $50M 미만 유동성 부족 제외
 
     av50 = np.mean(v[max(0,i-49):i]) if i >= 50 else np.mean(v[:i])
     vr = v[i]/av50 if av50 > 0 else 0
-    if vr < 1.2: return None
+    if vr < 1.5: return None           # 미국 대형주 기준 1.5배로 상향
 
     P, F, score = [], [], 0
     sma50 = np.mean(c[i-49:i+1])
