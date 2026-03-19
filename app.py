@@ -324,6 +324,11 @@ def screen_pro(df, name="", code="", mcap=0):
     av50 = np.mean(v[max(0, i-49):i]) if i >= 50 else np.mean(v[:i])
     vr = v[i] / av50 if av50 > 0 else 0
     if vr < 1.2: return None
+    if vr > 8.0: return None  # ★ 거래량 폭증 = 페이드 패턴
+
+    # ★ 갭업 4% 이상 필터
+    gap_pct = (o[i] - c[i-1]) / c[i-1] * 100 if c[i-1] > 0 else 0
+    if gap_pct > 4.0: return None
 
     P, F = [], []
     score = 0
@@ -364,7 +369,7 @@ def screen_pro(df, name="", code="", mcap=0):
 
     # D. 50 > 150 > 200
     if sma50 > sma150 > sma200:
-        P.append("D.완전정배열"); score += 8
+        P.append("D.완전정배열"); score += 12  # ★ 8→12
     else:
         F.append("D.완전정배열")
 
@@ -386,15 +391,15 @@ def screen_pro(df, name="", code="", mcap=0):
     else:
         F.append("G.52주고근접")
 
-    # H. Volume surge
-    if vr >= 3.0:
-        P.append(f"H.폭증{vr:.1f}x"); score += 10
-    elif vr >= 2.0:
-        P.append(f"H.급증{vr:.1f}x"); score += 8
-    elif vr >= 1.5:
-        P.append(f"H.증가{vr:.1f}x"); score += 6
+    # H. Volume surge ★ 적정 거래량이 최적, 극단치 페널티
+    if 1.5 <= vr < 3.0:
+        P.append(f"H.최적{vr:.1f}x"); score += 8
+    elif 3.0 <= vr < 5.0:
+        P.append(f"H.주의{vr:.1f}x"); score += 5
+    elif 5.0 <= vr <= 8.0:
+        P.append(f"H.경고{vr:.1f}x"); score += 2
     else:
-        P.append(f"H.소폭{vr:.1f}x"); score += 2
+        P.append(f"H.소폭{vr:.1f}x"); score += 0
 
     # I. OBV
     obv_delta = calc_obv_trend(c, v, 20)
@@ -498,6 +503,16 @@ def screen_pro(df, name="", code="", mcap=0):
     else:
         F.append("P.RS-")
 
+    # ★ Q. 풀백 바운스 보너스
+    ema10_touched = False; ema21_touched = False
+    for j in range(max(0, i-4), i):
+        if l[j] <= ema10[j] <= h[j]: ema10_touched = True
+        if l[j] <= ema21[j] <= h[j]: ema21_touched = True
+    if ema10_touched or ema21_touched:
+        P.append("Q.풀백바운스"); score += 5
+    else:
+        F.append("Q.풀백없음")
+
     if len(P) < 8:
         return None
 
@@ -526,15 +541,15 @@ def calc_price_pro(cl, lo, atr):
     if cl <= 0 or atr <= 0:
         return None
     buy = tick(int(cl * 1.003), cl)
-    sl_atr = int(buy - 2.0 * atr)
+    sl_atr = int(buy - 1.8 * atr)     # ★ 2.0→1.8
     sl_low = int(lo * 0.995)
-    sl_max = int(buy * 0.92)
+    sl_max = int(buy * 0.93)           # ★ 0.92→0.93
     sl = tick(max(sl_atr, sl_low, sl_max), cl)
     risk = buy - sl
     if risk <= 0:
         return None
-    t1 = tick(int(buy + 2.0 * risk), cl)
-    t2 = tick(int(buy + 3.0 * risk), cl)
+    t1 = tick(int(buy + 2.5 * risk), cl)   # ★ 2.0→2.5
+    t2 = tick(int(buy + 4.0 * risk), cl)   # ★ 3.0→4.0
     rr = round((t1 - buy) / risk, 2) if risk > 0 else 0
     risk_pct = round((buy - sl) / buy * 100, 1)
     return {"buy": buy, "t1": t1, "t2": t2, "sl": sl,
