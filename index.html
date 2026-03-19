@@ -1124,11 +1124,20 @@ function renderCards() {
     h += `<div class="card-detail${isOpen ? ' show' : ''}">
       <div class="price-grid">
         ${priceItem("매수가", s.buyPrice, "종가+0.3%", "pi-buy")}
-        ${priceItem("1차 목표(2R)", s.target1, "+" + pct(s.buyPrice, s.target1) + "%", "pi-t1")}
-        ${priceItem("2차 목표(3R)", s.target2, "+" + pct(s.buyPrice, s.target2) + "%", "pi-t2")}
-        ${priceItem("손절(ATR)", s.stoploss, pct(s.buyPrice, s.stoploss) + "% | ATR:" + fmt(s.atr || 0), "pi-sl")}
+        ${priceItem("1차 목표(2.5R)", s.target1, "+" + pct(s.buyPrice, s.target1) + "% → 1/3 매도", "pi-t1")}
+        ${priceItem("2차 목표(4.0R)", s.target2, "+" + pct(s.buyPrice, s.target2) + "% → 1/3 매도", "pi-t2")}
+        ${priceItem("손절(1.8ATR)", s.stoploss, pct(s.buyPrice, s.stoploss) + "% | ATR:" + fmt(s.atr || 0), "pi-sl")}
       </div>
       ${priceBarHTML(s.buyPrice, s.target1, s.target2, s.stoploss)}
+      <div style="background:#F0F4FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 12px;margin:8px 0;font-size:0.78rem;line-height:1.6;color:#1E3A5F">
+        <div style="font-weight:700;color:#1D4ED8;margin-bottom:4px">📋 매매 규칙</div>
+        <div><b>매수:</b> 종가 매수 (종가+0.3% = ${fmt(s.buyPrice)}원)</div>
+        <div><b>1차 목표(T1):</b> ${fmt(s.target1)}원 도달시 <b style="color:#16A34A">1/3 매도</b> → 손절선 본전으로 이동</div>
+        <div><b>2차 목표(T2):</b> ${fmt(s.target2)}원 도달시 <b style="color:#16A34A">1/3 매도</b> → 나머지 1/3은 트레일링</div>
+        <div><b>트레일링 스톱:</b> T1 도달 후 <b style="color:#2563EB">최고가 - 2×ATR(${fmt(s.atr || 0)})</b>로 손절선 자동 상향</div>
+        <div><b>손절:</b> ${fmt(s.stoploss)}원 이하 도달시 <b style="color:#DC2626">전량 매도</b> (최대 -${s.riskPct || '7'}%)</div>
+        <div><b>최대 보유:</b> 25거래일 → 종가 청산</div>
+      </div>
       <div class="ohlc-row">
         <span>시가 <b>${fmt(s.open)}</b></span>
         <span>고가 <b style="color:var(--red)">${fmt(s.high)}</b></span>
