@@ -978,6 +978,20 @@ async function doScan(demo) {
     }
 
     DATA = data.results;
+
+    // ★ 종합점수 계산 (모멘텀 70% + 거래량적정성 30%)
+    DATA.forEach(s => {
+      const vr = s.volumeRatio || 0;
+      let volScore;
+      if (vr < 3.0) volScore = vr / 3.0 * 100;
+      else if (vr < 8.0) volScore = 100 - (vr - 3.0) * 10;
+      else volScore = 20;
+      s._composite = s.momentum * 0.7 + volScore * 0.3;
+    });
+    DATA.sort((a, b) => b._composite - a._composite);
+    // 1위 종목에 매수 추천 마크
+    if (DATA.length > 0) DATA[0]._pick = true;
+
     openCards = new Set(DATA.length > 0 ? [DATA[0].code] : []);
 
     // Update header stats
@@ -1068,7 +1082,9 @@ function renderCards() {
     const mc = momentumColor(s.momentum);
     const rankClass = i < 3 ? "rank-top" : i < 10 ? "rank-mid" : "";
 
-    h += `<div class="card">
+    const isPick = s._pick === true;
+    h += `<div class="card" style="${isPick ? 'border:2px solid #2563EB; box-shadow:0 0 12px rgba(37,99,235,0.2)' : ''}">
+      ${isPick ? '<div style="background:#2563EB;color:#fff;text-align:center;padding:6px 0;font-weight:700;font-size:0.85rem;border-radius:10px 10px 0 0;letter-spacing:1px">⭐ 오늘의 매수 종목 (종합점수 1위)</div>' : ''}
       <div class="card-header" onclick="toggleCard('${s.code}')">
         <div class="card-left">
           <span class="rank ${rankClass}">${i + 1}</span>
