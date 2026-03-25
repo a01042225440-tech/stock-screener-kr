@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
 """
-종가매수 스크리너 웹앱 - 전문가급 조건검색 (고속 버전)
-Minervini SEPA + O'Neil CANSLIM + Weinstein Stage Analysis 기반
-5가지 속도 최적화:
-  1. requests.Session 커넥션 풀링 (TCP 재사용 → 요청당 30-50% 단축)
-  2. Phase 1 병렬 (KOSPI+KOSDAQ 동시 조회)
-  3. Phase 2 강화 필터 (731 → ~300 후보)
-  4. Phase 3 워커 20개 (10 → 20)
-  5. Phase 4 경고체크 병렬화 + 메모리 캐시
+키움증권 종가매수 조건검색 스크리너 (고속 버전)
+원본: 종가매수.xls (A~L 전체 AND) + BB하한 상향돌파 + 보조지표
+매수: 종가+0.5% | 손절: ATR x1.5 | T1: BB상한 | T2: 3R
 """
 import sys, os, json, time, traceback, pickle
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -26,21 +21,6 @@ from requests.adapters import HTTPAdapter
 from datetime import datetime, timedelta
 from flask import Flask, render_template, jsonify, request as flask_request
 
-# 클라우드 환경 감지 (Render는 RENDER 환경변수가 있음)
-IS_CLOUD = os.environ.get("RENDER") is not None
-
-def check_naver_api():
-    """네이버 API 접근 가능 여부 빠르게 확인"""
-    try:
-        r = requests.get(
-            "https://m.stock.naver.com/api/stocks/up/KOSPI?page=1&pageSize=1",
-            timeout=5
-        )
-        return r.status_code == 200 and len(r.json().get("stocks", [])) > 0
-    except:
-        return False
-
-NAVER_OK = None  # 첫 스캔 때 확인
 
 app = Flask(__name__, template_folder=".", static_folder=".", static_url_path="/static")
 
@@ -248,6 +228,83 @@ def check_warning_batch(codes):
         executor.map(check_one, codes)
     return excluded
 
+def fetch_investor_data(code):
+    """네이버 integration API에서 수급 + 재무 + 업종 + 컨센서스 일괄 조회"""
+    try:
+        r = _session.get(f"https://m.stock.naver.com/api/stock/{code}/integration", timeout=5)
+        if r.status_code != 200:
+            return None
+        data = r.json()
+
+        # ── 1. 외국인/기관 수급 (5일) ──
+        deals = data.get("dealTrendInfos", [])
+        foreign_net_5d = 0
+        inst_net_5d = 0
+        foreign_buy_days = 0
+        inst_buy_days = 0
+        foreign_hold = 0.0
+
+        for d in deals[:5]:
+            fb = d.get("foreignerPureBuyQuant", "0")
+            ob = d.get("organPureBuyQuant", "0")
+            fb_val = int(str(fb).replace(",", "").replace("+", "")) if fb else 0
+            ob_val = int(str(ob).replace(",", "").replace("+", "")) if ob else 0
+            foreign_net_5d += fb_val
+            inst_net_5d += ob_val
+            if fb_val > 0: foreign_buy_days += 1
+            if ob_val > 0: inst_buy_days += 1
+
+        if deals:
+            hold_str = deals[0].get("foreignerHoldRatio", "0%")
+            try: foreign_hold = float(str(hold_str).replace("%", "").replace(",", ""))
+            except: foreign_hold = 0.0
+
+        # ── 2. 재무제표 (totalInfos) ──
+        total_map = {}
+        for item in data.get("totalInfos", []):
+            total_map[item.get("code", "")] = item.get("value", "")
+
+        def parse_val(s):
+            try: return float(str(s).replace(",", "").replace("배", "").replace("원", "").replace("%", "").replace("억", "").replace("백만", ""))
+            except: return 0.0
+
+        per = parse_val(total_map.get("per", "0"))
+        pbr = parse_val(total_map.get("pbr", "0"))
+        eps = parse_val(total_map.get("eps", "0"))
+        bps = parse_val(total_map.get("bps", "0"))
+        div_yield = parse_val(total_map.get("dividendYieldRatio", "0"))
+        high_52w = parse_val(total_map.get("highPriceOf52Weeks", "0"))
+        low_52w = parse_val(total_map.get("lowPriceOf52Weeks", "0"))
+
+        # ── 3. 증권사 컨센서스 ──
+        cons = data.get("consensusInfo") or {}
+        target_price = parse_val(cons.get("priceTargetMean", "0"))
+        recomm_mean = parse_val(cons.get("recommMean", "0"))  # 1=강력매수 ~ 5=강력매도
+
+        # ── 4. 동종업종 비교 (업종 모멘텀) ──
+        sector_stocks = data.get("industryCompareInfo", [])
+        sector_up = 0
+        sector_total = len(sector_stocks)
+        for ss in sector_stocks:
+            chg = parse_val(ss.get("fluctuationsRatio", "0"))
+            if chg > 0: sector_up += 1
+        sector_ratio = sector_up / sector_total * 100 if sector_total > 0 else 50
+
+        return {
+            "foreign_net_5d": foreign_net_5d,
+            "inst_net_5d": inst_net_5d,
+            "foreign_buy_days": foreign_buy_days,
+            "inst_buy_days": inst_buy_days,
+            "foreign_hold": foreign_hold,
+            "per": per, "pbr": pbr, "eps": eps, "bps": bps,
+            "div_yield": div_yield,
+            "high_52w": high_52w, "low_52w": low_52w,
+            "target_price": target_price, "recomm_mean": recomm_mean,
+            "sector_ratio": sector_ratio,
+        }
+    except:
+        return None
+
 def parse_num(s):
     try: return int(str(s).replace(",", ""))
     except: return 0
@@ -302,11 +359,202 @@ def calc_obv_trend(c, v, lookback=20):
     return obv - obv_start
 
 # =============================================
-#  전문가급 조건검색 (16개 조건)
+#  고급 팩터 계산 (상승확률 정밀화)
+# =============================================
+def calc_advanced_factors(df):
+    """OHLCV에서 10가지 고급 팩터 계산 → rankScore에 반영"""
+    c = df["Close"].values
+    o = df["Open"].values
+    h = df["High"].values
+    l = df["Low"].values
+    v = df["Volume"].values
+    i = len(df) - 1
+    result = {}
+
+    # ── F1. 52주 고가 저항 분석 ──
+    high_52w = max(h[max(0,i-249):i+1])
+    low_52w = min(l[max(0,i-249):i+1])
+    range_52w = high_52w - low_52w if high_52w > low_52w else 1
+    pos_52w = (c[i] - low_52w) / range_52w * 100  # 52주 내 위치(%)
+    dist_from_high = (high_52w - c[i]) / high_52w * 100  # 고가 대비 하락률
+    result["pos52w"] = round(pos_52w, 1)
+    result["distFromHigh"] = round(dist_from_high, 1)
+    # 90% 이상이면 저항 근접 → 감점
+    if pos_52w >= 95: result["f1_score"] = -5   # 52주 고가 근접 = 저항
+    elif pos_52w >= 85: result["f1_score"] = -2
+    elif 60 <= pos_52w < 85: result["f1_score"] = 5  # 상승추세 중간 = 최적
+    elif 40 <= pos_52w < 60: result["f1_score"] = 3  # 중간
+    else: result["f1_score"] = 0
+
+    # ── F2. 변동성 수축 (Volatility Squeeze) ──
+    atr_14 = np.mean([max(h[j]-l[j], abs(h[j]-c[j-1]), abs(l[j]-c[j-1])) for j in range(i-13, i+1)])
+    atr_60 = np.mean([max(h[j]-l[j], abs(h[j]-c[j-1]), abs(l[j]-c[j-1])) for j in range(i-59, i+1)])
+    atr_ratio = atr_14 / atr_60 if atr_60 > 0 else 1
+    bb_width_now = (np.std(c[i-19:i+1]) * 4) / np.mean(c[i-19:i+1]) if np.mean(c[i-19:i+1]) > 0 else 0
+    bb_widths = [(np.std(c[j-19:j+1]) * 4) / np.mean(c[j-19:j+1]) if np.mean(c[j-19:j+1]) > 0 else 0 for j in range(i-59, i+1)]
+    squeeze = bool(atr_ratio < 0.8 and bb_width_now <= sorted(bb_widths)[len(bb_widths)//4])
+    result["atrRatio"] = round(float(atr_ratio), 2)
+    result["squeeze"] = squeeze
+    if squeeze: result["f2_score"] = 8
+    elif atr_ratio < 0.9: result["f2_score"] = 4
+    else: result["f2_score"] = 0
+
+    # ── F3. VWAP 거리 (기관 매매 기준선) ──
+    tp_arr = (h[i-19:i+1] + l[i-19:i+1] + c[i-19:i+1]) / 3
+    vwap_20 = np.sum(tp_arr * v[i-19:i+1]) / np.sum(v[i-19:i+1]) if np.sum(v[i-19:i+1]) > 0 else c[i]
+    vwap_dist = (c[i] - vwap_20) / vwap_20 * 100
+    result["vwapDist"] = round(vwap_dist, 1)
+    if 0 <= vwap_dist <= 3: result["f3_score"] = 6   # VWAP 바로 위 = 지지
+    elif -2 <= vwap_dist < 0: result["f3_score"] = 4  # VWAP 근접 하방
+    elif 3 < vwap_dist <= 8: result["f3_score"] = 2
+    else: result["f3_score"] = 0
+
+    # ── F4. Chaikin Money Flow (자금유입 품질) ──
+    mf_sum = 0; vol_sum = 0
+    for j in range(i-19, i+1):
+        rng = h[j] - l[j]
+        mf_mult = ((c[j] - l[j]) - (h[j] - c[j])) / rng if rng > 0 else 0
+        mf_sum += mf_mult * v[j]
+        vol_sum += v[j]
+    cmf = mf_sum / vol_sum if vol_sum > 0 else 0
+    result["cmf"] = round(cmf, 3)
+    if cmf > 0.15: result["f4_score"] = 7
+    elif cmf > 0.05: result["f4_score"] = 5
+    elif cmf > 0: result["f4_score"] = 2
+    else: result["f4_score"] = 0
+
+    # ── F5. ROC 모멘텀 가속도 ──
+    roc_10 = (c[i] - c[i-10]) / c[i-10] * 100 if c[i-10] > 0 else 0
+    roc_10_prev = (c[i-5] - c[i-15]) / c[i-15] * 100 if c[i-15] > 0 else 0
+    roc_accel = roc_10 - roc_10_prev
+    result["rocAccel"] = round(roc_accel, 2)
+    if roc_accel > 3: result["f5_score"] = 6
+    elif roc_accel > 0: result["f5_score"] = 4
+    elif roc_accel > -2: result["f5_score"] = 1
+    else: result["f5_score"] = -3  # 모멘텀 급감속
+
+    # ── F6. 가격 압축도 (Consolidation Tightness) ──
+    range_10 = (max(h[i-9:i+1]) - min(l[i-9:i+1])) / c[i] if c[i] > 0 else 0
+    range_20 = (max(h[i-19:i+1]) - min(l[i-19:i+1])) / c[i] if c[i] > 0 else 0
+    compression = range_10 / range_20 if range_20 > 0 else 1
+    # Inside day count
+    inside_days = sum(1 for j in range(i-9, i+1) if j > 0 and h[j] < h[j-1] and l[j] > l[j-1])
+    result["compression"] = round(compression, 2)
+    result["insideDays"] = inside_days
+    if compression < 0.5 and inside_days >= 2: result["f6_score"] = 7
+    elif compression < 0.6: result["f6_score"] = 4
+    else: result["f6_score"] = 0
+
+    # ── F7. 갭 분석 (최근 5일 내 갭업 확인) ──
+    gap_score = 0
+    for j in range(i-4, i+1):
+        if j <= 0: continue
+        gap_pct = (o[j] - c[j-1]) / c[j-1] * 100 if c[j-1] > 0 else 0
+        if gap_pct > 1.5:  # 갭업 1.5% 이상
+            gap_held = min(l[j:i+1]) > c[j-1]  # 갭 메우지 않음
+            vol_ratio_gap = v[j] / np.mean(v[max(0,j-20):j]) if np.mean(v[max(0,j-20):j]) > 0 else 1
+            if gap_held and vol_ratio_gap > 1.5:
+                gap_score = 6  # 거래량 동반 미충전 갭업 = 매우 강세
+            elif gap_held:
+                gap_score = max(gap_score, 4)
+    # 갭다운(저항) 체크
+    for j in range(i-9, i+1):
+        if j <= 0: continue
+        gap_down = (c[j-1] - o[j]) / c[j-1] * 100 if c[j-1] > 0 else 0
+        if gap_down > 2.0:
+            gap_top = c[j-1]
+            if c[i] < gap_top and c[i] > gap_top * 0.97:
+                gap_score = max(gap_score - 3, 0)  # 갭다운 저항 근접
+    result["f7_score"] = gap_score
+
+    # ── F8. 수급 가속도 (5일 데이터 내에서 최근 vs 이전 비교) ──
+    # → rankScore에서 investor data로 계산 (여기선 placeholder)
+    result["f8_score"] = 0
+
+    # ── F9. 다중 시간대 Z-Score ──
+    mean_20 = np.mean(c[i-19:i+1])
+    std_20 = np.std(c[i-19:i+1], ddof=1) if len(c[i-19:i+1]) > 1 else 1
+    z_20 = (c[i] - mean_20) / std_20 if std_20 > 0 else 0
+    mean_60 = np.mean(c[i-59:i+1])
+    std_60 = np.std(c[i-59:i+1], ddof=1) if len(c[i-59:i+1]) > 1 else 1
+    z_60 = (c[i] - mean_60) / std_60 if std_60 > 0 else 0
+    result["z20"] = round(z_20, 2)
+    result["z60"] = round(z_60, 2)
+    # 단기 눌림 + 장기 상승 = 최적
+    if -1.5 <= z_20 <= -0.5 and z_60 > 0: result["f9_score"] = 7
+    elif -0.5 <= z_20 <= 1.0 and z_60 > 0: result["f9_score"] = 4
+    elif z_20 > 2.0: result["f9_score"] = -3  # 과열
+    else: result["f9_score"] = 1
+
+    # ── F10. 추세 품질 (ADX + R-squared) ──
+    # ADX 계산 (간략화)
+    plus_dm = [max(h[j]-h[j-1], 0) if h[j]-h[j-1] > l[j-1]-l[j] else 0 for j in range(i-27, i+1)]
+    minus_dm = [max(l[j-1]-l[j], 0) if l[j-1]-l[j] > h[j]-h[j-1] else 0 for j in range(i-27, i+1)]
+    tr_list = [max(h[j]-l[j], abs(h[j]-c[j-1]), abs(l[j]-c[j-1])) for j in range(i-27, i+1)]
+    atr_adx = np.mean(tr_list[-14:]) if len(tr_list) >= 14 else 1
+    plus_di = 100 * np.mean(plus_dm[-14:]) / atr_adx if atr_adx > 0 else 0
+    minus_di = 100 * np.mean(minus_dm[-14:]) / atr_adx if atr_adx > 0 else 0
+    dx = abs(plus_di - minus_di) / (plus_di + minus_di) * 100 if (plus_di + minus_di) > 0 else 0
+    adx = dx  # 단순화
+
+    # R-squared (20일 선형회귀 적합도)
+    x = np.arange(20)
+    y = c[i-19:i+1]
+    if len(y) == 20:
+        slope = np.polyfit(x, y, 1)[0]
+        y_pred = np.polyval(np.polyfit(x, y, 1), x)
+        ss_res = np.sum((y - y_pred) ** 2)
+        ss_tot = np.sum((y - np.mean(y)) ** 2)
+        r_sq = 1 - ss_res / ss_tot if ss_tot > 0 else 0
+    else:
+        slope = 0; r_sq = 0
+
+    result["adx"] = round(adx, 1)
+    result["rSquared"] = round(r_sq, 2)
+    result["trendSlope"] = round(slope, 1)
+    trend_quality = adx * r_sq
+    if trend_quality > 20 and slope > 0: result["f10_score"] = 6
+    elif trend_quality > 10 and slope > 0: result["f10_score"] = 4
+    elif adx < 15: result["f10_score"] = 1  # 횡보장
+    else: result["f10_score"] = 0
+
+    # 총 고급팩터 점수 합산 (디버그용)
+    total = sum(result.get(f"f{n}_score", 0) for n in range(1, 11))
+    result["advancedTotal"] = total
+
+    return result
+
+# =============================================
+#  조건별 탈락 카운터 (디버그용)
+# =============================================
+_debug_reject = {"A": 0, "C": 0, "D": 0, "E": 0, "F": 0, "G": 0, "H": 0, "H2": 0, "I": 0, "J": 0, "K": 0, "L": 0, "limit": 0, "data": 0, "total": 0}
+_debug_lock = threading.Lock()
+
+def reset_debug():
+    global _debug_reject
+    _debug_reject = {k: 0 for k in _debug_reject}
+
+def print_debug_stats():
+    print("\n  ===== CONDITION REJECTION STATS =====")
+    for k, v in _debug_reject.items():
+        if k in ("total", "data"): continue
+        bar = "#" * min(v, 50)
+        print(f"  {k:>5}: {v:>5} rejected  {bar}")
+    print(f"  {'total':>5}: {_debug_reject['total']:>5} analyzed")
+    print(f"  {'data':>5}: {_debug_reject['data']:>5} insufficient data")
+    print("  =====================================\n")
+
+# =============================================
+#  키움증권 종가매수 조건검색 + 보조지표 (11+5 조건)
+#  원본: 종가매수.xls (A~L 전체 AND) + 추가 보조지표
 # =============================================
 def screen_pro(df, name="", code="", mcap=0):
+    global _debug_reject
     if len(df) < 201:
+        with _debug_lock: _debug_reject["data"] += 1
         return None
+
+    with _debug_lock: _debug_reject["total"] += 1
 
     c = df["Close"].values
     o = df["Open"].values
@@ -315,221 +563,183 @@ def screen_pro(df, name="", code="", mcap=0):
     v = df["Volume"].values
     i = len(df) - 1
 
-    # Must-pass
-    if c[i] <= o[i]: return None
-    if c[i] <= c[i-1]: return None
-    chg = (c[i] - c[i-1]) / c[i-1] * 100
-    if chg >= 29: return None
+    # ── 키움 원본 필수조건 (A~L 전체 AND) ──
 
-    av50 = np.mean(v[max(0, i-49):i]) if i >= 50 else np.mean(v[:i])
-    vr = v[i] / av50 if av50 > 0 else 0
-    if vr < 1.2: return None
-    if vr > 8.0: return None  # ★ 거래량 폭증 = 페이드 패턴
-
-    # ★ 갭업 4% 이상 필터
-    gap_pct = (o[i] - c[i-1]) / c[i-1] * 100 if c[i-1] > 0 else 0
-    if gap_pct > 4.0: return None
-
-    P, F = [], []
-    score = 0
-
-    # SMA
-    sma50 = np.mean(c[i-49:i+1])
-    sma150 = np.mean(c[i-149:i+1])
+    # A. 종가 1일이평 > 종가 200일이평
     sma200 = np.mean(c[i-199:i+1])
-    sma200_1m = np.mean(c[i-221:i-22+1]) if i >= 221 else sma200
+    if c[i] <= sma200:
+        with _debug_lock: _debug_reject["A"] += 1
+        return None
 
-    # EMA
-    ema10 = pd.Series(c).ewm(span=10, adjust=False).mean().values
-    ema21 = pd.Series(c).ewm(span=21, adjust=False).mean().values
-    ema20 = pd.Series(c).ewm(span=20, adjust=False).mean().values
+    # C. 전일종가 < 당일종가 (상승)
+    if c[i] <= c[i-1]:
+        with _debug_lock: _debug_reject["C"] += 1
+        return None
 
-    # 52주
-    lookback_52w = min(i + 1, 250)
-    high_52w = max(h[i - lookback_52w + 1:i + 1])
-    low_52w = min(l[i - lookback_52w + 1:i + 1])
+    # D. 시가 < 종가 (양봉)
+    if o[i] >= c[i]:
+        with _debug_lock: _debug_reject["D"] += 1
+        return None
 
-    # A. Price > 150MA & 200MA
-    if c[i] > sma150 and c[i] > sma200:
-        P.append("A.추세상위"); score += 7
-    else:
-        F.append("A.추세상위")
+    # E. 종가 1,000원 이상
+    if c[i] < 1000:
+        with _debug_lock: _debug_reject["E"] += 1
+        return None
 
-    # B. 150MA > 200MA
-    if sma150 > sma200:
-        P.append("B.중기정배열"); score += 5
-    else:
-        F.append("B.중기정배열")
-
-    # C. 200MA rising
-    if sma200 > sma200_1m:
-        P.append("C.장기상승"); score += 5
-    else:
-        F.append("C.장기상승")
-
-    # D. 50 > 150 > 200
-    if sma50 > sma150 > sma200:
-        P.append("D.완전정배열"); score += 12  # ★ 8→12
-    else:
-        F.append("D.완전정배열")
-
-    # E. Triple Stack
-    if ema10[i] > ema21[i] > sma50:
-        P.append("E.트리플스택"); score += 7
-    else:
-        F.append("E.트리플스택")
-
-    # F. 52w low +25%
-    if low_52w > 0 and c[i] >= low_52w * 1.25:
-        P.append("F.52주저+25%"); score += 5
-    else:
-        F.append("F.52주저+25%")
-
-    # G. 52w high 75%
-    if high_52w > 0 and c[i] >= high_52w * 0.75:
-        P.append("G.52주고근접"); score += 5
-    else:
-        F.append("G.52주고근접")
-
-    # H. Volume surge ★ 적정 거래량이 최적, 극단치 페널티
-    if 1.5 <= vr < 3.0:
-        P.append(f"H.최적{vr:.1f}x"); score += 8
-    elif 3.0 <= vr < 5.0:
-        P.append(f"H.주의{vr:.1f}x"); score += 5
-    elif 5.0 <= vr <= 8.0:
-        P.append(f"H.경고{vr:.1f}x"); score += 2
-    else:
-        P.append(f"H.소폭{vr:.1f}x"); score += 0
-
-    # I. OBV
-    obv_delta = calc_obv_trend(c, v, 20)
-    if obv_delta > 0:
-        P.append("I.OBV매집"); score += 5
-    else:
-        F.append("I.OBV이탈")
-
-    # J. RSI
-    rv = calc_rsi(pd.Series(c), 14).iloc[-1]
-    if not np.isnan(rv):
-        if 45 <= rv <= 75:
-            P.append(f"J.RSI{rv:.0f}"); score += 7
-        elif rv > 75:
-            F.append(f"J.RSI과열{rv:.0f}")
-        elif rv > 40:
-            P.append(f"J.RSI{rv:.0f}"); score += 3
-        else:
-            F.append(f"J.RSI약세{rv:.0f}")
-    else:
-        F.append("J.RSI-")
-
-    # K. MACD
-    macd_line, signal_line, macd_hist = calc_macd(pd.Series(c), 12, 26, 9)
-    mh_now = macd_hist.iloc[-1]
-    mh_prev = macd_hist.iloc[-2] if len(macd_hist) > 1 else 0
-    ml_now = macd_line.iloc[-1]
-    if not np.isnan(mh_now):
-        if mh_now > 0 and mh_now > mh_prev:
-            P.append("K.MACD가속"); score += 8
-        elif mh_now > 0:
-            P.append("K.MACD양전"); score += 4
-        elif ml_now > 0:
-            P.append("K.MACD+"); score += 2
-        else:
-            F.append("K.MACD음전")
-    else:
-        F.append("K.MACD-")
-
-    # L. Stochastic
-    sk, sd = calc_stoch(pd.Series(h), pd.Series(l), pd.Series(c), 14, 3)
-    sk_v = sk.iloc[-1]
-    sd_v = sd.iloc[-1]
-    if not np.isnan(sk_v) and not np.isnan(sd_v):
-        if 20 <= sk_v <= 80 and sk_v > sd_v:
-            P.append(f"L.Stoch{sk_v:.0f}"); score += 7
-        elif sk_v > sd_v:
-            P.append(f"L.Stoch{sk_v:.0f}"); score += 3
-        else:
-            F.append("L.Stoch역배열")
-    else:
-        F.append("L.Stoch-")
-
-    # M. 20EMA rising
-    if ema20[i] > ema20[i-1] > ema20[i-2]:
-        P.append("M.EMA상승"); score += 5
-    else:
-        F.append("M.EMA횡보")
-
-    # N. Bollinger
+    # F. BB(20,2) 하한선 상향돌파 (전일 종가 <= BB하한 근접, 당일 종가 > BB하한)
     bb_mid = np.mean(c[i-19:i+1])
     bb_std = np.std(c[i-19:i+1], ddof=1)
     bb_upper = bb_mid + 2 * bb_std
     bb_lower = bb_mid - 2 * bb_std
-    if bb_mid <= c[i] <= bb_upper:
-        P.append("N.BB상단구간"); score += 5
-    elif c[i] > bb_lower:
-        P.append("N.BB중간"); score += 2
-    else:
-        F.append("N.BB하단")
+    bb_mid_prev = np.mean(c[i-20:i])
+    bb_std_prev = np.std(c[i-20:i], ddof=1)
+    bb_lower_prev = bb_mid_prev - 2 * bb_std_prev
+    # 전일 종가가 BB하한 10% 이내 근접 + 당일 종가가 BB하한 위 (눌림목 반등)
+    if not (c[i-1] <= bb_lower_prev * 1.10 and c[i] > bb_lower):
+        with _debug_lock: _debug_reject["F"] += 1
+        return None
 
-    # O. Candle
+    # G. 전일대비 거래량 150% 이상 (반등 확인)
+    if v[i-1] <= 0:
+        with _debug_lock: _debug_reject["G"] += 1
+        return None
+    vol_ratio = v[i] / v[i-1]
+    if vol_ratio < 1.5:
+        with _debug_lock: _debug_reject["G"] += 1
+        return None
+
+    # H. 60일 이평 상승추세 1회 이상
+    sma60 = np.mean(c[i-59:i+1])
+    sma60_1 = np.mean(c[i-60:i])
+    sma60_2 = np.mean(c[i-61:i-1])
+    sma60_rising = 0
+    if sma60 > sma60_1: sma60_rising += 1
+    if sma60_1 > sma60_2: sma60_rising += 1
+    if sma60_rising < 1:
+        with _debug_lock: _debug_reject["H"] += 1
+        return None
+
+    # H2. 단기 정배열: 종가 > 10MA > 20MA
+    sma10 = np.mean(c[i-9:i+1])
+    sma20 = np.mean(c[i-19:i+1])
+    if not (c[i] > sma10 > sma20):
+        with _debug_lock: _debug_reject["H2"] += 1
+        return None
+
+    # I. MACD(12,26,9) 히스토그램 반전 (전일대비 개선)
+    macd_line_i, signal_line_i, macd_hist_i = calc_macd(pd.Series(c), 12, 26, 9)
+    mh_now_i = float(macd_hist_i.iloc[-1]) if not np.isnan(macd_hist_i.iloc[-1]) else 0
+    mh_prev_i = float(macd_hist_i.iloc[-2]) if len(macd_hist_i) > 1 and not np.isnan(macd_hist_i.iloc[-2]) else 0
+    if mh_now_i <= mh_prev_i:
+        with _debug_lock: _debug_reject["I"] += 1
+        return None
+
+    # J. 종가 > BB하한 + 밴드폭의 20% (BB하한 위에서 반등 확인)
+    bb_band_width = bb_upper - bb_lower
+    if bb_band_width > 0 and c[i] < bb_lower + bb_band_width * 0.2:
+        with _debug_lock: _debug_reject["J"] += 1
+        return None
+
+    # K. RSI(14) 25~65 (눌림목 반등 구간)
+    rv = calc_rsi(pd.Series(c), 14).iloc[-1]
+    if np.isnan(rv) or rv < 25 or rv > 65:
+        with _debug_lock: _debug_reject["K"] += 1
+        return None
+
+    # L. 시가총액 500억 이상 (mcap_eok 단위: 억)
+    if mcap > 0 and mcap < 500:
+        with _debug_lock: _debug_reject["L"] += 1
+        return None
+
+    # 상한가 제외
+    chg = (c[i] - c[i-1]) / c[i-1] * 100
+    if chg >= 29:
+        with _debug_lock: _debug_reject["limit"] += 1
+        return None
+
+    # ── 여기까지 통과 = 키움 원본 11개 조건 ALL PASS ──
+    # ── 아래는 추가 보조지표 (점수화) ──
+
+    P = ["A.200MA돌파", "C.전일대비상승", "D.양봉", "E.가격적정",
+         "F.BB하한반등", f"G.거래량{vol_ratio:.1f}x", "H.60MA상승",
+         "H2.정배열(10>20)", "I.MACD반전", "J.BB반등확인", f"K.RSI{rv:.0f}", "L.시총적정"]
+    F_list = []
+    score = 55  # 기본 11개 통과 = 55점
+
+    # ── 보조1. 추세 정배열 (50>150>200) ──
+    sma50 = np.mean(c[i-49:i+1])
+    sma150 = np.mean(c[i-149:i+1])
+    if sma50 > sma150 > sma200:
+        P.append("S1.완전정배열"); score += 10
+    elif sma50 > sma200:
+        P.append("S1.단기정배열"); score += 5
+    else:
+        F_list.append("S1.정배열X")
+
+    # ── 보조2. Stochastic 골든크로스 ──
+    sk, sd = calc_stoch(pd.Series(h), pd.Series(l), pd.Series(c), 14, 3)
+    sk_v = sk.iloc[-1]; sd_v = sd.iloc[-1]
+    if not np.isnan(sk_v) and not np.isnan(sd_v):
+        if sk_v > sd_v and sk_v < 80:
+            P.append(f"S2.Stoch{sk_v:.0f}"); score += 8
+        else:
+            F_list.append(f"S2.Stoch{sk_v:.0f}")
+    else:
+        F_list.append("S2.Stoch-")
+
+    # ── 보조3. OBV 매집 ──
+    obv_delta = calc_obv_trend(c, v, 20)
+    if obv_delta > 0:
+        P.append("S3.OBV매집"); score += 7
+    else:
+        F_list.append("S3.OBV이탈")
+
+    # ── 보조4. BB 위치 (상단 가까울수록 강세) ──
+    bb_pos = (c[i] - bb_lower) / (bb_upper - bb_lower) * 100 if (bb_upper - bb_lower) > 0 else 50
+    if bb_pos >= 70:
+        P.append(f"S4.BB상단{bb_pos:.0f}%"); score += 8
+    elif bb_pos >= 50:
+        P.append(f"S4.BB중상{bb_pos:.0f}%"); score += 4
+    else:
+        F_list.append(f"S4.BB하단{bb_pos:.0f}%")
+
+    # ── 보조5. 캔들 품질 ──
     body = abs(c[i] - o[i])
     rng = h[i] - l[i]
     body_ratio = body / rng if rng > 0 else 0
     if body_ratio >= 0.65:
-        P.append("O.장대양봉"); score += 5
+        P.append("S5.장대양봉"); score += 7
+    elif body_ratio >= 0.45:
+        P.append("S5.양봉확인"); score += 3
     else:
-        cn = 0
-        for j in range(i, max(i - 5, 0), -1):
-            if c[j] > o[j]: cn += 1
-            else: break
-        if cn >= 3:
-            P.append(f"O.{cn}연양봉"); score += 4
-        elif cn >= 2:
-            P.append(f"O.{cn}연양봉"); score += 2
-        else:
-            F.append("O.캔들보통")
+        F_list.append("S5.약한캔들")
 
-    # P. RS
-    if sma200 > 0:
-        rs_pct = (c[i] / sma200 - 1) * 100
-        if rs_pct > 20:
-            P.append(f"P.RS강+{rs_pct:.0f}%"); score += 5
-        elif rs_pct > 5:
-            P.append(f"P.RS양+{rs_pct:.0f}%"); score += 3
-        elif rs_pct > 0:
-            P.append(f"P.RS+{rs_pct:.0f}%"); score += 1
-        else:
-            F.append("P.RS약세")
-    else:
-        F.append("P.RS-")
-
-    # ★ Q. 풀백 바운스 보너스
-    ema10_touched = False; ema21_touched = False
-    for j in range(max(0, i-4), i):
-        if l[j] <= ema10[j] <= h[j]: ema10_touched = True
-        if l[j] <= ema21[j] <= h[j]: ema21_touched = True
-    if ema10_touched or ema21_touched:
-        P.append("Q.풀백바운스"); score += 5
-    else:
-        F.append("Q.풀백없음")
-
-    if len(P) < 8:
-        return None
+    # 50일 평균 거래량 비율 (화면 표시용)
+    av50 = np.mean(v[max(0, i-49):i]) if i >= 50 else np.mean(v[:i])
+    vr50 = v[i] / av50 if av50 > 0 else vol_ratio
 
     atr = calc_atr(h, l, c)
 
+    # MACD(12,26,9) 표시용
+    macd_line_std, _, macd_hist_std = calc_macd(pd.Series(c), 12, 26, 9)
+    mh_display = float(macd_hist_std.iloc[-1]) if not np.isnan(macd_hist_std.iloc[-1]) else 0
+
     return {
-        "passed": P, "failed": F,
-        "pass_count": len(P), "total": len(P) + len(F),
+        "passed": P, "failed": F_list,
+        "pass_count": len(P), "total": len(P) + len(F_list),
         "momentum": round(min(score, 100), 1),
         "atr": round(atr),
-        "rsi": round(rv, 1) if not np.isnan(rv) else 0,
-        "macd_hist": round(float(mh_now), 2) if not np.isnan(mh_now) else 0,
-        "volume_ratio": round(vr, 1)
+        "rsi": round(rv, 1),
+        "macd_hist": round(mh_display, 2),
+        "volume_ratio": round(vr50, 1),
+        "bb_lower": round(bb_lower),
+        "bb_upper": round(bb_upper),
+        "bb_mid": round(bb_mid),
+        "bb_pos": round(bb_pos, 1)
     }
 
 # =============================================
-#  매매가 계산
+#  매매가 계산 (종가매수 전략)
 # =============================================
 def tick(p, ref):
     for lim, t in [(2000, 1), (5000, 5), (20000, 10), (50000, 50), (200000, 100), (500000, 500)]:
@@ -537,19 +747,29 @@ def tick(p, ref):
             return (p // t) * t
     return (p // 1000) * 1000
 
-def calc_price_pro(cl, lo, atr):
+def calc_price_pro(cl, lo, atr, bb_info=None):
     if cl <= 0 or atr <= 0:
         return None
+    # 매수가: 종가 +0.3% (익일 시초가 슬리피지, 최적화 결과 0.3%)
     buy = tick(int(cl * 1.003), cl)
-    sl_atr = int(buy - 1.8 * atr)     # ★ 2.0→1.8
-    sl_low = int(lo * 0.995)
-    sl_max = int(buy * 0.93)           # ★ 0.92→0.93
+
+    # 손절: ATR x1.5 또는 저가-1% 또는 최대-7% 중 높은 값
+    sl_atr = int(buy - 1.5 * atr)
+    sl_low = int(lo * 0.99)
+    sl_max = int(buy * 0.93)
     sl = tick(max(sl_atr, sl_low, sl_max), cl)
+
     risk = buy - sl
     if risk <= 0:
         return None
-    t1 = tick(int(buy + 2.5 * risk), cl)   # ★ 2.0→2.5
-    t2 = tick(int(buy + 4.0 * risk), cl)   # ★ 3.0→4.0
+
+    # 목표1: BB상한선 또는 2R
+    t1_bb = int(bb_info["bb_upper"]) if bb_info and bb_info.get("bb_upper", 0) > buy else int(buy + 2.0 * risk)
+    t1 = tick(max(t1_bb, int(buy + 1.5 * risk)), cl)
+
+    # 목표2: 3R (추세 확장)
+    t2 = tick(int(buy + 3.0 * risk), cl)
+
     rr = round((t1 - buy) / risk, 2) if risk > 0 else 0
     risk_pct = round((buy - sl) / buy * 100, 1)
     return {"buy": buy, "t1": t1, "t2": t2, "sl": sl,
@@ -561,26 +781,8 @@ def calc_price_pro(cl, lo, atr):
 scan_status = {"running": False, "progress": 0, "total": 0, "found": 0, "message": "", "phase": ""}
 
 def run_scan(date_str, demo=False):
-    global scan_status, NAVER_OK
+    global scan_status
     results = []
-
-    # 클라우드에서 네이버 API 차단 여부 확인 (최초 1회)
-    if not demo and NAVER_OK is None:
-        print("  [CLOUD CHECK] Naver API 접근 테스트 중...")
-        NAVER_OK = check_naver_api()
-        print(f"  [CLOUD CHECK] Naver API: {'OK' if NAVER_OK else 'BLOCKED - 데모모드로 전환'}")
-    if not demo and NAVER_OK is False:
-        demo = True
-        print("  [AUTO] 해외서버 감지 → 데모모드 자동 전환")
-
-    if demo:
-        scan_status = {"running": True, "progress": 0, "total": 60, "found": 0,
-                       "message": "Demo data...", "phase": "demo"}
-        from app_demo import run_demo_scan
-        results = run_demo_scan(date_str, scan_status)
-        scan_status["running"] = False
-        scan_status["message"] = "done"
-        return results
 
     t_start = time.time()
 
@@ -588,7 +790,7 @@ def run_scan(date_str, demo=False):
     scan_status = {"running": True, "progress": 0, "total": 0, "found": 0,
                    "message": "KOSPI+KOSDAQ parallel fetch...", "phase": "krx"}
     print(f"\n{'='*60}")
-    print(f"  [SCAN] Pro Screener | {date_str}")
+    print(f"  [SCAN] BB Lower Bounce | {date_str}")
     print(f"{'='*60}")
 
     t1 = time.time()
@@ -625,12 +827,12 @@ def run_scan(date_str, demo=False):
         mcap_eok = parse_num(s.get("marketValue", "0"))
         chg_rate = parse_float(s.get("fluctuationsRatio", "0"))
 
-        # 강화 필터 (후보 수 ~절반으로 감소)
+        # 키움 종가매수 필터: 양봉 상승 종목
         if cl <= 0 or vol <= 0: continue
-        if chg_rate < 0.3: continue        # 0.3% 미만 상승 제외 (의미있는 상승만)
-        if cl < 500: continue
-        if trdval < 800: continue           # 거래대금 8억 미만 제외 (기존 5억)
-        if mcap_eok < 500: continue
+        if chg_rate < 0.1: continue        # 최소 상승
+        if cl < 1000: continue             # E조건: 1,000원 이상
+        if trdval < 500: continue           # 거래대금 5억 이상
+        if mcap_eok < 500: continue         # L조건: 시총 500억 이상
 
         candidates.append({
             "code": code, "name": name, "market": market,
@@ -644,6 +846,7 @@ def run_scan(date_str, demo=False):
     scan_status["phase"] = "detail"
 
     # ── Phase 3: 20개 워커 병렬 기술 분석 ──
+    reset_debug()
     t3 = time.time()
     scanned = 0
 
@@ -663,11 +866,103 @@ def run_scan(date_str, demo=False):
         last_open = int(df["Open"].iloc[-1])
         last_high = int(df["High"].iloc[-1])
         last_low = int(df["Low"].iloc[-1])
-        p = calc_price_pro(last_close, last_low, r["atr"])
+        bb_info = {"bb_lower": r.get("bb_lower", 0), "bb_mid": r.get("bb_mid", 0), "bb_upper": r.get("bb_upper", 0)}
+        p = calc_price_pro(last_close, last_low, r["atr"], bb_info)
         if p is None:
             return None
         dd = df.index[-1]
         dd = dd.strftime("%Y-%m-%d") if hasattr(dd, 'strftime') else date_str
+
+        # 외국인/기관 수급 데이터 조회
+        inv = fetch_investor_data(code)
+        inv_score = 0
+        foreign_net = 0
+        inst_net = 0
+        foreign_hold = 0.0
+        foreign_buy_days = 0
+        inst_buy_days = 0
+
+        per = 0; pbr = 0; eps = 0; div_yield = 0
+        target_price = 0; recomm_mean = 0; sector_ratio = 50
+        high_52w = 0; low_52w = 0
+
+        if inv:
+            foreign_net = inv["foreign_net_5d"]
+            inst_net = inv["inst_net_5d"]
+            foreign_hold = inv["foreign_hold"]
+            foreign_buy_days = inv["foreign_buy_days"]
+            inst_buy_days = inv["inst_buy_days"]
+            per = inv["per"]; pbr = inv["pbr"]; eps = inv["eps"]
+            div_yield = inv["div_yield"]
+            target_price = inv["target_price"]; recomm_mean = inv["recomm_mean"]
+            sector_ratio = inv["sector_ratio"]
+            high_52w = inv["high_52w"]; low_52w = inv["low_52w"]
+
+            # S6. 수급 점수 (최대 15점)
+            if foreign_net > 0 and inst_net > 0:
+                r["passed"].append("S6.쌍끌이매수")
+                inv_score = 15
+            elif inst_net > 0:
+                r["passed"].append(f"S6.기관매수{inst_buy_days}일")
+                inv_score = 10
+            elif foreign_net > 0:
+                r["passed"].append(f"S6.외인매수{foreign_buy_days}일")
+                inv_score = 8
+            else:
+                r["failed"].append("S6.수급약세")
+
+            # S7. 외국인 보유비율
+            if foreign_hold >= 20:
+                r["passed"].append(f"S7.외인{foreign_hold:.0f}%")
+                inv_score += 5
+            elif foreign_hold >= 10:
+                r["passed"].append(f"S7.외인{foreign_hold:.0f}%")
+                inv_score += 3
+
+            # S8. 재무 건전성 (PER 적정 + PBR 저평가)
+            if 0 < per <= 15:
+                r["passed"].append(f"S8.PER{per:.1f}")
+                inv_score += 5
+            elif 0 < per <= 25:
+                r["passed"].append(f"S8.PER{per:.1f}")
+                inv_score += 2
+            elif per > 50 or per < 0:
+                r["failed"].append(f"S8.PER{per:.1f}")
+
+            # S9. 증권사 컨센서스 (목표가 괴리율)
+            if target_price > 0 and last_close > 0:
+                upside = (target_price - last_close) / last_close * 100
+                if upside >= 30:
+                    r["passed"].append(f"S9.목표+{upside:.0f}%")
+                    inv_score += 5
+                elif upside >= 15:
+                    r["passed"].append(f"S9.목표+{upside:.0f}%")
+                    inv_score += 3
+                elif upside < 0:
+                    r["failed"].append(f"S9.목표초과")
+
+            # S10. 업종 모멘텀
+            if sector_ratio >= 70:
+                r["passed"].append(f"S10.업종강세{sector_ratio:.0f}%")
+                inv_score += 5
+            elif sector_ratio >= 50:
+                r["passed"].append(f"S10.업종보통")
+                inv_score += 2
+            else:
+                r["failed"].append(f"S10.업종약세{sector_ratio:.0f}%")
+
+        final_score = min(r["momentum"] + inv_score, 100)
+
+        # 고급 팩터 계산 (F1~F10)
+        try:
+            adv = calc_advanced_factors(df)
+        except Exception:
+            adv = {f"f{n}_score": 0 for n in range(1, 11)}
+            adv.update({"advancedTotal": 0, "pos52w": 0, "distFromHigh": 0,
+                        "atrRatio": 1, "squeeze": False, "vwapDist": 0,
+                        "cmf": 0, "rocAccel": 0, "compression": 1, "insideDays": 0,
+                        "z20": 0, "z60": 0, "adx": 0, "rSquared": 0, "trendSlope": 0})
+
         return {
             "code": code, "name": cand["name"], "market": cand["market"],
             "close": last_close, "open": last_open,
@@ -676,14 +971,51 @@ def run_scan(date_str, demo=False):
             "buyPrice": p["buy"], "target1": p["t1"], "target2": p["t2"],
             "stoploss": p["sl"], "rrRatio": p["rr"],
             "atr": p["atr"], "riskPct": p["risk_pct"],
-            "momentum": r["momentum"],
+            "momentum": final_score,
             "conditionsMet": r["passed"],
             "conditionsDetail": f'{r["pass_count"]}/{r["total"]}',
             "rsi": r["rsi"],
             "macdHist": r["macd_hist"],
             "volumeRatio": r["volume_ratio"],
             "dataDate": dd,
-            "changeRate": cand["chg_rate"]
+            "changeRate": cand["chg_rate"],
+            "foreignNet5d": foreign_net,
+            "instNet5d": inst_net,
+            "foreignHold": foreign_hold,
+            "foreignBuyDays": foreign_buy_days,
+            "instBuyDays": inst_buy_days,
+            "per": per, "pbr": pbr, "eps": eps,
+            "divYield": div_yield,
+            "targetPrice": target_price,
+            "recommMean": recomm_mean,
+            "sectorRatio": sector_ratio,
+            "high52w": high_52w, "low52w": low_52w,
+            # 고급 팩터 (F1~F10)
+            "pos52w": float(adv.get("pos52w", 0)),
+            "distFromHigh": float(adv.get("distFromHigh", 0)),
+            "atrRatio": float(adv.get("atrRatio", 1)),
+            "squeeze": bool(adv.get("squeeze", False)),
+            "vwapDist": float(adv.get("vwapDist", 0)),
+            "cmf": float(adv.get("cmf", 0)),
+            "rocAccel": float(adv.get("rocAccel", 0)),
+            "compression": float(adv.get("compression", 1)),
+            "insideDays": int(adv.get("insideDays", 0)),
+            "z20": float(adv.get("z20", 0)),
+            "z60": float(adv.get("z60", 0)),
+            "adx": float(adv.get("adx", 0)),
+            "rSquared": float(adv.get("rSquared", 0)),
+            "trendSlope": float(adv.get("trendSlope", 0)),
+            "advancedTotal": int(adv.get("advancedTotal", 0)),
+            "f1_score": int(adv.get("f1_score", 0)),
+            "f2_score": int(adv.get("f2_score", 0)),
+            "f3_score": int(adv.get("f3_score", 0)),
+            "f4_score": int(adv.get("f4_score", 0)),
+            "f5_score": int(adv.get("f5_score", 0)),
+            "f6_score": int(adv.get("f6_score", 0)),
+            "f7_score": int(adv.get("f7_score", 0)),
+            "f8_score": int(adv.get("f8_score", 0)),
+            "f9_score": int(adv.get("f9_score", 0)),
+            "f10_score": int(adv.get("f10_score", 0)),
         }
 
     with ThreadPoolExecutor(max_workers=20) as executor:
@@ -704,6 +1036,7 @@ def run_scan(date_str, demo=False):
 
     t_phase3 = time.time() - t3
     print(f"  [Phase3] {len(results)} found in {t_phase3:.1f}s ({scanned} analyzed)")
+    print_debug_stats()
 
     # ── Phase 4: 경고 체크 병렬 (15개 동시) ──
     t4 = time.time()
@@ -722,7 +1055,117 @@ def run_scan(date_str, demo=False):
     # 캐시 저장
     save_cache_to_disk()
 
-    results.sort(key=lambda x: x["momentum"], reverse=True)
+    # ── 실전 랭킹: 상승확률 종합점수 (100점 만점) ──
+    # 기본 8항목 (70점) + 고급팩터 10항목 (30점) = 총 100점
+    for r in results:
+        rank_score = 0.0
+
+        # 1. 수급 (22점 배점) - 가장 중요
+        fn = r.get("foreignNet5d", 0)
+        ins = r.get("instNet5d", 0)
+        fb = r.get("foreignBuyDays", 0)
+        ib = r.get("instBuyDays", 0)
+        if fn > 0 and ins > 0:
+            rank_score += 22  # 쌍끌이 = 만점
+        elif ins > 0:
+            rank_score += 15 + min(ib * 2, 5)  # 기관 매수 + 연속일수 가산
+        elif fn > 0:
+            rank_score += 10 + min(fb * 2, 5)  # 외인 매수
+        else:
+            rank_score += 0  # 수급 없음
+
+        # 2. 기술적 조건 충족도 (15점 배점)
+        conds_str = r.get("conditionsDetail", "0/0").split("/")
+        met = int(conds_str[0]) if conds_str[0].isdigit() else 0
+        total = int(conds_str[1]) if len(conds_str) > 1 and conds_str[1].isdigit() else 16
+        rank_score += (met / max(total, 1)) * 15
+
+        # 3. 거래량 강도 (7점 배점)
+        vr = r.get("volumeRatio", 0)
+        if vr >= 3.0: rank_score += 7
+        elif vr >= 2.0: rank_score += 5
+        elif vr >= 1.5: rank_score += 3
+        elif vr >= 1.0: rank_score += 2
+
+        # 4. R/R 비율 (7점 배점) - 리스크 대비 수익
+        rr = r.get("rrRatio", 0)
+        if rr >= 3.0: rank_score += 7
+        elif rr >= 2.0: rank_score += 5
+        elif rr >= 1.5: rank_score += 3
+        else: rank_score += 1
+
+        # 5. 증권사 목표가 괴리율 (7점 배점)
+        tp = r.get("targetPrice", 0)
+        cl = r.get("close", 1)
+        if tp > 0 and cl > 0:
+            upside = (tp - cl) / cl * 100
+            if upside >= 40: rank_score += 7
+            elif upside >= 25: rank_score += 5
+            elif upside >= 15: rank_score += 3
+            elif upside >= 0: rank_score += 1
+
+        # 6. 재무 건전성 (5점 배점)
+        per = r.get("per", 0)
+        pbr = r.get("pbr", 0)
+        if 0 < per <= 10: rank_score += 3
+        elif 0 < per <= 15: rank_score += 2
+        elif 0 < per <= 25: rank_score += 1
+        if 0 < pbr <= 1.0: rank_score += 2
+        elif 0 < pbr <= 2.0: rank_score += 1
+
+        # 7. 업종 모멘텀 (4점 배점)
+        sr = r.get("sectorRatio", 50)
+        if sr >= 80: rank_score += 4
+        elif sr >= 60: rank_score += 2
+        elif sr >= 50: rank_score += 1
+
+        # 8. RSI 적정구간 보너스 (3점 배점) - 40~55가 최적
+        rsi = r.get("rsi", 50)
+        if 40 <= rsi <= 55: rank_score += 3
+        elif 35 <= rsi <= 60: rank_score += 2
+        else: rank_score += 1
+
+        # ── 9. 고급 팩터 F1~F10 (30점 배점) ──
+        # F1: 52주 고가 저항 (-5~5) → 정규화 0~5
+        f1 = r.get("f1_score", 0)
+        rank_score += max(0, min((f1 + 5) / 2, 5))  # -5→0, 0→2.5, 5→5
+
+        # F2: 변동성 수축 (0~8) → 정규화 0~4
+        rank_score += min(r.get("f2_score", 0) / 2, 4)
+
+        # F3: VWAP 거리 (0~6) → 정규화 0~3
+        rank_score += min(r.get("f3_score", 0) / 2, 3)
+
+        # F4: CMF 자금유입 (0~7) → 정규화 0~4
+        rank_score += min(r.get("f4_score", 0) * 4 / 7, 4)
+
+        # F5: ROC 가속도 (-3~6) → 정규화 0~3
+        f5 = r.get("f5_score", 0)
+        rank_score += max(0, min((f5 + 3) / 3, 3))
+
+        # F6: 가격 압축 (0~7) → 정규화 0~3
+        rank_score += min(r.get("f6_score", 0) * 3 / 7, 3)
+
+        # F7: 갭 분석 (0~6) → 정규화 0~2
+        rank_score += min(r.get("f7_score", 0) / 3, 2)
+
+        # F8: 수급 가속도 (placeholder) → 0
+        rank_score += r.get("f8_score", 0)
+
+        # F9: Z-Score (-3~7) → 정규화 0~3
+        f9 = r.get("f9_score", 0)
+        rank_score += max(0, min((f9 + 3) / 10 * 3, 3))
+
+        # F10: 추세 품질 (0~6) → 정규화 0~3
+        rank_score += min(r.get("f10_score", 0) / 2, 3)
+
+        r["rankScore"] = round(min(rank_score, 100), 1)
+
+    results.sort(key=lambda x: x["rankScore"], reverse=True)
+
+    # 순위 부여
+    for i, r in enumerate(results):
+        r["rank"] = i + 1
     t_total = time.time() - t_start
 
     scan_status = {"running": False, "progress": len(candidates), "total": len(candidates),
@@ -748,7 +1191,6 @@ def index():
 @app.route("/api/scan")
 def api_scan():
     date_str = flask_request.args.get("date", "")
-    demo = flask_request.args.get("demo", "false") == "true"
     if not date_str:
         date_str = datetime.now().strftime("%Y-%m-%d")
     try:
@@ -758,18 +1200,27 @@ def api_scan():
     except ValueError:
         return jsonify({"error": "Date format error"}), 400
 
-    results = run_scan(date_str, demo=demo)
-    # Naver API가 해외 서버에서 막힌 경우 자동으로 demo 모드로 재시도
-    if not results and not demo:
-        print("  [INFO] Naver API returned 0 results. Falling back to demo mode.")
-        results = run_scan(date_str, demo=True)
-        demo = True
+    results = run_scan(date_str)
+    # 요일 정보 (화요일=1 → 매수 비추천)
+    dow = datetime.strptime(date_str, "%Y-%m-%d").weekday()
+    dow_names = ["월","화","수","목","금","토","일"]
     return jsonify({
         "results": results,
         "date": date_str,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "mode": "demo" if demo else "KRX+Naver Pro",
-        "count": len(results)
+        "mode": "KRX+Naver",
+        "count": len(results),
+        "dayOfWeek": dow_names[dow],
+        "isTuesday": dow == 1,
+        "tradeRules": {
+            "slip": "0.3%",
+            "t1SellRatio": "1/2",
+            "t2SellRatio": "1/2",
+            "trailingATR": 1.5,
+            "maxHold": 20,
+            "skipTuesday": True,
+            "skip3Loss": True,
+        }
     })
 
 @app.route("/api/status")

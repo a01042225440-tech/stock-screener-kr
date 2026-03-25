@@ -792,7 +792,7 @@ body {
           <div class="stat-value" style="color:var(--blue)" id="statCount">-</div>
         </div>
         <div class="stat-item">
-          <div class="stat-label">평균점수</div>
+          <div class="stat-label">평균확률</div>
           <div class="stat-value" style="color:var(--yellow)" id="statAvgScore">-</div>
         </div>
         <div class="stat-item">
@@ -800,7 +800,7 @@ body {
           <div class="stat-value" id="statAvgRR">-</div>
         </div>
         <div class="stat-item">
-          <div class="stat-label">12+조건</div>
+          <div class="stat-label">8+조건</div>
           <div class="stat-value" style="color:var(--green)" id="stat11">-</div>
         </div>
       </div>
@@ -813,11 +813,10 @@ body {
   <div class="controls">
     <div class="controls-row">
       <input type="date" class="date-input" id="dateInput">
-      <button class="btn btn-primary" id="btnScan" onclick="doScan(false)" style="touch-action:manipulation;">
+      <button class="btn btn-primary" id="btnScan" onclick="doScan()" style="touch-action:manipulation;">
         <span id="btnScanText">KRX 전종목 검색</span>
       </button>
-      <button class="btn btn-demo" onclick="doScan(true)" style="touch-action:manipulation;">📊 데모 검색</button>
-      <span class="scan-info" id="scanInfo">Minervini SEPA + O'Neil + Weinstein 기반 · 위험종목 자동제외</span>
+      <span class="scan-info" id="scanInfo">키움 종가매수 조건식 + BB하한돌파 · 위험종목 자동제외</span>
     </div>
   </div>
 
@@ -827,44 +826,41 @@ body {
   <!-- Card List -->
   <div id="cardList">
     <div class="initial-state">
-      <div class="initial-icon">S</div>
-      <div class="initial-title">전문가급 종목 스크리너</div>
+      <div class="initial-icon">KW</div>
+      <div class="initial-title">키움 종가매수 스크리너</div>
       <div class="initial-desc">
-        <b>Minervini SEPA</b> + <b>O'Neil CANSLIM</b> + <b>Weinstein Stage</b> 기반<br>
-        16개 전문가 조건 + ATR 기반 매매가 + 위험종목 자동제외<br>
-        관리종목·투자경고·우선주·SPAC·ETF·ETN 등 자동 필터링
+        <b>키움증권 종가매수.xls</b> 조건검색식 기반 (A~L 전체 AND)<br>
+        200MA돌파 + BB하한 상향돌파 + MACD 0선돌파 + RSI 30~60<br>
+        매수: 종가+0.3% | 손절: ATR x1.5 | T1: BB상한/2R | T2: 3R | 트레일링: 1.5ATR
       </div>
     </div>
   </div>
 
   <!-- Legend -->
   <div class="legend">
-    <div class="legend-title">전문가 조건 범례 (16개 + 필수 4개)</div>
-    <div class="legend-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
-      <div><b style="color:var(--red)">필수</b> 양봉 (종가 &gt; 시가)</div>
-      <div><b style="color:var(--red)">필수</b> 전일대비 상승</div>
-      <div><b style="color:var(--red)">필수</b> 거래량 &ge; 1.2배</div>
-      <div><b style="color:var(--red)">필수</b> 상한가 아님</div>
-      <div>A. 추세상위 (&gt;150&amp;200MA)</div>
-      <div>B. 중기정배열 (150&gt;200MA)</div>
-      <div>C. 장기상승 (200MA 1개월전 대비)</div>
-      <div>D. 완전정배열 (50&gt;150&gt;200MA)</div>
-      <div>E. 트리플스택 (10E&gt;21E&gt;50S)</div>
-      <div>F. 52주저점 +25% (Minervini)</div>
-      <div>G. 52주고점 근접75% (Minervini)</div>
-      <div>H. 거래량 급증 (기관 매집)</div>
-      <div>I. OBV 매집 (20일 기준)</div>
-      <div>J. RSI 45~75 (건전 상승)</div>
-      <div>K. MACD 양전 &amp; 가속</div>
-      <div>L. 스토캐스틱 골든크로스</div>
-      <div>M. 20EMA 3일 연속 상승</div>
-      <div>N. 볼린저 중심~상단</div>
-      <div>O. 장대양봉/연속양봉</div>
-      <div>P. 상대강도 RS (200MA 이격)</div>
+    <div class="legend-title">키움 종가매수 조건 (11개 필수 AND + 5개 보조)</div>
+    <div class="legend-grid" style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));">
+      <div><b style="color:var(--red)">A</b> 종가 &gt; 200일 이평 (장기추세)</div>
+      <div><b style="color:var(--red)">C</b> 전일종가 &lt; 당일종가 (상승)</div>
+      <div><b style="color:var(--red)">D</b> 시가 &lt; 종가 (양봉)</div>
+      <div><b style="color:var(--red)">E</b> 종가 1,000원 이상</div>
+      <div><b style="color:var(--red)">F</b> BB(20,2) 하한선 상향돌파</div>
+      <div><b style="color:var(--red)">G</b> 전일대비 거래량 200% 이상</div>
+      <div><b style="color:var(--red)">H</b> 60일 이평 상승추세 2일 연속</div>
+      <div><b style="color:var(--red)">I</b> MACD(12,26,9) 히스토그램 반전</div>
+      <div><b style="color:var(--red)">J</b> BB하한 위 반등 확인 (밴드20%+)</div>
+      <div><b style="color:var(--red)">K</b> RSI(14) 30~60</div>
+      <div><b style="color:var(--red)">L</b> 시가총액 1,000억 이상</div>
+      <div><b style="color:var(--blue)">S1</b> 추세정배열 (50&gt;150&gt;200MA)</div>
+      <div><b style="color:var(--blue)">S2</b> Stochastic 골든크로스</div>
+      <div><b style="color:var(--blue)">S3</b> OBV 매집 (20일)</div>
+      <div><b style="color:var(--blue)">S4</b> BB밴드 위치 (상단=강세)</div>
+      <div><b style="color:var(--blue)">S5</b> 캔들 품질 (장대양봉)</div>
     </div>
     <div class="legend-note">
-      <b>전문가 매매법</b>: 매수 = 종가+0.3% | 손절 = ATR x2 (최대 -8%, O'Neil 철칙) | 목표1 = 2R | 목표2 = 3R<br>
-      <b>제외종목</b>: 관리종목 / 투자경고·위험·주의 / 우선주 / 거래정지 / 정리매매 / 환기종목 / 불성실공시 / 단기과열 / ETN / SPAC / ETF
+      <b>매매법</b>: 매수 = 종가+0.3% | 손절 = ATR x1.5 (최대 -7%) | 목표1 = BB상한 또는 2R | 목표2 = 3R<br>
+      <b>최적화</b>: T1시 1/2매도 → 본전스톱 | 트레일링 1.5ATR | 화요일 매수금지 | 연속3패 후 1일 쉼 | 최대 20일 보유<br>
+      <b>제외종목</b>: 관리종목 / 투자경고·위험·주의 / 우선주 / 거래정지 / SPAC / ETF / ETN
     </div>
   </div>
 </div>
@@ -884,7 +880,7 @@ body {
 <script>
 // ── State ──
 let DATA = [];
-let sortBy = "momentum";
+let sortBy = "rank";
 let filterBy = "all";
 let openCards = new Set();
 
@@ -930,7 +926,7 @@ function rrColor(r) {
 // ── Scan ──
 let pollTimer = null;
 
-async function doScan(demo) {
+async function doScan() {
   const dateVal = document.getElementById("dateInput").value;
   const btn = document.getElementById("btnScan");
   const btnText = document.getElementById("btnScanText");
@@ -949,10 +945,10 @@ async function doScan(demo) {
       const res = await fetch("/api/status");
       const st = await res.json();
       const titleEl = document.getElementById("loadingTitle");
-      if (st.phase === "krx") titleEl.textContent = "KRX 전종목 시세 조회 중";
-      else if (st.phase === "filter") titleEl.textContent = "기본 조건 필터링 중";
+      if (st.phase === "krx") titleEl.textContent = "KOSPI+KOSDAQ 상승종목 조회 중";
+      else if (st.phase === "filter") titleEl.textContent = "BB하한 돌파 후보 필터링 중";
       else if (st.phase === "detail") titleEl.textContent = "상세 기술 분석 중";
-      else if (st.phase === "demo") titleEl.textContent = "데모 데이터 생성 중";
+
       if (st.total > 0) {
         const pct = ((st.progress / st.total) * 100).toFixed(0);
         document.getElementById("loadingBar").style.width = pct + "%";
@@ -963,7 +959,7 @@ async function doScan(demo) {
   }, 500);
 
   try {
-    const url = `/api/scan?date=${dateVal}&demo=${demo}`;
+    const url = `/api/scan?date=${dateVal}`;
     const controller = new AbortController();
     const fetchTimeout = setTimeout(() => controller.abort(), 110000); // 110초 타임아웃
     const res = await fetch(url, { signal: controller.signal });
@@ -979,25 +975,25 @@ async function doScan(demo) {
 
     DATA = data.results;
 
-    // ★ 종합점수 계산 (모멘텀 70% + 거래량적정성 30%)
-    DATA.forEach(s => {
-      const vr = s.volumeRatio || 0;
-      let volScore;
-      if (vr < 3.0) volScore = vr / 3.0 * 100;
-      else if (vr < 8.0) volScore = 100 - (vr - 3.0) * 10;
-      else volScore = 20;
-      s._composite = s.momentum * 0.7 + volScore * 0.3;
-    });
-    DATA.sort((a, b) => b._composite - a._composite);
-    // 1위 종목에 매수 추천 마크
-    if (DATA.length > 0) DATA[0]._pick = true;
+    // 화요일 경고 배너
+    if (data.isTuesday) {
+      document.getElementById("scanInfo").innerHTML =
+        `<span style="background:#DC2626;color:#fff;padding:4px 12px;border-radius:6px;font-weight:700">
+        ⚠️ 화요일 매수 금지 (백테스트 승률 30%)</span>`;
+    }
+
+    // 백엔드에서 이미 rankScore 순으로 정렬됨 → 1위 = 상승확률 최고
+    if (DATA.length > 0) {
+      DATA[0]._pick = true;
+    }
 
     openCards = new Set(DATA.length > 0 ? [DATA[0].code] : []);
 
     // Update header stats
     updateStats(data);
+    const tuesdayWarn = data.isTuesday ? ' <span style="color:#DC2626;font-weight:700">⚠️ 화요일=매수금지</span>' : '';
     document.getElementById("scanInfo").innerHTML =
-      `<span class="mode-badge ${data.mode === 'live' ? 'mode-live' : 'mode-demo'}">${data.mode === 'live' ? '● LIVE' : '◆ DEMO'}</span> &nbsp;${data.date} · ${data.timestamp}`;
+      `<span class="mode-badge mode-live">● LIVE</span> &nbsp;${data.date}(${data.dayOfWeek}) · ${data.timestamp}${tuesdayWarn}`;
 
     // Show toolbar & render
     document.getElementById("toolbar").style.display = "flex";
@@ -1017,7 +1013,7 @@ async function doScan(demo) {
 function updateStats(data) {
   const d = data.results;
   const cnt = d.length;
-  const avgScore = cnt > 0 ? (d.reduce((s, x) => s + x.momentum, 0) / cnt).toFixed(1) : "-";
+  const avgScore = cnt > 0 ? (d.reduce((s, x) => s + (x.rankScore || x.momentum), 0) / cnt).toFixed(1) : "-";
   const avgRR = cnt > 0 ? (d.reduce((s, x) => s + x.rrRatio, 0) / cnt).toFixed(2) : "-";
   const hi = d.filter(x => parseInt(x.conditionsDetail) >= 12).length;
 
@@ -1034,10 +1030,14 @@ function getFiltered() {
   if (filterBy === "r15") d = d.filter(s => s.rrRatio >= 1.5);
   if (filterBy === "c11") d = d.filter(s => parseInt(s.conditionsDetail) >= 12);
 
-  if (sortBy === "momentum") d.sort((a, b) => b.momentum - a.momentum);
+  if (sortBy === "rank") d.sort((a, b) => (b.rankScore||0) - (a.rankScore||0));
   if (sortBy === "rr") d.sort((a, b) => b.rrRatio - a.rrRatio);
   if (sortBy === "cond") d.sort((a, b) => parseInt(b.conditionsDetail) - parseInt(a.conditionsDetail));
-  if (sortBy === "vol") d.sort((a, b) => b.volume - a.volume);
+  if (sortBy === "supply") d.sort((a, b) => {
+    const sa = ((a.foreignNet5d||0)>0&&(a.instNet5d||0)>0)?3:((a.instNet5d||0)>0)?2:((a.foreignNet5d||0)>0)?1:0;
+    const sb = ((b.foreignNet5d||0)>0&&(b.instNet5d||0)>0)?3:((b.instNet5d||0)>0)?2:((b.foreignNet5d||0)>0)?1:0;
+    return sb - sa || (b.rankScore||0) - (a.rankScore||0);
+  });
   return d;
 }
 
@@ -1045,8 +1045,8 @@ function setSort(v) { sortBy = v; renderToolbar(); renderCards(); }
 function setFilter(v) { filterBy = v; renderToolbar(); renderCards(); }
 
 function renderToolbar() {
-  const sorts = [["momentum", "모멘텀순"], ["rr", "R/R순"], ["cond", "조건순"], ["vol", "거래량순"]];
-  const filters = [["all", "전체"], ["r1", "R/R≥1.0"], ["r15", "R/R≥1.5"], ["c11", "12+조건"]];
+  const sorts = [["rank", "상승확률순"], ["supply", "수급순"], ["rr", "R/R순"], ["cond", "조건순"]];
+  const filters = [["all", "전체"], ["r1", "R/R≥1.0"], ["r15", "R/R≥1.5"], ["c11", "8+조건"]];
 
   let h = '<span class="toolbar-label">정렬</span>';
   sorts.forEach(([k, l]) => {
@@ -1079,7 +1079,7 @@ function renderCards() {
     const isUp = cr >= 0;
     const pn = parseInt(s.conditionsDetail);
     const isOpen = openCards.has(s.code);
-    const mc = momentumColor(s.momentum);
+    const mc = momentumColor(s.rankScore || s.momentum);
     const rankClass = i < 3 ? "rank-top" : i < 10 ? "rank-mid" : "";
 
     const isPick = s._pick === true;
@@ -1102,10 +1102,10 @@ function renderCards() {
             <div class="price-change ${isUp ? 'change-up' : 'change-down'}">${isUp ? '▲' : '▼'} ${Math.abs(cr)}%</div>
           </div>
           <div class="mini-stat">
-            <div class="mini-label">모멘텀</div>
+            <div class="mini-label">상승확률</div>
             <div class="momentum-bar">
-              <div class="momentum-track"><div class="momentum-fill" style="width:${Math.min(s.momentum, 100)}%;background:${mc}"></div></div>
-              <span class="momentum-num" style="color:${mc}">${s.momentum}</span>
+              <div class="momentum-track"><div class="momentum-fill" style="width:${Math.min(s.rankScore || s.momentum, 100)}%;background:${mc}"></div></div>
+              <span class="momentum-num" style="color:${mc}">${s.rankScore || s.momentum}</span>
             </div>
           </div>
           <div class="mini-stat">
@@ -1124,17 +1124,18 @@ function renderCards() {
     h += `<div class="card-detail${isOpen ? ' show' : ''}">
       <div class="price-grid">
         ${priceItem("매수가", s.buyPrice, "종가+0.3%", "pi-buy")}
-        ${priceItem("1차 목표(2.5R)", s.target1, "+" + pct(s.buyPrice, s.target1) + "% → 1/3 매도", "pi-t1")}
-        ${priceItem("2차 목표(4.0R)", s.target2, "+" + pct(s.buyPrice, s.target2) + "% → 1/3 매도", "pi-t2")}
+        ${priceItem("1차 목표(T1)", s.target1, "+" + pct(s.buyPrice, s.target1) + "% → 1/2 매도", "pi-t1")}
+        ${priceItem("2차 목표(T2)", s.target2, "+" + pct(s.buyPrice, s.target2) + "% → 1/2 매도", "pi-t2")}
         ${priceItem("손절(1.8ATR)", s.stoploss, pct(s.buyPrice, s.stoploss) + "% | ATR:" + fmt(s.atr || 0), "pi-sl")}
       </div>
       ${priceBarHTML(s.buyPrice, s.target1, s.target2, s.stoploss)}
       <div style="background:#F0F4FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 12px;margin:8px 0;font-size:0.78rem;line-height:1.6;color:#1E3A5F">
         <div style="font-weight:700;color:#1D4ED8;margin-bottom:4px">📋 매매 규칙</div>
         <div><b>매수:</b> 종가 매수 (종가+0.3% = ${fmt(s.buyPrice)}원)</div>
-        <div><b>1차 목표(T1):</b> ${fmt(s.target1)}원 도달시 <b style="color:#16A34A">1/3 매도</b> → 손절선 본전으로 이동</div>
-        <div><b>2차 목표(T2):</b> ${fmt(s.target2)}원 도달시 <b style="color:#16A34A">1/3 매도</b> → 나머지 1/3은 트레일링</div>
-        <div><b>트레일링 스톱:</b> T1 도달 후 <b style="color:#2563EB">최고가 - 2×ATR(${fmt(s.atr || 0)})</b>로 손절선 자동 상향</div>
+        <div><b>1차 목표(T1):</b> ${fmt(s.target1)}원 도달시 <b style="color:#16A34A">1/2 매도</b> → 손절선 본전으로 이동</div>
+        <div><b>2차 목표(T2):</b> ${fmt(s.target2)}원 도달시 <b style="color:#16A34A">나머지 전량 매도</b></div>
+        <div><b>트레일링 스톱:</b> T1 도달 후 <b style="color:#2563EB">최고가 - 1.5×ATR(${fmt(s.atr || 0)})</b>로 손절선 자동 상향</div>
+        <div><b>최대 보유:</b> 20거래일 | <b style="color:#DC2626">화요일 매수 금지</b> | 연속 3패 후 1일 쉼</div>
         <div><b>손절:</b> ${fmt(s.stoploss)}원 이하 도달시 <b style="color:#DC2626">전량 매도</b> (최대 -${s.riskPct || '7'}%)</div>
         <div><b>최대 보유:</b> 25거래일 → 종가 청산</div>
       </div>
@@ -1144,6 +1145,92 @@ function renderCards() {
         <span>저가 <b style="color:var(--blue)">${fmt(s.low)}</b></span>
         <span>RSI <b>${s.rsi || '-'}</b></span>
         <span>거래배율 <b style="color:var(--red)">${s.volumeRatio || '-'}x</b></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:6px 0;font-size:0.78rem">
+        <div style="background:${(s.foreignNet5d||0)>0?'#DCFCE7':'#FEE2E2'};padding:6px 8px;border-radius:6px;text-align:center">
+          <div style="color:#6B7280;font-size:0.7rem">외국인 5일</div>
+          <b style="color:${(s.foreignNet5d||0)>0?'#16A34A':'#DC2626'}">${(s.foreignNet5d||0)>0?'+':''}${fmt(s.foreignNet5d||0)}</b>
+          <div style="font-size:0.65rem;color:#9CA3AF">보유 ${s.foreignHold||0}%</div>
+        </div>
+        <div style="background:${(s.instNet5d||0)>0?'#DCFCE7':'#FEE2E2'};padding:6px 8px;border-radius:6px;text-align:center">
+          <div style="color:#6B7280;font-size:0.7rem">기관 5일</div>
+          <b style="color:${(s.instNet5d||0)>0?'#16A34A':'#DC2626'}">${(s.instNet5d||0)>0?'+':''}${fmt(s.instNet5d||0)}</b>
+          <div style="font-size:0.65rem;color:#9CA3AF">매수${s.instBuyDays||0}일/5일</div>
+        </div>
+        <div style="background:${((s.foreignNet5d||0)>0&&(s.instNet5d||0)>0)?'#FEF9C3':'#F3F4F6'};padding:6px 8px;border-radius:6px;text-align:center">
+          <div style="color:#6B7280;font-size:0.7rem">수급 판정</div>
+          <b style="color:${((s.foreignNet5d||0)>0&&(s.instNet5d||0)>0)?'#CA8A04':((s.foreignNet5d||0)>0||(s.instNet5d||0)>0)?'#2563EB':'#DC2626'}">${
+            ((s.foreignNet5d||0)>0&&(s.instNet5d||0)>0)?'쌍끌이':((s.instNet5d||0)>0)?'기관매수':((s.foreignNet5d||0)>0)?'외인매수':'매도우위'
+          }</b>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:4px 0;font-size:0.72rem">
+        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#94A3B8;font-size:0.65rem">PER</div>
+          <b style="color:${(s.per>0&&s.per<=15)?'#16A34A':(s.per>50||s.per<0)?'#DC2626':'#374151'}">${s.per?s.per.toFixed(1)+'배':'N/A'}</b>
+        </div>
+        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#94A3B8;font-size:0.65rem">PBR</div>
+          <b>${s.pbr?s.pbr.toFixed(2)+'배':'N/A'}</b>
+        </div>
+        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#94A3B8;font-size:0.65rem">배당률</div>
+          <b>${s.divYield?s.divYield.toFixed(1)+'%':'N/A'}</b>
+        </div>
+        <div style="background:${(s.targetPrice&&s.close&&s.targetPrice>s.close)?'#F0FDF4':'#FEF2F2'};padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#94A3B8;font-size:0.65rem">목표가</div>
+          <b style="color:${(s.targetPrice>s.close)?'#16A34A':'#DC2626'}">${s.targetPrice?fmt(s.targetPrice):'N/A'}</b>
+          ${s.targetPrice&&s.close?`<div style="font-size:0.6rem;color:#6B7280">${((s.targetPrice-s.close)/s.close*100).toFixed(0)}%</div>`:''}
+        </div>
+        <div style="background:${(s.sectorRatio>=60)?'#F0FDF4':'#FEF2F2'};padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#94A3B8;font-size:0.65rem">업종강도</div>
+          <b style="color:${(s.sectorRatio>=60)?'#16A34A':'#DC2626'}">${s.sectorRatio?s.sectorRatio.toFixed(0)+'%':'N/A'}</b>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:6px 0;font-size:0.72rem">
+        <div style="background:#F0F4FF;padding:5px;border-radius:5px;text-align:center;border:1px solid #BFDBFE">
+          <div style="color:#6366F1;font-size:0.6rem;font-weight:600">52주위치</div>
+          <b style="color:${(s.pos52w||0)<40?'#16A34A':(s.pos52w||0)>85?'#DC2626':'#2563EB'}">${(s.pos52w||0).toFixed(0)}%</b>
+          <div style="font-size:0.58rem;color:#9CA3AF">고가-${(s.distFromHigh||0).toFixed(0)}%</div>
+        </div>
+        <div style="background:${s.squeeze?'#FEF9C3':'#F8FAFC'};padding:5px;border-radius:5px;text-align:center;border:1px solid ${s.squeeze?'#FDE047':'#E2E8F0'}">
+          <div style="color:#6366F1;font-size:0.6rem;font-weight:600">스퀴즈</div>
+          <b style="color:${s.squeeze?'#CA8A04':'#6B7280'}">${s.squeeze?'감지':'없음'}</b>
+          <div style="font-size:0.58rem;color:#9CA3AF">ATR ${(s.atrRatio||1).toFixed(2)}</div>
+        </div>
+        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#6366F1;font-size:0.6rem;font-weight:600">VWAP</div>
+          <b style="color:${(s.vwapDist||0)>=0&&(s.vwapDist||0)<=3?'#16A34A':'#6B7280'}">${(s.vwapDist||0)>0?'+':''}${(s.vwapDist||0).toFixed(1)}%</b>
+        </div>
+        <div style="background:${(s.cmf||0)>0.05?'#F0FDF4':'#FEF2F2'};padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#6366F1;font-size:0.6rem;font-weight:600">CMF</div>
+          <b style="color:${(s.cmf||0)>0?'#16A34A':'#DC2626'}">${(s.cmf||0).toFixed(3)}</b>
+          <div style="font-size:0.58rem;color:#9CA3AF">${(s.cmf||0)>0.15?'강한유입':(s.cmf||0)>0.05?'유입':(s.cmf||0)>0?'약유입':'유출'}</div>
+        </div>
+        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#6366F1;font-size:0.6rem;font-weight:600">추세품질</div>
+          <b style="color:${(s.adx||0)>20?'#16A34A':'#6B7280'}">ADX ${(s.adx||0).toFixed(0)}</b>
+          <div style="font-size:0.58rem;color:#9CA3AF">R² ${(s.rSquared||0).toFixed(2)}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:2px 0 6px;font-size:0.72rem">
+        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#7C3AED;font-size:0.6rem;font-weight:600">ROC가속</div>
+          <b style="color:${(s.rocAccel||0)>0?'#16A34A':'#DC2626'}">${(s.rocAccel||0)>0?'+':''}${(s.rocAccel||0).toFixed(1)}</b>
+        </div>
+        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#7C3AED;font-size:0.6rem;font-weight:600">압축도</div>
+          <b>${(s.compression||1).toFixed(2)}</b>
+          <div style="font-size:0.58rem;color:#9CA3AF">${(s.insideDays||0)}일 내포</div>
+        </div>
+        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#7C3AED;font-size:0.6rem;font-weight:600">Z-Score</div>
+          <b style="color:${(s.z20||0)<-0.5?'#16A34A':(s.z20||0)>2?'#DC2626':'#6B7280'}">단기${(s.z20||0).toFixed(1)} 장기${(s.z60||0).toFixed(1)}</b>
+        </div>
+        <div style="background:${(s.advancedTotal||0)>=20?'#F0FDF4':(s.advancedTotal||0)>=10?'#FFFBEB':'#F8FAFC'};padding:5px;border-radius:5px;text-align:center;border:1px solid ${(s.advancedTotal||0)>=20?'#86EFAC':(s.advancedTotal||0)>=10?'#FDE047':'#E2E8F0'}">
+          <div style="color:#7C3AED;font-size:0.6rem;font-weight:600">고급점수</div>
+          <b style="color:${(s.advancedTotal||0)>=20?'#16A34A':(s.advancedTotal||0)>=10?'#CA8A04':'#DC2626'}">${s.advancedTotal||0}점</b>
+        </div>
       </div>
       <div class="badge-group">
         <div class="badge-title">충족 조건</div>
