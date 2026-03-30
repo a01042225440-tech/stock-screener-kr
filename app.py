@@ -98,7 +98,7 @@ def naver_stock_list(market, sort_type="up"):
     while True:
         url = f"https://m.stock.naver.com/api/stocks/{sort_type}/{market}?page={page}&pageSize={page_size}"
         try:
-            r = _session.get(url, timeout=10)
+            r = _session.get(url, timeout=15)
             if r.status_code != 200: break
             data = r.json()
             stocks = data.get("stocks", [])
@@ -151,7 +151,7 @@ def naver_ohlcv_fast(code, days=250, target_date=None):
     }
     try:
         r = _session.get("https://fchart.stock.naver.com/siseJson.naver",
-                         params=params, timeout=7)
+                         params=params, timeout=15)
         text = r.text.strip()
         rows = []
         for line in text.split('\n'):
@@ -1264,24 +1264,26 @@ def _save_and_sync_results(results, date_str):
         print(f"  [SYNC] Save error: {e}")
         return payload
 
-    # Git push (백그라운드, 실패해도 무시)
-    try:
-        app_dir = os.path.dirname(__file__)
-        subprocess.Popen(
-            ["git", "add", "latest_results.json"],
-            cwd=app_dir, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-        ).wait(timeout=5)
-        subprocess.Popen(
-            ["git", "commit", "-m", f"sync: {date_str} scan results ({len(results)} stocks)"],
-            cwd=app_dir, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-        ).wait(timeout=5)
-        subprocess.Popen(
-            ["git", "push", "origin", "master"],
-            cwd=app_dir, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-        )
-        print(f"  [SYNC] Git push started")
-    except Exception as e:
-        print(f"  [SYNC] Git push skipped: {e}")
+    # Git push (로컬에서만, Render에서는 스킵)
+    is_render = os.environ.get("RENDER", "") == "true"
+    if not is_render:
+        try:
+            app_dir = os.path.dirname(__file__)
+            subprocess.Popen(
+                ["git", "add", "latest_results.json"],
+                cwd=app_dir, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            ).wait(timeout=5)
+            subprocess.Popen(
+                ["git", "commit", "-m", f"sync: {date_str} scan results ({len(results)} stocks)"],
+                cwd=app_dir, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            ).wait(timeout=5)
+            subprocess.Popen(
+                ["git", "push", "origin", "master"],
+                cwd=app_dir, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+            print(f"  [SYNC] Git push started")
+        except Exception as e:
+            print(f"  [SYNC] Git push skipped: {e}")
 
     return payload
 
