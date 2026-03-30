@@ -1235,6 +1235,69 @@ def run_scan(date_str, demo=False):
 def index():
     return render_template("index.html")
 
+def _save_and_sync_results(results, date_str):
+    """스캔 결과를 JSON 파일로 저장 + GitHub push (Render 동기화)"""
+    import subprocess
+    dow = datetime.strptime(date_str, "%Y-%m-%d").weekday()
+    dow_names = ["월","화","수","목","금","토","일"]
+    payload = {
+        "results": results,
+        "date": date_str,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "mode": "KRX+Naver",
+        "count": len(results),
+        "dayOfWeek": dow_names[dow],
+        "isTuesday": dow == 1,
+        "tradeRules": {
+            "slip": "0.3%", "t1SellRatio": "1/2", "t2SellRatio": "1/2",
+            "trailingATR": 1.5, "maxHold": 20,
+            "skipTuesday": True, "skip3Loss": True,
+        }
+    }
+    # JSON 저장
+    results_path = os.path.join(os.path.dirname(__file__), "latest_results.json")
+    try:
+        with open(results_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2, default=str)
+        print(f"  [SYNC] Saved latest_results.json ({len(results)} stocks)")
+    except Exception as e:
+        print(f"  [SYNC] Save error: {e}")
+        return payload
+
+    # Git push (백그라운드, 실패해도 무시)
+    try:
+        app_dir = os.path.dirname(__file__)
+        subprocess.Popen(
+            ["git", "add", "latest_results.json"],
+            cwd=app_dir, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        ).wait(timeout=5)
+        subprocess.Popen(
+            ["git", "commit", "-m", f"sync: {date_str} scan results ({len(results)} stocks)"],
+            cwd=app_dir, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        ).wait(timeout=5)
+        subprocess.Popen(
+            ["git", "push", "origin", "master"],
+            cwd=app_dir, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+        print(f"  [SYNC] Git push started")
+    except Exception as e:
+        print(f"  [SYNC] Git push skipped: {e}")
+
+    return payload
+
+def _load_cached_results(date_str):
+    """저장된 결과 파일 로드 (Render에서 사용)"""
+    results_path = os.path.join(os.path.dirname(__file__), "latest_results.json")
+    try:
+        with open(results_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if data.get("date") == date_str:
+            print(f"  [CACHE] Serving cached results for {date_str} ({data.get('count',0)} stocks)")
+            return data
+    except Exception:
+        pass
+    return None
+
 @app.route("/api/scan")
 def api_scan():
     date_str = flask_request.args.get("date", "")
@@ -1247,28 +1310,17 @@ def api_scan():
     except ValueError:
         return jsonify({"error": "Date format error"}), 400
 
+    # 1) 캐시된 결과가 있으면 우선 사용 (Render에서 동일 결과 보장)
+    cached = _load_cached_results(date_str)
+    if cached:
+        return jsonify(cached)
+
+    # 2) 없으면 라이브 스캔
     results = run_scan(date_str)
-    # 요일 정보 (화요일=1 → 매수 비추천)
-    dow = datetime.strptime(date_str, "%Y-%m-%d").weekday()
-    dow_names = ["월","화","수","목","금","토","일"]
-    return jsonify({
-        "results": results,
-        "date": date_str,
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "mode": "KRX+Naver",
-        "count": len(results),
-        "dayOfWeek": dow_names[dow],
-        "isTuesday": dow == 1,
-        "tradeRules": {
-            "slip": "0.3%",
-            "t1SellRatio": "1/2",
-            "t2SellRatio": "1/2",
-            "trailingATR": 1.5,
-            "maxHold": 20,
-            "skipTuesday": True,
-            "skip3Loss": True,
-        }
-    })
+
+    # 3) 결과 저장 + GitHub 동기화
+    payload = _save_and_sync_results(results, date_str)
+    return jsonify(payload)
 
 @app.route("/api/status")
 def api_status():
