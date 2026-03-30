@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>종가매수 스크리너</title>
+<style>
+:root {
+  --bg: #F8FAFC;
+  --bg2: #FFFFFF;
+  --bg3: #F1F5F9;
+  --border: #E2E8F0;
+  --border2: #CBD5E1;
+  --text: #0F172A;
+  --text2: #334155;
+  --text3: #64748B;
+  --text4: #94A3B8;
+  --blue: #2563EB;
+  --blue-bg: #EFF6FF;
+  --blue-light: #3B82F6;
+  --green: #16A34A;
+  --green-bg: #F0FDF4;
+  --red: #DC2626;
+  --red-bg: #FEF2F2;
+  --yellow: #D97706;
+  --yellow-bg: #FFFBEB;
+  --purple: #7C3AED;
+  --purple-bg: #F5F3FF;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow2: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --radius: 12px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { font-size: 15px; -webkit-text-size-adjust: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+/* ── Header ── */
+.header {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.header-inner {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.logo {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--blue), var(--purple));
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.header-stats {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 0.65rem;
+  color: var(--text4);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.stat-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+/* ── Controls ── */
+.controls {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+
+.controls-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.date-input {
+  background: var(--bg3);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--text);
+  width: 170px;
+  transition: border-color 0.2s;
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: var(--blue);
+  background: var(--bg2);
+}
+
+.btn {
+  padding: 10px 24px;
+  border-radius: 10px;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--blue), #1D4ED8);
+  color: white;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-demo {
+  background: var(--purple-bg);
+  color: var(--purple);
+  border: 2px solid transparent;
+}
+
+.btn-demo:hover {
+  border-color: var(--purple);
+}
+
+.mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.mode-live {
+  background: var(--green-bg);
+  color: var(--green);
+}
+
+.mode-demo {
+  background: var(--purple-bg);
+  color: var(--purple);
+}
+
+.scan-info {
+  font-size: 0.78rem;
+  color: var(--text3);
+  margin-left: auto;
+}
+
+/* ── Sort & Filter ── */
+.toolbar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.toolbar-label {
+  font-size: 0.72rem;
+  color: var(--text4);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-right: 2px;
+}
+
+.toolbar-sep {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+  margin: 0 6px;
+}
+
+.chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 2px solid var(--border);
+  background: var(--bg2);
+  color: var(--text3);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.chip:hover {
+  border-color: var(--border2);
+  background: var(--bg3);
+}
+
+.chip.active-sort {
+  background: var(--blue);
+  color: white;
+  border-color: var(--blue);
+}
+
+.chip.active-filter {
+  background: var(--purple);
+  color: white;
+  border-color: var(--purple);
+}
+
+/* ── Loading ── */
+.loading-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(248, 250, 252, 0.92);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  justify-content: center;
+  align-items: center;
+}
+
+.loading-overlay.show {
+  display: flex;
+}
+
+.loading-box {
+  background: var(--bg2);
+  border-radius: 20px;
+  padding: 40px 50px;
+  text-align: center;
+  box-shadow: var(--shadow2);
+  border: 1px solid var(--border);
+  max-width: 360px;
+  width: 90%;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--border);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.loading-progress {
+  width: 100%;
+  height: 8px;
+  background: var(--bg3);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 12px 0 8px;
+}
+
+.loading-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue), var(--purple));
+  border-radius: 4px;
+  transition: width 0.3s;
+  width: 0%;
+}
+
+.loading-text {
+  font-size: 0.82rem;
+  color: var(--text3);
+}
+
+/* ── Card ── */
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: all 0.2s;
+}
+
+.card:hover {
+  box-shadow: var(--shadow2);
+  border-color: var(--border2);
+}
+
+.card-header {
+  padding: 14px 18px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.rank {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--bg2);
+  background: var(--text3);
+  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rank-top { background: linear-gradient(135deg, var(--blue), var(--purple)); }
+.rank-mid { background: var(--blue-light); }
+
+.stock-info {
+  min-width: 0;
+}
+
+.stock-name {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.stock-code {
+  font-size: 0.72rem;
+  color: var(--text4);
+  margin-left: 6px;
+  font-weight: 600;
+}
+
+.stock-meta {
+  font-size: 0.72rem;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.card-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.price-block {
+  text-align: right;
+}
+
+.price-value {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.price-unit {
+  font-size: 0.7rem;
+  color: var(--text4);
+  font-weight: 500;
+}
+
+.price-change {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.change-up { color: var(--red); }
+.change-down { color: var(--blue); }
+
+.mini-stat {
+  text-align: center;
+  min-width: 50px;
+}
+
+.mini-label {
+  font-size: 0.62rem;
+  color: var(--text4);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.mini-value {
+  font-size: 0.85rem;
+  font-weight: 800;
+  margin-top: 1px;
+}
+
+.momentum-bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.momentum-track {
+  width: 50px;
+  height: 6px;
+  background: var(--bg3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.momentum-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.momentum-num {
+  font-size: 0.78rem;
+  font-weight: 800;
+  min-width: 28px;
+}
+
+.arrow {
+  font-size: 0.8rem;
+  color: var(--text4);
+  transition: transform 0.25s;
+  margin-left: 4px;
+}
+
+.arrow.open {
+  transform: rotate(180deg);
+}
+
+/* ── Detail ── */
+.card-detail {
+  display: none;
+  padding: 0 18px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.card-detail.show {
+  display: block;
+}
+
+.price-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 14px 0 12px;
+}
+
+.price-item {
+  background: var(--bg3);
+  border-radius: 10px;
+  padding: 12px 14px;
+  border-top: 3px solid transparent;
+}
+
+.price-item .pi-label {
+  font-size: 0.68rem;
+  color: var(--text3);
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+
+.price-item .pi-value {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.price-item .pi-sub {
+  font-size: 0.68rem;
+  color: var(--text4);
+  margin-top: 1px;
+}
+
+.pi-buy { border-top-color: var(--blue); }
+.pi-buy .pi-value { color: var(--blue); }
+.pi-t1 { border-top-color: var(--green); }
+.pi-t1 .pi-value { color: var(--green); }
+.pi-t2 { border-top-color: var(--yellow); }
+.pi-t2 .pi-value { color: var(--yellow); }
+.pi-sl { border-top-color: var(--red); }
+.pi-sl .pi-value { color: var(--red); }
+
+/* ── Price Bar ── */
+.price-bar-container {
+  position: relative;
+  height: 52px;
+  margin: 8px 16px 10px;
+}
+
+.price-bar-track {
+  position: absolute;
+  top: 22px;
+  height: 5px;
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.price-bar-fill {
+  position: absolute;
+  top: 22px;
+  height: 5px;
+  background: rgba(22, 163, 74, 0.25);
+  border-radius: 3px;
+}
+
+.price-bar-dot {
+  position: absolute;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.price-bar-dot .dot-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.price-bar-dot .dot-circle {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin: 0 auto;
+  border: 2px solid var(--bg2);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.price-bar-dot .dot-value {
+  font-size: 0.6rem;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+/* ── OHLC ── */
+.ohlc-row {
+  display: flex;
+  gap: 16px;
+  font-size: 0.75rem;
+  color: var(--text3);
+  margin: 8px 0 10px;
+}
+
+.ohlc-row b {
+  font-weight: 700;
+}
+
+/* ── Badges ── */
+.badge-group {
+  margin-top: 8px;
+}
+
+.badge-title {
+  font-size: 0.72rem;
+  color: var(--text4);
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: white;
+  margin: 2px 3px 2px 0;
+}
+
+/* ── Legend ── */
+.legend {
+  margin-top: 20px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+}
+
+.legend-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.legend-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--text2);
+  line-height: 1.7;
+}
+
+.legend-note {
+  margin-top: 10px;
+  font-size: 0.72rem;
+  color: var(--text4);
+  line-height: 1.6;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Empty ── */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text3);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+.empty-text {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.empty-sub {
+  font-size: 0.82rem;
+  color: var(--text4);
+  margin-top: 6px;
+}
+
+/* ── Initial ── */
+.initial-state {
+  text-align: center;
+  padding: 80px 20px;
+}
+
+.initial-icon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+}
+
+.initial-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.initial-desc {
+  font-size: 0.9rem;
+  color: var(--text3);
+  max-width: 400px;
+  margin: 0 auto 20px;
+  line-height: 1.6;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  html { font-size: 14px; }
+  .container { padding: 10px; }
+  .header { padding: 12px; }
+
+  .header-top { flex-direction: column; align-items: flex-start; }
+  .header-stats { gap: 12px; }
+
+  .controls-row { flex-direction: column; align-items: stretch; }
+  .date-input { width: 100%; }
+  .btn { width: 100%; justify-content: center; }
+  .scan-info { margin-left: 0; text-align: center; }
+
+  .price-grid { grid-template-columns: repeat(2, 1fr); }
+
+  .card-header { padding: 12px 14px; flex-direction: column; align-items: flex-start; }
+  .card-right { width: 100%; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+
+  .toolbar { gap: 4px; }
+  .chip { padding: 5px 10px; font-size: 0.72rem; }
+  .toolbar-sep { display: none; }
+}
+
+@media (max-width: 380px) {
+  .card-right { gap: 8px; }
+  .mini-stat { min-width: 40px; }
+}
+
+/* ── PWA safe-area ── */
+@supports (padding: max(0px)) {
+  .header { padding-top: max(16px, env(safe-area-inset-top)); }
+  body { padding-bottom: max(0px, env(safe-area-inset-bottom)); }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-inner">
+    <div class="header-top">
+      <div class="logo">
+        <div class="logo-icon">S</div>
+        <span>종가매수 스크리너</span>
+      </div>
+      <div class="header-stats" id="headerStats">
+        <div class="stat-item">
+          <div class="stat-label">발굴</div>
+          <div class="stat-value" style="color:var(--blue)" id="statCount">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">평균확률</div>
+          <div class="stat-value" style="color:var(--yellow)" id="statAvgScore">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">평균 R/R</div>
+          <div class="stat-value" id="statAvgRR">-</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">8+조건</div>
+          <div class="stat-value" style="color:var(--green)" id="stat11">-</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Controls -->
+  <div class="controls">
+    <div class="controls-row">
+      <input type="date" class="date-input" id="dateInput">
+      <button class="btn btn-primary" id="btnScan" onclick="doScan()" style="touch-action:manipulation;">
+        <span id="btnScanText">KRX 전종목 검색</span>
+      </button>
+      <span class="scan-info" id="scanInfo">키움 종가매수 조건식 + BB하한돌파 · 위험종목 자동제외</span>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar" id="toolbar" style="display:none;"></div>
+
+  <!-- Card List -->
+  <div id="cardList">
+    <div class="initial-state">
+      <div class="initial-icon">KW</div>
+      <div class="initial-title">키움 종가매수 스크리너</div>
+      <div class="initial-desc">
+        <b>키움증권 종가매수.xls</b> 조건검색식 기반 (A~L 전체 AND)<br>
+        200MA돌파 + BB하한 상향돌파 + MACD 0선돌파 + RSI 30~60<br>
+        매수: 종가+0.3% | 손절: ATR x1.5 | T1: BB상한/2R | T2: 3R | 트레일링: 1.5ATR
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-title">키움 종가매수 조건 (11개 필수 AND + 5개 보조)</div>
+    <div class="legend-grid" style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));">
+      <div><b style="color:var(--red)">A</b> 종가 &gt; 200일 이평 (장기추세)</div>
+      <div><b style="color:var(--red)">C</b> 전일종가 &lt; 당일종가 (상승)</div>
+      <div><b style="color:var(--red)">D</b> 시가 &lt; 종가 (양봉)</div>
+      <div><b style="color:var(--red)">E</b> 종가 1,000원 이상</div>
+      <div><b style="color:var(--red)">F</b> BB(20,2) 하한선 상향돌파</div>
+      <div><b style="color:var(--red)">G</b> 전일대비 거래량 200% 이상</div>
+      <div><b style="color:var(--red)">H</b> 60일 이평 상승추세 2일 연속</div>
+      <div><b style="color:var(--red)">I</b> MACD(12,26,9) 히스토그램 반전</div>
+      <div><b style="color:var(--red)">J</b> BB하한 위 반등 확인 (밴드20%+)</div>
+      <div><b style="color:var(--red)">K</b> RSI(14) 30~60</div>
+      <div><b style="color:var(--red)">L</b> 시가총액 1,000억 이상</div>
+      <div><b style="color:var(--blue)">S1</b> 추세정배열 (50&gt;150&gt;200MA)</div>
+      <div><b style="color:var(--blue)">S2</b> Stochastic 골든크로스</div>
+      <div><b style="color:var(--blue)">S3</b> OBV 매집 (20일)</div>
+      <div><b style="color:var(--blue)">S4</b> BB밴드 위치 (상단=강세)</div>
+      <div><b style="color:var(--blue)">S5</b> 캔들 품질 (장대양봉)</div>
+    </div>
+    <div class="legend-note">
+      <b>매매법</b>: 매수 = 종가+0.3% | 손절 = ATR x1.5 (최대 -7%) | 목표1 = BB상한 또는 2R | 목표2 = 3R<br>
+      <b>최적화</b>: T1시 1/2매도 → 본전스톱 | 트레일링 1.5ATR | 화요일 매수금지 | 연속3패 후 1일 쉼 | 최대 20일 보유<br>
+      <b>제외종목</b>: 관리종목 / 투자경고·위험·주의 / 우선주 / 거래정지 / SPAC / ETF / ETN
+    </div>
+  </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <div class="loading-title" id="loadingTitle">종목 스캔 중</div>
+    <div class="loading-progress">
+      <div class="loading-bar" id="loadingBar"></div>
+    </div>
+    <div class="loading-text" id="loadingText">준비 중...</div>
+  </div>
+</div>
+
+<script>
+// ── State ──
+let DATA = [];
+let sortBy = "rank";
+let filterBy = "all";
+let openCards = new Set();
+
+const BADGE_COLORS = {
+  A: "#2563EB", B: "#7C3AED", C: "#059669", D: "#16A34A",
+  E: "#D97706", F: "#CA8A04", G: "#DC2626", H: "#8B5CF6",
+  I: "#0891B2", J: "#DB2777", K: "#0D9488", L: "#EA580C",
+  M: "#65A30D", N: "#64748B"
+};
+
+// ── Init ──
+document.addEventListener("DOMContentLoaded", () => {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  document.getElementById("dateInput").value = `${yyyy}-${mm}-${dd}`;
+});
+
+// ── Helpers ──
+const fmt = n => n != null ? n.toLocaleString("ko-KR") : "-";
+const pct = (a, b) => (((b - a) / a) * 100).toFixed(1);
+const mktCap = v => v >= 10000 ? (v / 10000).toFixed(1) + "조" : fmt(v) + "억";
+
+function momentumColor(v) {
+  if (v >= 80) return "var(--red)";
+  if (v >= 60) return "var(--yellow)";
+  return "var(--blue)";
+}
+
+function condColor(n) {
+  if (n >= 13) return "var(--green)";
+  if (n >= 10) return "var(--yellow)";
+  return "var(--text3)";
+}
+
+function rrColor(r) {
+  if (r >= 1.5) return "var(--green)";
+  if (r >= 1.0) return "var(--yellow)";
+  return "var(--text3)";
+}
+
+// ── Scan ──
+let pollTimer = null;
+
+async function doScan() {
+  const dateVal = document.getElementById("dateInput").value;
+  const btn = document.getElementById("btnScan");
+  const btnText = document.getElementById("btnScanText");
+
+  btn.disabled = true;
+  btnText.textContent = "스캔 중...";
+
+  // Show loading
+  document.getElementById("loadingOverlay").classList.add("show");
+  document.getElementById("loadingBar").style.width = "0%";
+  document.getElementById("loadingText").textContent = "서버에 요청 중...";
+
+  // Start polling status
+  pollTimer = setInterval(async () => {
+    try {
+      const res = await fetch("/api/status");
+      const st = await res.json();
+      const titleEl = document.getElementById("loadingTitle");
+      if (st.phase === "krx") titleEl.textContent = "KOSPI+KOSDAQ 상승종목 조회 중";
+      else if (st.phase === "filter") titleEl.textContent = "BB하한 돌파 후보 필터링 중";
+      else if (st.phase === "detail") titleEl.textContent = "상세 기술 분석 중";
+
+      if (st.total > 0) {
+        const pct = ((st.progress / st.total) * 100).toFixed(0);
+        document.getElementById("loadingBar").style.width = pct + "%";
+        document.getElementById("loadingText").textContent =
+          `${st.progress}/${st.total} 분석 (${st.found}개 발견) — ${st.message}`;
+      }
+    } catch (e) {}
+  }, 500);
+
+  try {
+    const url = `/api/scan?date=${dateVal}`;
+    const controller = new AbortController();
+    const fetchTimeout = setTimeout(() => controller.abort(), 110000); // 110초 타임아웃
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(fetchTimeout);
+    const data = await res.json();
+
+    clearInterval(pollTimer);
+
+    if (data.error) {
+      alert(data.error);
+      return;
+    }
+
+    DATA = data.results;
+
+    // 화요일 경고 배너
+    if (data.isTuesday) {
+      document.getElementById("scanInfo").innerHTML =
+        `<span style="background:#DC2626;color:#fff;padding:4px 12px;border-radius:6px;font-weight:700">
+        ⚠️ 화요일 매수 금지 (백테스트 승률 30%)</span>`;
+    }
+
+    // 백엔드에서 이미 rankScore 순으로 정렬됨 → 1위 = 상승확률 최고
+    if (DATA.length > 0) {
+      DATA[0]._pick = true;
+    }
+
+    openCards = new Set(DATA.length > 0 ? [DATA[0].code] : []);
+
+    // Update header stats
+    updateStats(data);
+    const tuesdayWarn = data.isTuesday ? ' <span style="color:#DC2626;font-weight:700">⚠️ 화요일=매수금지</span>' : '';
+    document.getElementById("scanInfo").innerHTML =
+      `<span class="mode-badge mode-live">● LIVE</span> &nbsp;${data.date}(${data.dayOfWeek}) · ${data.timestamp}${tuesdayWarn}`;
+
+    // Show toolbar & render
+    document.getElementById("toolbar").style.display = "flex";
+    renderToolbar();
+    renderCards();
+
+  } catch (err) {
+    clearInterval(pollTimer);
+    alert("서버 연결 실패: " + err.message + "\n\npython app.py 가 실행 중인지 확인하세요.");
+  } finally {
+    document.getElementById("loadingOverlay").classList.remove("show");
+    btn.disabled = false;
+    btnText.textContent = "KRX 전종목 검색";
+  }
+}
+
+function updateStats(data) {
+  const d = data.results;
+  const cnt = d.length;
+  const avgScore = cnt > 0 ? (d.reduce((s, x) => s + (x.rankScore || x.momentum), 0) / cnt).toFixed(1) : "-";
+  const avgRR = cnt > 0 ? (d.reduce((s, x) => s + x.rrRatio, 0) / cnt).toFixed(2) : "-";
+  const hi = d.filter(x => parseInt(x.conditionsDetail) >= 12).length;
+
+  document.getElementById("statCount").textContent = cnt;
+  document.getElementById("statAvgScore").textContent = avgScore;
+  document.getElementById("statAvgRR").textContent = avgRR !== "-" ? "1:" + avgRR : "-";
+  document.getElementById("stat11").textContent = hi + "개";
+}
+
+// ── Filter & Sort ──
+function getFiltered() {
+  let d = [...DATA];
+  if (filterBy === "r1") d = d.filter(s => s.rrRatio >= 1.0);
+  if (filterBy === "r15") d = d.filter(s => s.rrRatio >= 1.5);
+  if (filterBy === "c11") d = d.filter(s => parseInt(s.conditionsDetail) >= 12);
+
+  if (sortBy === "rank") d.sort((a, b) => (b.rankScore||0) - (a.rankScore||0));
+  if (sortBy === "rr") d.sort((a, b) => b.rrRatio - a.rrRatio);
+  if (sortBy === "cond") d.sort((a, b) => parseInt(b.conditionsDetail) - parseInt(a.conditionsDetail));
+  if (sortBy === "supply") d.sort((a, b) => {
+    const sa = ((a.foreignNet5d||0)>0&&(a.instNet5d||0)>0)?3:((a.instNet5d||0)>0)?2:((a.foreignNet5d||0)>0)?1:0;
+    const sb = ((b.foreignNet5d||0)>0&&(b.instNet5d||0)>0)?3:((b.instNet5d||0)>0)?2:((b.foreignNet5d||0)>0)?1:0;
+    return sb - sa || (b.rankScore||0) - (a.rankScore||0);
+  });
+  return d;
+}
+
+function setSort(v) { sortBy = v; renderToolbar(); renderCards(); }
+function setFilter(v) { filterBy = v; renderToolbar(); renderCards(); }
+
+function renderToolbar() {
+  const sorts = [["rank", "상승확률순"], ["supply", "수급순"], ["rr", "R/R순"], ["cond", "조건순"]];
+  const filters = [["all", "전체"], ["r1", "R/R≥1.0"], ["r15", "R/R≥1.5"], ["c11", "8+조건"]];
+
+  let h = '<span class="toolbar-label">정렬</span>';
+  sorts.forEach(([k, l]) => {
+    h += `<button class="chip${sortBy === k ? ' active-sort' : ''}" onclick="setSort('${k}')">${l}</button>`;
+  });
+  h += '<span class="toolbar-sep"></span><span class="toolbar-label">필터</span>';
+  filters.forEach(([k, l]) => {
+    h += `<button class="chip${filterBy === k ? ' active-filter' : ''}" onclick="setFilter('${k}')">${l}</button>`;
+  });
+  document.getElementById("toolbar").innerHTML = h;
+}
+
+// ── Render Cards ──
+function renderCards() {
+  const list = getFiltered();
+
+  if (!list.length) {
+    document.getElementById("cardList").innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-text">해당 필터 조건에 맞는 종목이 없습니다</div>
+        <div class="empty-sub">필터를 변경하거나 다른 날짜로 검색해보세요</div>
+      </div>`;
+    return;
+  }
+
+  let h = '<div class="card-list">';
+  list.forEach((s, i) => {
+    const cr = (((s.close - s.open) / s.open) * 100).toFixed(2);
+    const isUp = cr >= 0;
+    const pn = parseInt(s.conditionsDetail);
+    const isOpen = openCards.has(s.code);
+    const mc = momentumColor(s.rankScore || s.momentum);
+    const rankClass = i < 3 ? "rank-top" : i < 10 ? "rank-mid" : "";
+
+    const isPick = s._pick === true;
+    h += `<div class="card" style="${isPick ? 'border:2px solid #2563EB; box-shadow:0 0 12px rgba(37,99,235,0.2)' : ''}">
+      ${isPick ? '<div style="background:#2563EB;color:#fff;text-align:center;padding:6px 0;font-weight:700;font-size:0.85rem;border-radius:10px 10px 0 0;letter-spacing:1px">⭐ 오늘의 매수 종목 (종합점수 1위)</div>' : ''}
+      <div class="card-header" onclick="toggleCard('${s.code}')">
+        <div class="card-left">
+          <span class="rank ${rankClass}">${i + 1}</span>
+          <div class="stock-info">
+            <div>
+              <span class="stock-name">${s.name}</span>
+              <span class="stock-code">${s.code}</span>
+            </div>
+            <div class="stock-meta">${s.market ? s.market + ' · ' : ''}시총 ${mktCap(s.marketCap)} · 거래량 ${(s.volume / 10000).toFixed(0)}만주</div>
+          </div>
+        </div>
+        <div class="card-right">
+          <div class="price-block">
+            <div class="price-value">${fmt(s.close)}<span class="price-unit">원</span></div>
+            <div class="price-change ${isUp ? 'change-up' : 'change-down'}">${isUp ? '▲' : '▼'} ${Math.abs(cr)}%</div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-label">상승확률</div>
+            <div class="momentum-bar">
+              <div class="momentum-track"><div class="momentum-fill" style="width:${Math.min(s.rankScore || s.momentum, 100)}%;background:${mc}"></div></div>
+              <span class="momentum-num" style="color:${mc}">${s.rankScore || s.momentum}</span>
+            </div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-label">조건</div>
+            <div class="mini-value" style="color:${condColor(pn)}">${s.conditionsDetail}</div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-label">R/R</div>
+            <div class="mini-value" style="color:${rrColor(s.rrRatio)}">1:${s.rrRatio}</div>
+          </div>
+          <span class="arrow${isOpen ? ' open' : ''}">▼</span>
+        </div>
+      </div>`;
+
+    // Detail
+    h += `<div class="card-detail${isOpen ? ' show' : ''}">
+      <div class="price-grid">
+        ${priceItem("매수가", s.buyPrice, "종가+0.3%", "pi-buy")}
+        ${priceItem("1차 목표(T1)", s.target1, "+" + pct(s.buyPrice, s.target1) + "% → 1/2 매도", "pi-t1")}
+        ${priceItem("2차 목표(T2)", s.target2, "+" + pct(s.buyPrice, s.target2) + "% → 1/2 매도", "pi-t2")}
+        ${priceItem("손절(1.8ATR)", s.stoploss, pct(s.buyPrice, s.stoploss) + "% | ATR:" + fmt(s.atr || 0), "pi-sl")}
+      </div>
+      ${priceBarHTML(s.buyPrice, s.target1, s.target2, s.stoploss)}
+      <div style="background:#F0F4FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 12px;margin:8px 0;font-size:0.78rem;line-height:1.6;color:#1E3A5F">
+        <div style="font-weight:700;color:#1D4ED8;margin-bottom:4px">📋 매매 규칙</div>
+        <div><b>매수:</b> 종가 매수 (종가+0.3% = ${fmt(s.buyPrice)}원)</div>
+        <div><b>1차 목표(T1):</b> ${fmt(s.target1)}원 도달시 <b style="color:#16A34A">1/2 매도</b> → 손절선 본전으로 이동</div>
+        <div><b>2차 목표(T2):</b> ${fmt(s.target2)}원 도달시 <b style="color:#16A34A">나머지 전량 매도</b></div>
+        <div><b>트레일링 스톱:</b> T1 도달 후 <b style="color:#2563EB">최고가 - 1.5×ATR(${fmt(s.atr || 0)})</b>로 손절선 자동 상향</div>
+        <div><b>최대 보유:</b> 20거래일 | <b style="color:#DC2626">화요일 매수 금지</b> | 연속 3패 후 1일 쉼</div>
+        <div><b>손절:</b> ${fmt(s.stoploss)}원 이하 도달시 <b style="color:#DC2626">전량 매도</b> (최대 -${s.riskPct || '7'}%)</div>
+        <div><b>최대 보유:</b> 25거래일 → 종가 청산</div>
+      </div>
+      <div class="ohlc-row">
+        <span>시가 <b>${fmt(s.open)}</b></span>
+        <span>고가 <b style="color:var(--red)">${fmt(s.high)}</b></span>
+        <span>저가 <b style="color:var(--blue)">${fmt(s.low)}</b></span>
+        <span>RSI <b>${s.rsi || '-'}</b></span>
+        <span>거래배율 <b style="color:var(--red)">${s.volumeRatio || '-'}x</b></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:6px 0;font-size:0.78rem">
+        <div style="background:${(s.foreignNet5d||0)>0?'#DCFCE7':'#FEE2E2'};padding:6px 8px;border-radius:6px;text-align:center">
+          <div style="color:#6B7280;font-size:0.7rem">외국인 5일</div>
+          <b style="color:${(s.foreignNet5d||0)>0?'#16A34A':'#DC2626'}">${(s.foreignNet5d||0)>0?'+':''}${fmt(s.foreignNet5d||0)}</b>
+          <div style="font-size:0.65rem;color:#9CA3AF">보유 ${s.foreignHold||0}%</div>
+        </div>
+        <div style="background:${(s.instNet5d||0)>0?'#DCFCE7':'#FEE2E2'};padding:6px 8px;border-radius:6px;text-align:center">
+          <div style="color:#6B7280;font-size:0.7rem">기관 5일</div>
+          <b style="color:${(s.instNet5d||0)>0?'#16A34A':'#DC2626'}">${(s.instNet5d||0)>0?'+':''}${fmt(s.instNet5d||0)}</b>
+          <div style="font-size:0.65rem;color:#9CA3AF">매수${s.instBuyDays||0}일/5일</div>
+        </div>
+        <div style="background:${((s.foreignNet5d||0)>0&&(s.instNet5d||0)>0)?'#FEF9C3':'#F3F4F6'};padding:6px 8px;border-radius:6px;text-align:center">
+          <div style="color:#6B7280;font-size:0.7rem">수급 판정</div>
+          <b style="color:${((s.foreignNet5d||0)>0&&(s.instNet5d||0)>0)?'#CA8A04':((s.foreignNet5d||0)>0||(s.instNet5d||0)>0)?'#2563EB':'#DC2626'}">${
+            ((s.foreignNet5d||0)>0&&(s.instNet5d||0)>0)?'쌍끌이':((s.instNet5d||0)>0)?'기관매수':((s.foreignNet5d||0)>0)?'외인매수':'매도우위'
+          }</b>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:4px 0;font-size:0.72rem">
+        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#94A3B8;font-size:0.65rem">PER</div>
+          <b style="color:${(s.per>0&&s.per<=15)?'#16A34A':(s.per>50||s.per<0)?'#DC2626':'#374151'}">${s.per?s.per.toFixed(1)+'배':'N/A'}</b>
+        </div>
+        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#94A3B8;font-size:0.65rem">PBR</div>
+          <b>${s.pbr?s.pbr.toFixed(2)+'배':'N/A'}</b>
+        </div>
+        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#94A3B8;font-size:0.65rem">배당률</div>
+          <b>${s.divYield?s.divYield.toFixed(1)+'%':'N/A'}</b>
+        </div>
+        <div style="background:${(s.targetPrice&&s.close&&s.targetPrice>s.close)?'#F0FDF4':'#FEF2F2'};padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#94A3B8;font-size:0.65rem">목표가</div>
+          <b style="color:${(s.targetPrice>s.close)?'#16A34A':'#DC2626'}">${s.targetPrice?fmt(s.targetPrice):'N/A'}</b>
+          ${s.targetPrice&&s.close?`<div style="font-size:0.6rem;color:#6B7280">${((s.targetPrice-s.close)/s.close*100).toFixed(0)}%</div>`:''}
+        </div>
+        <div style="background:${(s.sectorRatio>=60)?'#F0FDF4':'#FEF2F2'};padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#94A3B8;font-size:0.65rem">업종강도</div>
+          <b style="color:${(s.sectorRatio>=60)?'#16A34A':'#DC2626'}">${s.sectorRatio?s.sectorRatio.toFixed(0)+'%':'N/A'}</b>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:6px 0;font-size:0.72rem">
+        <div style="background:#F0F4FF;padding:5px;border-radius:5px;text-align:center;border:1px solid #BFDBFE">
+          <div style="color:#6366F1;font-size:0.6rem;font-weight:600">52주위치</div>
+          <b style="color:${(s.pos52w||0)<40?'#16A34A':(s.pos52w||0)>85?'#DC2626':'#2563EB'}">${(s.pos52w||0).toFixed(0)}%</b>
+          <div style="font-size:0.58rem;color:#9CA3AF">고가-${(s.distFromHigh||0).toFixed(0)}%</div>
+        </div>
+        <div style="background:${s.squeeze?'#FEF9C3':'#F8FAFC'};padding:5px;border-radius:5px;text-align:center;border:1px solid ${s.squeeze?'#FDE047':'#E2E8F0'}">
+          <div style="color:#6366F1;font-size:0.6rem;font-weight:600">스퀴즈</div>
+          <b style="color:${s.squeeze?'#CA8A04':'#6B7280'}">${s.squeeze?'감지':'없음'}</b>
+          <div style="font-size:0.58rem;color:#9CA3AF">ATR ${(s.atrRatio||1).toFixed(2)}</div>
+        </div>
+        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#6366F1;font-size:0.6rem;font-weight:600">VWAP</div>
+          <b style="color:${(s.vwapDist||0)>=0&&(s.vwapDist||0)<=3?'#16A34A':'#6B7280'}">${(s.vwapDist||0)>0?'+':''}${(s.vwapDist||0).toFixed(1)}%</b>
+        </div>
+        <div style="background:${(s.cmf||0)>0.05?'#F0FDF4':'#FEF2F2'};padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#6366F1;font-size:0.6rem;font-weight:600">CMF</div>
+          <b style="color:${(s.cmf||0)>0?'#16A34A':'#DC2626'}">${(s.cmf||0).toFixed(3)}</b>
+          <div style="font-size:0.58rem;color:#9CA3AF">${(s.cmf||0)>0.15?'강한유입':(s.cmf||0)>0.05?'유입':(s.cmf||0)>0?'약유입':'유출'}</div>
+        </div>
+        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#6366F1;font-size:0.6rem;font-weight:600">추세품질</div>
+          <b style="color:${(s.adx||0)>20?'#16A34A':'#6B7280'}">ADX ${(s.adx||0).toFixed(0)}</b>
+          <div style="font-size:0.58rem;color:#9CA3AF">R² ${(s.rSquared||0).toFixed(2)}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:2px 0 6px;font-size:0.72rem">
+        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#7C3AED;font-size:0.6rem;font-weight:600">ROC가속</div>
+          <b style="color:${(s.rocAccel||0)>0?'#16A34A':'#DC2626'}">${(s.rocAccel||0)>0?'+':''}${(s.rocAccel||0).toFixed(1)}</b>
+        </div>
+        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#7C3AED;font-size:0.6rem;font-weight:600">압축도</div>
+          <b>${(s.compression||1).toFixed(2)}</b>
+          <div style="font-size:0.58rem;color:#9CA3AF">${(s.insideDays||0)}일 내포</div>
+        </div>
+        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#7C3AED;font-size:0.6rem;font-weight:600">Z-Score</div>
+          <b style="color:${(s.z20||0)<-0.5?'#16A34A':(s.z20||0)>2?'#DC2626':'#6B7280'}">단기${(s.z20||0).toFixed(1)} 장기${(s.z60||0).toFixed(1)}</b>
+        </div>
+        <div style="background:${(s.advancedTotal||0)>=20?'#F0FDF4':(s.advancedTotal||0)>=10?'#FFFBEB':'#F8FAFC'};padding:5px;border-radius:5px;text-align:center;border:1px solid ${(s.advancedTotal||0)>=20?'#86EFAC':(s.advancedTotal||0)>=10?'#FDE047':'#E2E8F0'}">
+          <div style="color:#7C3AED;font-size:0.6rem;font-weight:600">고급점수</div>
+          <b style="color:${(s.advancedTotal||0)>=20?'#16A34A':(s.advancedTotal||0)>=10?'#CA8A04':'#DC2626'}">${s.advancedTotal||0}점</b>
+        </div>
+      </div>
+      <div class="badge-group">
+        <div class="badge-title">충족 조건</div>
+        <div>${s.conditionsMet.map(c => `<span class="badge" style="background:${BADGE_COLORS[c.charAt(0)] || '#6B7280'}">${c}</span>`).join("")}</div>
+      </div>
+    </div></div>`;
+  });
+
+  h += '</div>';
+  document.getElementById("cardList").innerHTML = h;
+}
+
+function priceItem(label, value, sub, cls) {
+  return `<div class="price-item ${cls}">
+    <div class="pi-label">${label}</div>
+    <div class="pi-value">${fmt(value)}<span style="font-size:0.68rem;color:var(--text4)">원</span></div>
+    <div class="pi-sub">${sub}</div>
+  </div>`;
+}
+
+function priceBarHTML(buy, t1, t2, sl) {
+  const mn = sl * 0.996;
+  const mx = t2 * 1.004;
+  const rn = mx - mn;
+  const pos = v => ((v - mn) / rn) * 100;
+  const dots = [
+    { v: sl, c: "var(--red)", l: "손절" },
+    { v: buy, c: "var(--blue)", l: "매수" },
+    { v: t1, c: "var(--green)", l: "T1" },
+    { v: t2, c: "var(--yellow)", l: "T2" }
+  ];
+
+  let h = `<div class="price-bar-container">
+    <div class="price-bar-track" style="left:${pos(sl)}%;right:${100 - pos(t2)}%"></div>
+    <div class="price-bar-fill" style="left:${pos(buy)}%;right:${100 - pos(t1)}%"></div>`;
+  dots.forEach(d => {
+    h += `<div class="price-bar-dot" style="left:${pos(d.v)}%">
+      <div class="dot-label" style="color:${d.c}">${d.l}</div>
+      <div class="dot-circle" style="background:${d.c}"></div>
+      <div class="dot-value">${fmt(d.v)}</div>
+    </div>`;
+  });
+  return h + '</div>';
+}
+
+function toggleCard(code) {
+  if (openCards.has(code)) openCards.delete(code);
+  else openCards.add(code);
+  renderCards();
+}
+</script>
+</body>
+</html>

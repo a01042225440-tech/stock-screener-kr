@@ -527,7 +527,7 @@ def calc_advanced_factors(df):
 # =============================================
 #  조건별 탈락 카운터 (디버그용)
 # =============================================
-_debug_reject = {"A": 0, "C": 0, "D": 0, "E": 0, "F": 0, "G": 0, "H": 0, "H2": 0, "I": 0, "J": 0, "K": 0, "L": 0, "limit": 0, "data": 0, "total": 0}
+_debug_reject = {"A": 0, "C": 0, "D": 0, "E": 0, "F": 0, "G": 0, "H": 0, "H2": 0, "I": 0, "J": 0, "K": 0, "L": 0, "M": 0, "N": 0, "O": 0, "limit": 0, "data": 0, "total": 0}
 _debug_lock = threading.Lock()
 
 def reset_debug():
@@ -586,16 +586,23 @@ def screen_pro(df, name="", code="", mcap=0):
         with _debug_lock: _debug_reject["E"] += 1
         return None
 
-    # F. BB(20,2) 하한선 상향돌파 (전일 종가 <= BB하한 근접, 당일 종가 > BB하한)
+    # F. BB(20,2) 눌림목 반등: 최근 5일 내 BB하한 근접(5%이내) + 당일 BB하한 위 반등
     bb_mid = np.mean(c[i-19:i+1])
     bb_std = np.std(c[i-19:i+1], ddof=1)
     bb_upper = bb_mid + 2 * bb_std
     bb_lower = bb_mid - 2 * bb_std
-    bb_mid_prev = np.mean(c[i-20:i])
-    bb_std_prev = np.std(c[i-20:i], ddof=1)
-    bb_lower_prev = bb_mid_prev - 2 * bb_std_prev
-    # 전일 종가가 BB하한 10% 이내 근접 + 당일 종가가 BB하한 위 (눌림목 반등)
-    if not (c[i-1] <= bb_lower_prev * 1.10 and c[i] > bb_lower):
+    touched_lower = False
+    for back in range(1, 6):
+        if i - back < 20:
+            break
+        bb_mid_b = np.mean(c[i-back-19:i-back+1])
+        bb_std_b = np.std(c[i-back-19:i-back+1], ddof=1)
+        bb_lower_b = bb_mid_b - 2 * bb_std_b
+        if c[i-back] <= bb_lower_b * 1.15:  # BB하한 15%이내 터치
+            touched_lower = True
+            break
+    # 당일 종가는 BB하한 위
+    if not (touched_lower and c[i] > bb_lower):
         with _debug_lock: _debug_reject["F"] += 1
         return None
 
@@ -619,10 +626,11 @@ def screen_pro(df, name="", code="", mcap=0):
         with _debug_lock: _debug_reject["H"] += 1
         return None
 
-    # H2. 단기 정배열: 종가 > 10MA > 20MA
+    # H2. 이평선 정배열 필수: 10MA > 20MA > 200MA (장기추세 확인)
+    #     + 종가 > 20MA (중기 추세 위)
     sma10 = np.mean(c[i-9:i+1])
     sma20 = np.mean(c[i-19:i+1])
-    if not (c[i] > sma10 > sma20):
+    if not (sma10 > sma20 > sma200 and c[i] > sma20):
         with _debug_lock: _debug_reject["H2"] += 1
         return None
 
@@ -646,10 +654,23 @@ def screen_pro(df, name="", code="", mcap=0):
         with _debug_lock: _debug_reject["K"] += 1
         return None
 
-    # L. 시가총액 500억 이상 (mcap_eok 단위: 억)
-    if mcap > 0 and mcap < 500:
+    # L. 시가총액 800억 이상
+    if mcap > 0 and mcap < 800:
         with _debug_lock: _debug_reject["L"] += 1
         return None
+
+    # M. 윗꼬리 > 몸통이면 제외 (매도세 우위 캔들)
+    body_m = abs(c[i] - o[i])
+    upper_wick = h[i] - max(c[i], o[i])
+    if upper_wick > body_m and body_m > 0:
+        with _debug_lock: _debug_reject["M"] += 1
+        return None
+
+    # N. BB 중심선 이상 여부 → 1순위 보너스 (필수 아님, 점수화에서 처리)
+    bb_pos_n = (c[i] - bb_lower) / (bb_upper - bb_lower) * 100 if (bb_upper - bb_lower) > 0 else 50
+    bb_above_mid = c[i] >= bb_mid  # 중심선 이상이면 1순위
+
+    # O. W자형 이중바닥 → 보너스 점수 (필수 아님, 아래 점수화에서 처리)
 
     # 상한가 제외
     chg = (c[i] - c[i-1]) / c[i-1] * 100
@@ -657,14 +678,42 @@ def screen_pro(df, name="", code="", mcap=0):
         with _debug_lock: _debug_reject["limit"] += 1
         return None
 
-    # ── 여기까지 통과 = 키움 원본 11개 조건 ALL PASS ──
+    # ── 여기까지 통과 = 필수조건 ALL PASS ──
     # ── 아래는 추가 보조지표 (점수화) ──
 
     P = ["A.200MA돌파", "C.전일대비상승", "D.양봉", "E.가격적정",
-         "F.BB하한반등", f"G.거래량{vol_ratio:.1f}x", "H.60MA상승",
-         "H2.정배열(10>20)", "I.MACD반전", "J.BB반등확인", f"K.RSI{rv:.0f}", "L.시총적정"]
+         "F.BB하한돌파", f"G.거래량{vol_ratio:.1f}x", "H.60MA상승",
+         "H2.정배열(1>10>20>200)", "I.MACD반전", "J.BB반등확인", f"K.RSI{rv:.0f}",
+         "L.시총800억+", "M.양봉품질"]
     F_list = []
-    score = 55  # 기본 11개 통과 = 55점
+    score = 50  # 기본 필수조건 통과 = 50점
+
+    # ── 핵심 보너스: BB 중심선 이상 = 1순위 (+15점) ──
+    if bb_above_mid:
+        P.append(f"N.BB중심↑{bb_pos_n:.0f}%"); score += 15
+    else:
+        F_list.append(f"N.BB하단{bb_pos_n:.0f}%")
+
+    # ── 보조0. W자형 이중바닥 패턴 보너스 ──
+    lookback = min(60, i)
+    lows_60 = l[i-lookback:i+1]
+    closes_60 = c[i-lookback:i+1]
+    w_pattern = False
+    if lookback >= 20:
+        half = lookback // 2
+        first_low_idx = np.argmin(lows_60[:half+1])
+        second_low_idx = half + np.argmin(lows_60[half:])
+        first_low = lows_60[first_low_idx]
+        second_low = lows_60[second_low_idx]
+        if second_low_idx > first_low_idx + 3:
+            mid_high = np.max(closes_60[first_low_idx:second_low_idx+1])
+            low_diff = abs(first_low - second_low) / max(first_low, 1)
+            if low_diff < 0.15 and c[i] >= mid_high * 0.98:
+                w_pattern = True
+    if w_pattern:
+        P.append("S0.W바닥"); score += 10
+    else:
+        F_list.append("S0.W바닥X")
 
     # ── 보조1. 추세 정배열 (50>150>200) ──
     sma50 = np.mean(c[i-49:i+1])
@@ -694,14 +743,14 @@ def screen_pro(df, name="", code="", mcap=0):
     else:
         F_list.append("S3.OBV이탈")
 
-    # ── 보조4. BB 위치 (상단 가까울수록 강세) ──
+    # ── 보조4. BB 위치 (중심선↑ 필수 통과했으므로, 상단 근접 보너스) ──
     bb_pos = (c[i] - bb_lower) / (bb_upper - bb_lower) * 100 if (bb_upper - bb_lower) > 0 else 50
-    if bb_pos >= 70:
+    if bb_pos >= 75:
         P.append(f"S4.BB상단{bb_pos:.0f}%"); score += 8
-    elif bb_pos >= 50:
-        P.append(f"S4.BB중상{bb_pos:.0f}%"); score += 4
+    elif bb_pos >= 60:
+        P.append(f"S4.BB중상{bb_pos:.0f}%"); score += 5
     else:
-        F_list.append(f"S4.BB하단{bb_pos:.0f}%")
+        P.append(f"S4.BB중심↑{bb_pos:.0f}%"); score += 2
 
     # ── 보조5. 캔들 품질 ──
     body = abs(c[i] - o[i])
@@ -1060,70 +1109,68 @@ def run_scan(date_str, demo=False):
     for r in results:
         rank_score = 0.0
 
-        # 1. 수급 (22점 배점) - 가장 중요
+        # 1. 수급 (35점 배점) - 최고 가중치! 외국인·기관이 핵심
         fn = r.get("foreignNet5d", 0)
         ins = r.get("instNet5d", 0)
         fb = r.get("foreignBuyDays", 0)
         ib = r.get("instBuyDays", 0)
         if fn > 0 and ins > 0:
-            rank_score += 22  # 쌍끌이 = 만점
+            rank_score += 35  # 쌍끌이 = 만점
         elif ins > 0:
-            rank_score += 15 + min(ib * 2, 5)  # 기관 매수 + 연속일수 가산
+            rank_score += 22 + min(ib * 2, 6)  # 기관 매수 + 연속일수
         elif fn > 0:
-            rank_score += 10 + min(fb * 2, 5)  # 외인 매수
+            rank_score += 15 + min(fb * 2, 6)  # 외인 매수 + 연속일수
         else:
             rank_score += 0  # 수급 없음
 
-        # 2. 기술적 조건 충족도 (15점 배점)
+        # 2. 기술적 조건 충족도 (12점 배점)
         conds_str = r.get("conditionsDetail", "0/0").split("/")
         met = int(conds_str[0]) if conds_str[0].isdigit() else 0
         total = int(conds_str[1]) if len(conds_str) > 1 and conds_str[1].isdigit() else 16
-        rank_score += (met / max(total, 1)) * 15
+        rank_score += (met / max(total, 1)) * 12
 
-        # 3. 거래량 강도 (7점 배점)
+        # 3. 거래량 강도 (6점 배점)
         vr = r.get("volumeRatio", 0)
-        if vr >= 3.0: rank_score += 7
-        elif vr >= 2.0: rank_score += 5
+        if vr >= 3.0: rank_score += 6
+        elif vr >= 2.0: rank_score += 4
         elif vr >= 1.5: rank_score += 3
-        elif vr >= 1.0: rank_score += 2
+        elif vr >= 1.0: rank_score += 1
 
-        # 4. R/R 비율 (7점 배점) - 리스크 대비 수익
+        # 4. R/R 비율 (5점 배점)
         rr = r.get("rrRatio", 0)
-        if rr >= 3.0: rank_score += 7
-        elif rr >= 2.0: rank_score += 5
-        elif rr >= 1.5: rank_score += 3
+        if rr >= 3.0: rank_score += 5
+        elif rr >= 2.0: rank_score += 4
+        elif rr >= 1.5: rank_score += 2
         else: rank_score += 1
 
-        # 5. 증권사 목표가 괴리율 (7점 배점)
+        # 5. 증권사 목표가 괴리율 (5점 배점)
         tp = r.get("targetPrice", 0)
         cl = r.get("close", 1)
         if tp > 0 and cl > 0:
             upside = (tp - cl) / cl * 100
-            if upside >= 40: rank_score += 7
-            elif upside >= 25: rank_score += 5
-            elif upside >= 15: rank_score += 3
+            if upside >= 40: rank_score += 5
+            elif upside >= 25: rank_score += 4
+            elif upside >= 15: rank_score += 2
             elif upside >= 0: rank_score += 1
 
-        # 6. 재무 건전성 (5점 배점)
+        # 6. 재무 건전성 (4점 배점)
         per = r.get("per", 0)
         pbr = r.get("pbr", 0)
-        if 0 < per <= 10: rank_score += 3
-        elif 0 < per <= 15: rank_score += 2
-        elif 0 < per <= 25: rank_score += 1
+        if 0 < per <= 10: rank_score += 2
+        elif 0 < per <= 15: rank_score += 1
         if 0 < pbr <= 1.0: rank_score += 2
         elif 0 < pbr <= 2.0: rank_score += 1
 
-        # 7. 업종 모멘텀 (4점 배점)
+        # 7. 업종 모멘텀 (3점 배점)
         sr = r.get("sectorRatio", 50)
-        if sr >= 80: rank_score += 4
+        if sr >= 80: rank_score += 3
         elif sr >= 60: rank_score += 2
         elif sr >= 50: rank_score += 1
 
-        # 8. RSI 적정구간 보너스 (3점 배점) - 40~55가 최적
+        # 8. RSI 적정구간 보너스 (2점 배점) - 40~55가 최적
         rsi = r.get("rsi", 50)
-        if 40 <= rsi <= 55: rank_score += 3
-        elif 35 <= rsi <= 60: rank_score += 2
-        else: rank_score += 1
+        if 40 <= rsi <= 55: rank_score += 2
+        elif 35 <= rsi <= 60: rank_score += 1
 
         # ── 9. 고급 팩터 F1~F10 (30점 배점) ──
         # F1: 52주 고가 저항 (-5~5) → 정규화 0~5
