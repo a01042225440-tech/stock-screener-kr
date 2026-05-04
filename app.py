@@ -586,23 +586,19 @@ def screen_pro(df, name="", code="", mcap=0):
         with _debug_lock: _debug_reject["E"] += 1
         return None
 
-    # F. BB(20,2) 눌림목 반등: 최근 5일 내 BB하한 근접(5%이내) + 당일 BB하한 위 반등
+    # F. BB(20,2) 하단 돌파 상승:
+    #    최근 3일 중 저가가 BB하단 + 밴드폭 10% 이내 (하단 근접 or 터치)
+    #    + 당일 종가 > BB하단 (하단 위로 마감 = 돌파 확인)
     bb_mid = np.mean(c[i-19:i+1])
     bb_std = np.std(c[i-19:i+1], ddof=1)
     bb_upper = bb_mid + 2 * bb_std
     bb_lower = bb_mid - 2 * bb_std
-    touched_lower = False
-    for back in range(1, 6):
-        if i - back < 20:
-            break
-        bb_mid_b = np.mean(c[i-back-19:i-back+1])
-        bb_std_b = np.std(c[i-back-19:i-back+1], ddof=1)
-        bb_lower_b = bb_mid_b - 2 * bb_std_b
-        if c[i-back] <= bb_lower_b * 1.15:  # BB하한 15%이내 터치
-            touched_lower = True
-            break
-    # 당일 종가는 BB하한 위
-    if not (touched_lower and c[i] > bb_lower):
+    bb_width = bb_upper - bb_lower
+    # BB하단 근접 기준: 저가 ≤ BB하단 + 밴드폭의 10%
+    touch_zone = bb_lower + bb_width * 0.10
+    touched = any(l[i-back] <= touch_zone for back in range(0, 4) if i-back >= 0)
+    # 당일 종가는 반드시 BB하단 위
+    if not (touched and c[i] > bb_lower):
         with _debug_lock: _debug_reject["F"] += 1
         return None
 
@@ -626,11 +622,11 @@ def screen_pro(df, name="", code="", mcap=0):
         with _debug_lock: _debug_reject["H"] += 1
         return None
 
-    # H2. 이평선 정배열 필수: 10MA > 20MA > 200MA (장기추세 확인)
-    #     + 종가 > 20MA (중기 추세 위)
+    # H2. 최소 정배열: 200MA 위에서 거래 + 20MA 이상 (장기추세만 필수)
+    #     10MA>20MA 정배열은 보너스 점수로 처리
     sma10 = np.mean(c[i-9:i+1])
     sma20 = np.mean(c[i-19:i+1])
-    if not (sma10 > sma20 > sma200 and c[i] > sma20):
+    if not (c[i] > sma200):  # 200MA 위 = 장기 상승추세 최소 조건
         with _debug_lock: _debug_reject["H2"] += 1
         return None
 
@@ -682,13 +678,21 @@ def screen_pro(df, name="", code="", mcap=0):
     # ── 아래는 추가 보조지표 (점수화) ──
 
     P = ["A.200MA돌파", "C.전일대비상승", "D.양봉", "E.가격적정",
-         "F.BB하한돌파", f"G.거래량{vol_ratio:.1f}x", "H.60MA상승",
-         "H2.정배열(1>10>20>200)", "I.MACD반전", "J.BB반등확인", f"K.RSI{rv:.0f}",
+         "F.BB하단돌파", f"G.거래량{vol_ratio:.1f}x", "H.60MA상승",
+         "I.MACD반전", "J.BB반등확인", f"K.RSI{rv:.0f}",
          "L.시총800억+", "M.양봉품질"]
     F_list = []
-    score = 50  # 기본 필수조건 통과 = 50점
+    score = 48  # 기본 필수조건 통과 = 48점
 
-    # ── 핵심 보너스: BB 중심선 이상 = 1순위 (+15점) ──
+    # ── 핵심 보너스1: 단기 정배열 (1>10>20>200) +15점 ──
+    if c[i] > sma10 > sma20 > sma200:
+        P.append("H2.완전정배열↑"); score += 15
+    elif sma10 > sma20 > sma200:
+        P.append("H2.정배열(MA)"); score += 8
+    else:
+        F_list.append("H2.정배열X")
+
+    # ── 핵심 보너스2: BB 중심선 이상 = 1순위 (+15점) ──
     if bb_above_mid:
         P.append(f"N.BB중심↑{bb_pos_n:.0f}%"); score += 15
     else:
