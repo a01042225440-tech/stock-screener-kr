@@ -760,15 +760,123 @@ def screen_pro(df, name="", code="", mcap=0):
         mn_count += 1; mn_passed.append("T5.고점-35%이내")
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    # 등급 판정
+    # PRO 등급 — 학술 검증 10개 인자 ALL AND (정확도 최우선)
+    # 목표: 월 1-3개 신호, 승률 70%+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    pro_factors = []  # 통과한 학술 인자 리스트
+
+    # A1. 52주 신고가 모멘텀 (George & Hwang 2004, Journal of Finance)
+    # 종가 ≥ 52주고가 × 0.85 (15% 이내)
+    proximity_52w = c[i] / high_52w if high_52w > 0 else 0
+    a1 = bool(proximity_52w >= 0.85)
+    if a1: pro_factors.append(f"A1.52주{proximity_52w*100:.0f}%")
+
+    # A2. 중기 모멘텀 6개월 (Jegadeesh & Titman 1993)
+    # 6개월(126영업일) 수익률 ≥ +15%
+    ret_6m = (c[i] - c[i-126]) / c[i-126] * 100 if i >= 126 and c[i-126] > 0 else 0
+    a2 = bool(ret_6m >= 15)
+    if a2: pro_factors.append(f"A2.6M{ret_6m:+.0f}%")
+
+    # A3. VCP / Coil Spring (Minervini)
+    # Phase1 ≥ 6점 (압축 완성)
+    a3 = bool(p1_score >= 6)
+    if a3: pro_factors.append(f"A3.P1={p1_score}")
+
+    # A4. 거래량-가격 동조 (Brennan et al. 1998)
+    # 당일 vol≥2x AND 가격≥+3% AND MA20위 (Phase2 통과)
+    a4 = bool(phase2_pass)
+    if a4: pro_factors.append("A4.P2통과")
+
+    # A5. PEAD proxy - 갭 유지 (Bernard & Thomas 1989)
+    # 60일 내 +3% 갭상승 1회+ AND 그 갭이 미충전 (이후 저점이 갭 시작점 위)
+    a5 = False
+    gap_held_recent = False
+    for j in range(max(1, i-60), i+1):
+        gap_pct = (o[j] - c[j-1]) / c[j-1] * 100 if c[j-1] > 0 else 0
+        if gap_pct >= 3:  # 갭상승 발견
+            gap_floor = c[j-1]
+            # 갭 발생일 이후의 저점이 모두 갭 시작점 위면 미충전
+            if j < i and np.min(l[j:i+1]) > gap_floor:
+                gap_held_recent = True
+                break
+    a5 = bool(gap_held_recent)
+    if a5: pro_factors.append("A5.갭유지")
+
+    # A6. 기관 매집 - OBV 추세 (Wermers 1999)
+    # 60일 OBV 누적 변화 양수 AND 상승일 거래량 > 하락일 거래량
+    obv_60 = 0
+    up_vol = 0; down_vol = 0
+    for j in range(max(1, i-60), i+1):
+        if c[j] > c[j-1]:
+            obv_60 += v[j]
+            up_vol += v[j]
+        elif c[j] < c[j-1]:
+            obv_60 -= v[j]
+            down_vol += v[j]
+    a6 = bool(obv_60 > 0 and up_vol > down_vol * 1.1)  # 상승일 거래량 10%+ 우위
+    if a6: pro_factors.append("A6.OBV매집")
+
+    # A7. Minervini Trend Template 핵심 3종
+    # 현재가 > MA200 AND MA50 > MA200 AND MA200 우상향
+    a7 = bool(c[i] > sma200 and sma50 > sma200 and sma200 > sma200_30d_ago)
+    if a7: pro_factors.append("A7.Trend")
+
+    # A8. 저변동성 anomaly (Ang et al. 2006, Journal of Finance)
+    # 60일 연환산 변동성 < 45% (극도로 변동성 큰 종목 제외)
+    daily_ret_60 = np.diff(c[max(0, i-60):i+1]) / c[max(0, i-60):i]
+    annual_vol_60 = np.std(daily_ret_60, ddof=1) * np.sqrt(252) * 100 if len(daily_ret_60) > 1 else 100
+    a8 = bool(annual_vol_60 < 45)
+    if a8: pro_factors.append(f"A8.변동{annual_vol_60:.0f}%")
+
+    # A9. RSI 적정 구간 (Welles Wilder)
+    # 45 ≤ RSI ≤ 70 (과매수 회피 + 모멘텀 보유)
+    rv_pro = calc_rsi(pd.Series(c), 14).iloc[-1]
+    rv_pro = float(rv_pro) if not np.isnan(rv_pro) else 50.0
+    a9 = bool(45 <= rv_pro <= 70)
+    if a9: pro_factors.append(f"A9.RSI{rv_pro:.0f}")
+
+    # A10. 거래량 base 형성 (O'Neil CANSLIM)
+    # 최근 20일 평균 거래량 ≥ 60일 평균 × 0.8 (바닥 다지기 단계)
+    vol_20avg = np.mean(v[i-20:i]) if i >= 20 else 1
+    vol_60avg = np.mean(v[i-60:i]) if i >= 60 else vol_20avg
+    a10 = bool(vol_60avg > 0 and vol_20avg >= vol_60avg * 0.8)
+    if a10: pro_factors.append("A10.base형성")
+
+    # PRO 통과 인자 개수
+    pro_count = sum([a1, a2, a3, a4, a5, a6, a7, a8, a9, a10])
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # BB(20,2) 하단 상승돌파 신호 — 우선순위 부스터
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # 전일 BB 하단도 계산 (전일 기준 20일 표준편차)
+    if i >= 20:
+        bb_mid_prev  = float(np.mean(c[i-20:i]))
+        bb_std_prev  = float(np.std(c[i-20:i], ddof=1))
+        bb_lower_prev = bb_mid_prev - 2 * bb_std_prev
+    else:
+        bb_lower_prev = bb_lower
+
+    # 신호1: 전일 종가가 BB하단 아래 + 당일 종가가 BB하단 위 (정통 돌파)
+    bb_break_close = bool(c[i-1] <= bb_lower_prev and c[i] > bb_lower)
+    # 신호2: 당일 저가가 BB하단 아래 터치 + 당일 종가는 BB하단 위 (인트라데이 돌파)
+    bb_break_intraday = bool(l[i] <= bb_lower and c[i] > bb_lower)
+    bb_lower_break = bool(bb_break_close or bb_break_intraday)
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # 등급 판정 (PRO 최우선) — PRO 임계 9/10 (정확도 우선 + 현실성)
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     grade = None
-    if p1_score >= 6 and phase2_pass:
-        grade = "BUY"
+    if pro_count >= 9:
+        grade = "PRO"          # 🟢 학술 9개 이상 통과 (정확도 최우선)
+    elif p1_score >= 6 and phase2_pass:
+        grade = "BUY"          # 🔴
     elif p1_score >= 4 and not phase2_pass:
-        grade = "WATCH"
+        grade = "WATCH"        # 🟡
     elif p1_score >= 3:
-        grade = "COILING"
+        grade = "COILING"      # 🔵
+    elif bb_lower_break:
+        # BB 하단 돌파 자체가 의미 있는 신호 → 점수 낮아도 보존
+        grade = "BB_BREAK"     # 🟣 BB하단 상승돌파 (별도 기회 신호)
     else:
         with _debug_lock: _debug_reject["p1_total"] += 1
         return None
@@ -779,13 +887,13 @@ def screen_pro(df, name="", code="", mcap=0):
     sector, sector_bonus = classify_sector(name, code)
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    # 최종점수 = (Phase1점수 × 10) + 섹터가중치_보너스 + Minervini충족수
+    # 최종점수 = (Phase1점수×10) + 섹터보너스 + Minervini + PRO보너스
+    # PRO 통과당 +10점 (최대 +100), PRO 10/10이면 등급도 PRO
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    final_score = (p1_score * 10) + sector_bonus + mn_count
+    final_score = (p1_score * 10) + sector_bonus + mn_count + (pro_count * 10)
 
     # ── 보조 표시지표 계산 ──
-    rv = calc_rsi(pd.Series(c), 14).iloc[-1]
-    rv = float(rv) if not np.isnan(rv) else 50.0
+    rv = rv_pro  # PRO 평가에서 이미 계산됨
 
     _, _, macd_hist = calc_macd(pd.Series(c), 12, 26, 9)
     mh_now = float(macd_hist.iloc[-1]) if not np.isnan(macd_hist.iloc[-1]) else 0
@@ -803,8 +911,16 @@ def screen_pro(df, name="", code="", mcap=0):
     if trig_ma20:   P.append("P2.MA20위")
     if trig_ma60:   P.append("P2.MA60위")
     P.extend(mn_passed)
+    P.extend(pro_factors)  # 학술 인자 통과 항목
     if sector_bonus > 0:
         P.append(f"섹터[{sector}+{sector_bonus}]")
+    if bb_lower_break:
+        if bb_break_close:
+            P.insert(0, "🟣BB하단돌파(종가)")
+        else:
+            P.insert(0, "🟣BB하단돌파(인트라데이)")
+    if grade == "PRO":
+        P.insert(0, f"🟢PRO({pro_count}/10)")
 
     F_list = []
     if not trig_volume: F_list.append(f"P2.거래량부족{vol_mult:.1f}x")
@@ -845,6 +961,28 @@ def screen_pro(df, name="", code="", mcap=0):
         "sector": sector,                        # 분류된 섹터
         "sectorBonus": sector_bonus,             # 섹터 가산점
         "finalScore": round(final_score, 1),    # 최종 점수
+
+        # ── PRO 등급 (학술 10개 인자) ──
+        "proCount": pro_count,                   # 0~10
+        "proFactors": pro_factors,               # 통과 인자 리스트
+        "a1_52w": bool(a1),                      # George & Hwang
+        "a2_mom6m": bool(a2),                    # Jegadeesh & Titman
+        "a3_vcp": bool(a3),                      # Minervini VCP
+        "a4_volprice": bool(a4),                 # Brennan
+        "a5_pead": bool(a5),                     # Bernard & Thomas
+        "a6_obv": bool(a6),                      # Wermers
+        "a7_trend": bool(a7),                    # Minervini Trend
+        "a8_lowvol": bool(a8),                   # Ang et al.
+        "a9_rsi": bool(a9),                      # Wilder
+        "a10_base": bool(a10),                   # O'Neil
+        "ret6m": round(ret_6m, 1),
+        "annualVol60": round(annual_vol_60, 1),
+        "gapHeld": bool(gap_held_recent),
+
+        # ── BB(20,2) 하단 돌파 신호 ──
+        "bbLowerBreak": bb_lower_break,
+        "bbBreakClose": bb_break_close,
+        "bbBreakIntraday": bb_break_intraday,
     }
 
 # =============================================
@@ -1145,6 +1283,26 @@ def run_scan(date_str, demo=False):
             "sector": r.get("sector", "일반"),
             "sectorBonus": r.get("sectorBonus", 0),
             "finalScore": r.get("finalScore", 0),
+            # ── PRO 등급 (학술 10개 인자) ──
+            "proCount": r.get("proCount", 0),
+            "proFactors": r.get("proFactors", []),
+            "a1_52w": r.get("a1_52w", False),
+            "a2_mom6m": r.get("a2_mom6m", False),
+            "a3_vcp": r.get("a3_vcp", False),
+            "a4_volprice": r.get("a4_volprice", False),
+            "a5_pead": r.get("a5_pead", False),
+            "a6_obv": r.get("a6_obv", False),
+            "a7_trend": r.get("a7_trend", False),
+            "a8_lowvol": r.get("a8_lowvol", False),
+            "a9_rsi": r.get("a9_rsi", False),
+            "a10_base": r.get("a10_base", False),
+            "ret6m": r.get("ret6m", 0),
+            "annualVol60": r.get("annualVol60", 0),
+            "gapHeld": r.get("gapHeld", False),
+            # ── BB 하단 돌파 신호 ──
+            "bbLowerBreak": r.get("bbLowerBreak", False),
+            "bbBreakClose": r.get("bbBreakClose", False),
+            "bbBreakIntraday": r.get("bbBreakIntraday", False),
         }
 
     with ThreadPoolExecutor(max_workers=20) as executor:
@@ -1189,10 +1347,13 @@ def run_scan(date_str, demo=False):
     for r in results:
         r["rankScore"] = r.get("finalScore", 0)
 
-    # 등급 우선순위(BUY=0, WATCH=1, COILING=2) → finalScore 내림차순
-    GRADE_ORDER = {"BUY": 0, "WATCH": 1, "COILING": 2}
-    results.sort(key=lambda x: (GRADE_ORDER.get(x.get("grade", "COILING"), 3),
-                                -x.get("finalScore", 0)))
+    # 등급 우선순위(PRO=0, BUY=1, WATCH=2, COILING=3, BB_BREAK=4) → 같은 등급 내에서 BB하단 돌파 우선 → finalScore 내림차순
+    GRADE_ORDER = {"PRO": 0, "BUY": 1, "WATCH": 2, "COILING": 3, "BB_BREAK": 4}
+    results.sort(key=lambda x: (
+        GRADE_ORDER.get(x.get("grade", "COILING"), 5),
+        0 if x.get("bbLowerBreak") else 1,   # BB 하단 돌파 종목 우선
+        -x.get("finalScore", 0)
+    ))
 
     # 순위 부여
     for i, r in enumerate(results):
@@ -1208,17 +1369,23 @@ def run_scan(date_str, demo=False):
     print(f"{'='*82}")
     if results:
         # 등급별 개수
+        pro_n   = sum(1 for s in results if s.get("grade") == "PRO")
         buy_n   = sum(1 for s in results if s.get("grade") == "BUY")
         watch_n = sum(1 for s in results if s.get("grade") == "WATCH")
         coil_n  = sum(1 for s in results if s.get("grade") == "COILING")
-        print(f"  Grade: 🔴BUY={buy_n}  🟡WATCH={watch_n}  🔵COILING={coil_n}")
+        bbb_n   = sum(1 for s in results if s.get("grade") == "BB_BREAK")
+        bb_total = sum(1 for s in results if s.get("bbLowerBreak"))
+        print(f"  Grade: 🟢PRO={pro_n}  🔴BUY={buy_n}  🟡WATCH={watch_n}  🔵COILING={coil_n}  🟣BB={bbb_n}")
+        print(f"  BB하단돌파 전체: {bb_total}개")
         print(f"  {'-'*78}")
-        for idx, s in enumerate(results[:20], 1):
+        for idx, s in enumerate(results[:25], 1):
             g = s.get("grade", "-")
             sec = s.get("sector", "-")
             fs = s.get("finalScore", 0)
             p1 = s.get("p1Score", 0)
-            print(f"  {idx:>2} [{g:<7}] {s['name']:<10} {s['close']:>8,} P1={p1}/10 Sec={sec:<8} Final={fs:>5.0f}")
+            pc = s.get("proCount", 0)
+            bb_mark = "🟣" if s.get("bbLowerBreak") else " "
+            print(f"  {idx:>2} [{g:<8}] {bb_mark} {s['name']:<10} {s['close']:>8,} P1={p1}/10 PRO={pc}/10 Sec={sec:<8} Final={fs:>5.0f}")
     print(f"{'='*82}\n")
     return results
 
