@@ -863,19 +863,19 @@ def screen_pro(df, name="", code="", mcap=0):
     bb_lower_break = bool(bb_break_close or bb_break_intraday)
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    # 등급 판정 (PRO 최우선) — PRO 임계 9/10 (정확도 우선 + 현실성)
+    # 등급 판정 (PRO 최우선) — BUY 임계 P1≥4로 완화 (매일 5-15개 목표)
+    # 사전 필터에서 시총 1000억+ 보장됨 → 잡주 자동 제외
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     grade = None
     if pro_count >= 9:
         grade = "PRO"          # 🟢 학술 9개 이상 통과 (정확도 최우선)
-    elif p1_score >= 6 and phase2_pass:
-        grade = "BUY"          # 🔴
+    elif p1_score >= 4 and phase2_pass:
+        grade = "BUY"          # 🔴 P1≥4 + Phase2 동시 충족 (완화)
     elif p1_score >= 4 and not phase2_pass:
-        grade = "WATCH"        # 🟡
+        grade = "WATCH"        # 🟡 압축 완료, 폭발 대기
     elif p1_score >= 3:
-        grade = "COILING"      # 🔵
+        grade = "COILING"      # 🔵 압축 진행 중
     elif bb_lower_break:
-        # BB 하단 돌파 자체가 의미 있는 신호 → 점수 낮아도 보존
         grade = "BB_BREAK"     # 🟣 BB하단 상승돌파 (별도 기회 신호)
     else:
         with _debug_lock: _debug_reject["p1_total"] += 1
@@ -1074,11 +1074,11 @@ def run_scan(date_str, demo=False):
         mcap_eok = parse_num(s.get("marketValue", "0"))
         chg_rate = parse_float(s.get("fluctuationsRatio", "0"))
 
-        # 데이터 품질 필터 (코일스프링 사전 제외)
+        # 데이터 품질 필터 (잡주 자동 제외)
         if cl <= 0 or vol <= 0: continue
-        if cl < 1000: continue              # 현재가 1,000원 이상
-        if trdval < 300: continue           # 거래대금 3억 이상 (일평균은 Phase3에서 정밀 체크)
-        if mcap_eok < 300: continue         # 시가총액 300억 이상
+        if cl < 2000: continue              # 현재가 2,000원 이상 (저가주/동전주 제외)
+        if trdval < 1000: continue          # 거래대금 10억 이상
+        if mcap_eok < 1000: continue        # 시가총액 1,000억 이상 (중소형주 이상)
 
         candidates.append({
             "code": code, "name": name, "market": market,
@@ -1347,11 +1347,11 @@ def run_scan(date_str, demo=False):
     for r in results:
         r["rankScore"] = r.get("finalScore", 0)
 
-    # 등급 우선순위(PRO=0, BUY=1, WATCH=2, COILING=3, BB_BREAK=4) → 같은 등급 내에서 BB하단 돌파 우선 → finalScore 내림차순
+    # 등급 우선순위(PRO=0, BUY=1, WATCH=2, COILING=3, BB_BREAK=4) → finalScore 내림차순만
+    # BB하단돌파는 별도 표시(🟣)는 유지하되 정렬에는 영향 없음
     GRADE_ORDER = {"PRO": 0, "BUY": 1, "WATCH": 2, "COILING": 3, "BB_BREAK": 4}
     results.sort(key=lambda x: (
         GRADE_ORDER.get(x.get("grade", "COILING"), 5),
-        0 if x.get("bbLowerBreak") else 1,   # BB 하단 돌파 종목 우선
         -x.get("finalScore", 0)
     ))
 
