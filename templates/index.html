@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<title>코일스프링 + PRO 스크리너</title>
+<title>실전 트레이더 스크리너 (HUNT·BREAKOUT)</title>
 <style>
 :root {
   --bg: #F8FAFC;
@@ -784,7 +784,7 @@ body {
     <div class="header-top">
       <div class="logo">
         <div class="logo-icon">S</div>
-        <span>코일스프링 + PRO 스크리너</span>
+        <span>실전 트레이더 스크리너 (HUNT·BREAKOUT)</span>
       </div>
       <div class="header-stats" id="headerStats">
         <div class="stat-item">
@@ -792,16 +792,16 @@ body {
           <div class="stat-value" style="color:var(--blue)" id="statCount">-</div>
         </div>
         <div class="stat-item">
-          <div class="stat-label">🟢PRO</div>
-          <div class="stat-value" style="color:var(--green)" id="statPRO">-</div>
+          <div class="stat-label">🟢HUNT</div>
+          <div class="stat-value" style="color:var(--green)" id="statHUNT">-</div>
         </div>
         <div class="stat-item">
-          <div class="stat-label">🔴BUY</div>
-          <div class="stat-value" style="color:var(--red)" id="statBUY">-</div>
+          <div class="stat-label">🔴BREAKOUT</div>
+          <div class="stat-value" style="color:var(--red)" id="statBREAKOUT">-</div>
         </div>
         <div class="stat-item">
-          <div class="stat-label">🟣BB돌파</div>
-          <div class="stat-value" style="color:var(--purple)" id="statBB">-</div>
+          <div class="stat-label">🟡TREND</div>
+          <div class="stat-value" style="color:var(--yellow)" id="statTREND">-</div>
         </div>
       </div>
     </div>
@@ -816,7 +816,7 @@ body {
       <button class="btn btn-primary" id="btnScan" onclick="doScan()" style="touch-action:manipulation;">
         <span id="btnScanText">KRX 전종목 검색</span>
       </button>
-      <span class="scan-info" id="scanInfo">코일스프링 패턴 + 학술 10인자 PRO + BB하단돌파 · 시총1000억+ 우량주 자동필터</span>
+      <span class="scan-info" id="scanInfo">실전 4등급 (HUNT/BREAKOUT/TREND/WATCH) · 정배열+실적+주도섹터+저점매수 · 시총1000억+ 우량주 자동필터</span>
     </div>
   </div>
 
@@ -826,55 +826,77 @@ body {
   <!-- Card List -->
   <div id="cardList">
     <div class="initial-state">
-      <div class="initial-icon">CS</div>
-      <div class="initial-title">코일스프링 + PRO 스크리너</div>
+      <div class="initial-icon">실</div>
+      <div class="initial-title">실전 트레이더 스크리너 (HUNT·BREAKOUT)</div>
       <div class="initial-desc">
-        <b>5단계 등급 체계</b>: 🟢PRO · 🔴BUY · 🟡WATCH · 🔵COILING · 🟣BB돌파<br>
-        Phase1(압축감지 10점) + Phase2(폭발 트리거) + 학술 10인자 + 섹터 가중치<br>
-        매수: 종가+0.3% | 손절: 1.5ATR | T1: BB상한/2R, 1/2매도 | T2: 3R, 잔량매도
+        <b>4등급 + 보조</b>: 🟢HUNT(저점매수) · 🔴BREAKOUT(추격) · 🟡TREND(추세) · 🔵WATCH(예비) · 🟣BB돌파<br>
+        <b>저점매수</b>: 정배열+실적+주도섹터+20일선 ±5%+양봉반등 (남석관·Schwartz)<br>
+        <b>고점매도</b>: T1=2R 1/2매도 → 본전스톱 | T2=3R 잔량매도 | 1.5ATR 트레일링
       </div>
     </div>
   </div>
 
   <!-- Legend -->
   <div class="legend">
-    <div class="legend-title">코일스프링 + PRO(학술 10인자) 등급 체계</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-bottom:12px;font-size:0.78rem">
-      <div style="background:#F0FDF4;border:1px solid #86EFAC;border-radius:6px;padding:8px"><b style="color:#16A34A">🟢 PRO</b> 학술 9~10/10 인자 통과<br><span style="color:#64748B;font-size:0.72rem">정확도 최우선, 월 1-3개 신호</span></div>
-      <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:6px;padding:8px"><b style="color:#DC2626">🔴 BUY</b> P1≥4 + Phase2 폭발<br><span style="color:#64748B;font-size:0.72rem">매수 가능 후보 (매일 5-15개)</span></div>
-      <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:8px"><b style="color:#D97706">🟡 WATCH</b> P1≥4, 폭발 대기<br><span style="color:#64748B;font-size:0.72rem">압축 완료, 모니터링 대상</span></div>
-      <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:6px;padding:8px"><b style="color:#2563EB">🔵 COILING</b> P1≥3, 압축 진행 중<br><span style="color:#64748B;font-size:0.72rem">관찰 종목</span></div>
-      <div style="background:#F5F3FF;border:1px solid #DDD6FE;border-radius:6px;padding:8px"><b style="color:#7C3AED">🟣 BB_BREAK</b> BB(20,2) 하단 상승돌파<br><span style="color:#64748B;font-size:0.72rem">평균회귀 기회 신호</span></div>
+    <div class="legend-title">실전 트레이더 4등급 시스템 (저점매수·고점매도)</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin-bottom:12px;font-size:0.78rem">
+      <div style="background:#F0FDF4;border:1px solid #86EFAC;border-radius:6px;padding:8px">
+        <b style="color:#16A34A">🟢 HUNT (저점매수)</b><br>
+        <span style="color:#64748B;font-size:0.72rem">남석관 눌림목·Marty Schwartz<br>정배열+실적+섹터+20일선 ±5%+양봉반등</span>
+      </div>
+      <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:6px;padding:8px">
+        <b style="color:#DC2626">🔴 BREAKOUT (추격매수)</b><br>
+        <span style="color:#64748B;font-size:0.72rem">Minervini·William O'Neil<br>정배열+실적+섹터+52주신고가+거래량2배</span>
+      </div>
+      <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:8px">
+        <b style="color:#D97706">🟡 TREND (추세진입)</b><br>
+        <span style="color:#64748B;font-size:0.72rem">Stan Weinstein Stage 2<br>정배열+실적 충족, 섹터·트리거 대기</span>
+      </div>
+      <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:6px;padding:8px">
+        <b style="color:#2563EB">🔵 WATCH (예비)</b><br>
+        <span style="color:#64748B;font-size:0.72rem">200MA 위만 충족, 펀더 보강 필요</span>
+      </div>
+      <div style="background:#F5F3FF;border:1px solid #DDD6FE;border-radius:6px;padding:8px">
+        <b style="color:#7C3AED">🟣 BB_BREAK (평균회귀)</b><br>
+        <span style="color:#64748B;font-size:0.72rem">BB(20,2) 하단 상승돌파 보조 신호</span>
+      </div>
     </div>
 
-    <div class="legend-title">Phase 1 — 압축 감지 (10점)</div>
+    <div class="legend-title">A. 추세 정배열 (Weinstein Stage 2 + Minervini) — A1 필수</div>
     <div class="legend-grid" style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));">
-      <div><b style="color:var(--blue)">①</b> 거래량 추세 감소 (3점)</div>
-      <div><b style="color:var(--blue)">②</b> 거래량 절대 저수준 (2점)</div>
-      <div><b style="color:var(--blue)">③</b> 변동성 극소화 &lt;35% (2점)</div>
-      <div><b style="color:var(--blue)">④</b> 횡보 박스권 &lt;15% (2점)</div>
-      <div><b style="color:var(--blue)">⑤</b> BB(20,2)폭 &lt;18% (1점)</div>
+      <div><b style="color:var(--green)">A1</b> 종가 &gt; 200MA <span style="color:#DC2626;font-size:0.7rem">(필수)</span></div>
+      <div><b style="color:var(--green)">A2</b> 종가 &gt; 60MA (중기 상승)</div>
+      <div><b style="color:var(--green)">A3</b> 60MA &gt; 200MA (정배열)</div>
+      <div><b style="color:var(--green)">A4</b> 200MA 우상향 (30일전 대비)</div>
     </div>
 
-    <div class="legend-title" style="margin-top:12px">Phase 2 — 폭발 트리거 (당일 동시 충족)</div>
+    <div class="legend-title" style="margin-top:12px">B. 펀더멘털 (염승환·O'Neil CANSLIM·Peter Lynch)</div>
     <div class="legend-grid" style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));">
-      <div><b style="color:var(--red)">A</b> 당일 거래량 ≥ 20일평균 × 2배</div>
-      <div><b style="color:var(--red)">B</b> 종가 ≥ 전일 × 1.03 (+3%)</div>
-      <div><b style="color:var(--red)">C</b> 종가 &gt; MA20 (필수)</div>
+      <div><b style="color:#0891B2">B1</b> EPS &gt; 0 (흑자 기업)</div>
+      <div><b style="color:#0891B2">B2</b> PER 0~30 (적정 밸류에이션)</div>
+      <div><b style="color:#0891B2">B3</b> 증권사 목표가 ≥ 현재가 × 1.05 (성장 기대)</div>
     </div>
 
-    <div class="legend-title" style="margin-top:12px">PRO 학술 검증 10인자 (정확도 최우선)</div>
+    <div class="legend-title" style="margin-top:12px">D. HUNT 트리거 — 저점 매수 (남석관 눌림목 + Marty Schwartz)</div>
     <div class="legend-grid" style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));">
-      <div><b style="color:var(--green)">A1</b> 52주 신고가 모멘텀 (George&Hwang 2004)</div>
-      <div><b style="color:var(--green)">A2</b> 6개월 모멘텀 +15% (Jegadeesh 1993)</div>
-      <div><b style="color:var(--green)">A3</b> VCP/Coil Phase1≥6 (Minervini)</div>
-      <div><b style="color:var(--green)">A4</b> 거래량2x+가격+3% (Brennan 1998)</div>
-      <div><b style="color:var(--green)">A5</b> PEAD 갭유지 (Bernard 1989)</div>
-      <div><b style="color:var(--green)">A6</b> OBV 매집 (Wermers 1999)</div>
-      <div><b style="color:var(--green)">A7</b> Minervini Trend Template</div>
-      <div><b style="color:var(--green)">A8</b> 60일 변동성 &lt;45% (Ang 2006)</div>
-      <div><b style="color:var(--green)">A9</b> RSI 45-70 (Wilder)</div>
-      <div><b style="color:var(--green)">A10</b> 거래량 base (O'Neil CANSLIM)</div>
+      <div><b style="color:var(--red)">D1</b> 20일선 ±5% 안 (눌림목 또는 갓 돌파)</div>
+      <div><b style="color:var(--red)">D2</b> 종가 &gt; 5일선 (단기 반등)</div>
+      <div><b style="color:var(--red)">D3</b> 양봉 (시가 &lt; 종가)</div>
+      <div><b style="color:var(--red)">D4</b> 거래량 ≥ 5일평균 × 1.2 (관심 유입)</div>
+      <div><b style="color:var(--red)">D5</b> RSI 40~65 (과매도 탈출, 과열 회피)</div>
+    </div>
+
+    <div class="legend-title" style="margin-top:12px">E. BREAKOUT 트리거 — 추격 매수 (Minervini·O'Neil)</div>
+    <div class="legend-grid" style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));">
+      <div><b style="color:#D97706">E1</b> 52주 신고가 90% 이내 (모멘텀)</div>
+      <div><b style="color:#D97706">E2</b> 거래량 ≥ 20일평균 × 2배 (수급 폭발)</div>
+      <div><b style="color:#D97706">E3</b> 당일 종가 ≥ 전일 × 1.03 (+3%)</div>
+    </div>
+
+    <div class="legend-title" style="margin-top:12px">C. 주도섹터 / 순환매 (현재웅·박세익)</div>
+    <div class="legend-grid" style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));">
+      <div><b style="color:#0891B2">C1</b> 동종업종 60% 이상 상승 (당일 강세 섹터)</div>
+      <div><b style="color:#0891B2">C2</b> 미래 주도섹터 (AI반도체/로봇/전력/방산/AI/우주/2차전지/바이오 등)</div>
     </div>
 
     <div class="legend-title" style="margin-top:12px">섹터 가중치 (미래 주도주 우선)</div>
@@ -886,9 +908,11 @@ body {
     </div>
 
     <div class="legend-note" style="margin-top:14px">
-      <b>최종점수</b>: (Phase1점수×10) + 섹터보너스 + Minervini충족수 + (PRO점수×10)<br>
-      <b>매매법</b>: 매수 = 종가+0.3% | 손절 = 1.5ATR (최대 -7%) | T1 = BB상한 또는 2R, 1/2매도 | T2 = 3R, 잔량매도 | 최대 보유 20거래일<br>
-      <b>사전 필터</b>: 시총 1,000억+ / 거래대금 10억+ / 현재가 2,000원+ / 신규상장 60일 제외 / 관리·SPAC·ETF 제외
+      <b>최종점수</b>: (A충족×10) + (B충족×10) + 섹터보너스 + 트리거점수(HUNT 30·BREAKOUT 25·BB 10) + 목표가보너스<br>
+      <b>매매법</b>: 매수 = 종가+0.3% | 손절 = 1.5ATR (최대 -7%) | T1 = BB상한/2R, 1/2매도 | T2 = 3R, 잔량매도 | 최대 보유 20거래일<br>
+      <b>사전 필터</b>: 시총 1,000억+ / 거래대금 10억+ / 현재가 2,000원+ / 신규상장 60일 제외 / 관리·SPAC·ETF·우선주 제외<br>
+      <b>매출 우상향</b>: 네이버 무료 API 한계로 EPS&gt;0 + 증권사 목표가 +5%+ 로 proxy (분기 매출 YoY는 DART API 연동 필요)<br>
+      <b>참고 트레이더</b>: Stan Weinstein, Mark Minervini, William O'Neil, Marty Schwartz, Peter Lynch / 남석관, 박세익, 염승환, 현재웅
     </div>
   </div>
 </div>
@@ -1012,8 +1036,8 @@ async function doScan() {
     }
 
     // ── 오늘의 추천 1순위 계산 (정렬과 무관하게 고정) ──
-    // 우선순위: PRO > BUY > WATCH > COILING > BB_BREAK, 같은 등급 내 finalScore 최고
-    const GO = {"PRO":0,"BUY":1,"WATCH":2,"COILING":3,"BB_BREAK":4};
+    // 우선순위: HUNT > BREAKOUT > TREND > WATCH > BB_BREAK, 같은 등급 내 finalScore 최고
+    const GO = {"HUNT":0,"BREAKOUT":1,"TREND":2,"WATCH":3,"BB_BREAK":4};
     const sorted = [...DATA].sort((a,b) =>
       (GO[a.grade]??5) - (GO[b.grade]??5) || (b.finalScore||0) - (a.finalScore||0));
     PICK = sorted[0] || null;
@@ -1045,33 +1069,35 @@ async function doScan() {
 function updateStats(data) {
   const d = data.results;
   const cnt = d.length;
-  const pro_n = d.filter(x => x.grade === "PRO").length;
-  const buy_n = d.filter(x => x.grade === "BUY").length;
-  const bb_n  = d.filter(x => x.bbLowerBreak === true).length;
+  const hunt_n = d.filter(x => x.grade === "HUNT").length;
+  const brk_n  = d.filter(x => x.grade === "BREAKOUT").length;
+  const trend_n = d.filter(x => x.grade === "TREND").length;
 
   document.getElementById("statCount").textContent = cnt;
-  document.getElementById("statPRO").textContent = pro_n + "개";
-  document.getElementById("statBUY").textContent = buy_n + "개";
-  document.getElementById("statBB").textContent = bb_n + "개";
+  document.getElementById("statHUNT").textContent = hunt_n + "개";
+  document.getElementById("statBREAKOUT").textContent = brk_n + "개";
+  document.getElementById("statTREND").textContent = trend_n + "개";
 }
 
 // ── Filter & Sort ──
-const GRADE_ORDER = {"PRO": 0, "BUY": 1, "WATCH": 2, "COILING": 3, "BB_BREAK": 4};
+const GRADE_ORDER = {"HUNT": 0, "BREAKOUT": 1, "TREND": 2, "WATCH": 3, "BB_BREAK": 4};
 
 function getFiltered() {
   let d = [...DATA];
-  if (filterBy === "pro")   d = d.filter(s => s.grade === "PRO");
-  if (filterBy === "buy")   d = d.filter(s => s.grade === "BUY");
-  if (filterBy === "bb")    d = d.filter(s => s.bbLowerBreak === true);
-  if (filterBy === "watch") d = d.filter(s => s.grade === "WATCH");
-  if (filterBy === "sector") d = d.filter(s => (s.sectorBonus || 0) > 0);
+  if (filterBy === "hunt")   d = d.filter(s => s.grade === "HUNT");
+  if (filterBy === "breakout") d = d.filter(s => s.grade === "BREAKOUT");
+  if (filterBy === "trend")  d = d.filter(s => s.grade === "TREND");
+  if (filterBy === "watch")  d = d.filter(s => s.grade === "WATCH");
+  if (filterBy === "bb")     d = d.filter(s => s.bbLowerBreak === true);
+  if (filterBy === "sector") d = d.filter(s => (s.sectorBonus || 0) >= 25);
 
   if (sortBy === "rank") d.sort((a, b) =>
     (GRADE_ORDER[a.grade] ?? 5) - (GRADE_ORDER[b.grade] ?? 5)
     || (b.finalScore || 0) - (a.finalScore || 0));
   if (sortBy === "final") d.sort((a, b) => (b.finalScore || 0) - (a.finalScore || 0));
-  if (sortBy === "p1")    d.sort((a, b) => (b.p1Score || 0) - (a.p1Score || 0));
-  if (sortBy === "pro")   d.sort((a, b) => (b.proCount || 0) - (a.proCount || 0));
+  if (sortBy === "a")     d.sort((a, b) => (b.aCount || 0) - (a.aCount || 0));
+  if (sortBy === "b")     d.sort((a, b) => (b.bCount || 0) - (a.bCount || 0));
+  if (sortBy === "target") d.sort((a, b) => (b.targetUpside || 0) - (a.targetUpside || 0));
   if (sortBy === "volume") d.sort((a, b) => (b.volMult || 0) - (a.volMult || 0));
   if (sortBy === "today")  d.sort((a, b) => (b.chgToday || 0) - (a.chgToday || 0));
   if (sortBy === "supply") d.sort((a, b) => {
@@ -1087,12 +1113,13 @@ function setFilter(v) { filterBy = v; renderToolbar(); renderCards(); }
 
 function renderToolbar() {
   const sorts = [
-    ["rank", "등급순"], ["final", "최종점수"], ["p1", "P1점수"],
-    ["pro", "PRO점수"], ["volume", "거래량"], ["today", "당일%"], ["supply", "수급순"]
+    ["rank", "등급순"], ["final", "최종점수"], ["a", "정배열A"],
+    ["b", "펀더B"], ["target", "목표가+%"], ["volume", "거래량"],
+    ["today", "당일%"], ["supply", "수급순"]
   ];
   const filters = [
-    ["all", "전체"], ["pro", "🟢PRO"], ["buy", "🔴BUY"],
-    ["bb", "🟣BB돌파"], ["watch", "🟡WATCH"], ["sector", "주도섹터"]
+    ["all", "전체"], ["hunt", "🟢HUNT"], ["breakout", "🔴BREAKOUT"],
+    ["trend", "🟡TREND"], ["watch", "🔵WATCH"], ["bb", "🟣BB돌파"], ["sector", "주도섹터"]
   ];
 
   let h = '<span class="toolbar-label">정렬</span>';
@@ -1119,11 +1146,11 @@ function renderCards() {
   // ⭐ 추천 1순위 고정 배너 카드
   if (PICK) {
     const g = {
-      "PRO":      {bg:"#16A34A", emoji:"🟢", label:"PRO", txt:"학술 9~10/10 통과 - 최고 신뢰도"},
-      "BUY":      {bg:"#DC2626", emoji:"🔴", label:"BUY", txt:"P1 압축 완성 + 폭발 트리거 발동"},
-      "WATCH":    {bg:"#D97706", emoji:"🟡", label:"WATCH", txt:"압축 완료 - 폭발 대기 (관찰)"},
-      "COILING":  {bg:"#2563EB", emoji:"🔵", label:"COILING", txt:"압축 진행 중 (조기 포착)"},
-      "BB_BREAK": {bg:"#7C3AED", emoji:"🟣", label:"BB돌파", txt:"BB(20,2) 하단 상승돌파"}
+      "HUNT":     {bg:"#16A34A", emoji:"🟢", label:"HUNT",     txt:"저점매수 (남석관 눌림목) - 정배열+실적+주도섹터+20일선 ±5%+양봉반등"},
+      "BREAKOUT": {bg:"#DC2626", emoji:"🔴", label:"BREAKOUT", txt:"추격매수 (Minervini/O'Neil) - 정배열+실적+섹터+52주신고가+거래량2배"},
+      "TREND":    {bg:"#D97706", emoji:"🟡", label:"TREND",    txt:"추세진입 (Weinstein Stage 2) - 정배열+실적 충족, 섹터/트리거 대기"},
+      "WATCH":    {bg:"#2563EB", emoji:"🔵", label:"WATCH",    txt:"예비 - 정배열만 충족, 펀더멘털 보강 필요"},
+      "BB_BREAK": {bg:"#7C3AED", emoji:"🟣", label:"BB돌파",  txt:"BB(20,2) 하단 상승돌파 - 평균회귀 기회"}
     }[PICK.grade] || {bg:"#64748B", emoji:"⚫", label:"-", txt:"-"};
     const bb = PICK.bbLowerBreak ? ' 🟣BB돌파동시' : '';
     const sec = (PICK.sectorBonus > 0) ? ` · ${PICK.sector}+${PICK.sectorBonus}` : '';
@@ -1145,22 +1172,26 @@ function renderCards() {
             <div style="font-size:0.95rem;font-weight:700;color:${isUp2?'#DC2626':'#2563EB'}">${isUp2?'▲':'▼'} ${Math.abs(cr2)}%</div>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px">
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:12px">
           <div style="background:#fff;border:1px solid ${g.bg}44;border-radius:8px;padding:8px;text-align:center">
-            <div style="font-size:0.65rem;color:#64748B;font-weight:600">P1 압축</div>
-            <div style="font-size:1.1rem;font-weight:800;color:${g.bg}">${PICK.p1Score||0}/10</div>
+            <div style="font-size:0.65rem;color:#64748B;font-weight:600">A 정배열</div>
+            <div style="font-size:1.1rem;font-weight:800;color:${g.bg}">${PICK.aCount||0}/4</div>
           </div>
           <div style="background:#fff;border:1px solid ${g.bg}44;border-radius:8px;padding:8px;text-align:center">
-            <div style="font-size:0.65rem;color:#64748B;font-weight:600">PRO 학술</div>
-            <div style="font-size:1.1rem;font-weight:800;color:${g.bg}">${PICK.proCount||0}/10</div>
+            <div style="font-size:0.65rem;color:#64748B;font-weight:600">B 펀더</div>
+            <div style="font-size:1.1rem;font-weight:800;color:${g.bg}">${PICK.bCount||0}/3</div>
+          </div>
+          <div style="background:#fff;border:1px solid ${g.bg}44;border-radius:8px;padding:8px;text-align:center">
+            <div style="font-size:0.65rem;color:#64748B;font-weight:600">20MA거리</div>
+            <div style="font-size:1.1rem;font-weight:800;color:${Math.abs(PICK.ma20Dist||0)<=5?'#16A34A':'#64748B'}">${(PICK.ma20Dist||0)>=0?'+':''}${(PICK.ma20Dist||0).toFixed(1)}%</div>
           </div>
           <div style="background:#fff;border:1px solid ${g.bg}44;border-radius:8px;padding:8px;text-align:center">
             <div style="font-size:0.65rem;color:#64748B;font-weight:600">거래량</div>
             <div style="font-size:1.1rem;font-weight:800;color:#DC2626">${(PICK.volMult||0).toFixed(1)}x</div>
           </div>
           <div style="background:#fff;border:1px solid ${g.bg}44;border-radius:8px;padding:8px;text-align:center">
-            <div style="font-size:0.65rem;color:#64748B;font-weight:600">6M 수익</div>
-            <div style="font-size:1.1rem;font-weight:800;color:${(PICK.ret6m||0)>=0?'#16A34A':'#DC2626'}">${(PICK.ret6m||0)>=0?'+':''}${(PICK.ret6m||0).toFixed(0)}%</div>
+            <div style="font-size:0.65rem;color:#64748B;font-weight:600">목표가</div>
+            <div style="font-size:1.1rem;font-weight:800;color:${(PICK.targetUpside||0)>=10?'#16A34A':'#64748B'}">+${(PICK.targetUpside||0).toFixed(0)}%</div>
           </div>
         </div>
         <div style="background:#fff;border:1px solid ${g.bg}44;border-radius:8px;padding:10px 12px;margin-top:10px;font-size:0.82rem;line-height:1.6">
@@ -1192,12 +1223,12 @@ function renderCards() {
     const mc = momentumColor(s.finalScore || s.rankScore || s.momentum);
     const rankClass = i < 3 ? "rank-top" : i < 10 ? "rank-mid" : "";
 
-    // 등급 뱃지 색상/라벨
+    // 등급 뱃지 색상/라벨 (실전 4등급)
     const gradeInfo = {
-      "PRO":      {bg:"#16A34A", emoji:"🟢", label:"PRO"},
-      "BUY":      {bg:"#DC2626", emoji:"🔴", label:"BUY"},
-      "WATCH":    {bg:"#D97706", emoji:"🟡", label:"WATCH"},
-      "COILING":  {bg:"#2563EB", emoji:"🔵", label:"COIL"},
+      "HUNT":     {bg:"#16A34A", emoji:"🟢", label:"HUNT"},
+      "BREAKOUT": {bg:"#DC2626", emoji:"🔴", label:"BREAK"},
+      "TREND":    {bg:"#D97706", emoji:"🟡", label:"TREND"},
+      "WATCH":    {bg:"#2563EB", emoji:"🔵", label:"WATCH"},
       "BB_BREAK": {bg:"#7C3AED", emoji:"🟣", label:"BB"}
     }[s.grade] || {bg:"#64748B", emoji:"⚫", label:"-"};
     const bbMark = s.bbLowerBreak ? '<span style="background:#7C3AED;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.65rem;margin-left:4px;font-weight:700">🟣BB돌파</span>' : '';
@@ -1230,64 +1261,92 @@ function renderCards() {
             </div>
           </div>
           <div class="mini-stat">
-            <div class="mini-label">P1/PRO</div>
-            <div class="mini-value" style="color:${condColor((s.p1Score||0)+(s.proCount||0))}">${s.p1Score||0}/${s.proCount||0}</div>
+            <div class="mini-label">A/B</div>
+            <div class="mini-value" style="color:${((s.aCount||0)===4&&(s.bCount||0)>=2)?'#16A34A':'#64748B'}">${s.aCount||0}/${s.bCount||0}</div>
           </div>
           <div class="mini-stat">
-            <div class="mini-label">거래량</div>
-            <div class="mini-value" style="color:${(s.volMult||0)>=2?'#DC2626':(s.volMult||0)>=1.5?'#D97706':'#64748B'}">${(s.volMult||0).toFixed(1)}x</div>
+            <div class="mini-label">20MA</div>
+            <div class="mini-value" style="color:${Math.abs(s.ma20Dist||0)<=5?'#16A34A':'#64748B'}">${(s.ma20Dist||0)>=0?'+':''}${(s.ma20Dist||0).toFixed(1)}%</div>
           </div>
           <span class="arrow${isOpen ? ' open' : ''}">▼</span>
         </div>
       </div>`;
 
-    // Detail
-    // 코일스프링 + PRO 학술 인자 표시
-    const proItems = [
-      ["A1", "52주 신고가", s.a1_52w], ["A2", "6개월모멘텀", s.a2_mom6m],
-      ["A3", "VCP/Coil", s.a3_vcp], ["A4", "거래량폭발", s.a4_volprice],
-      ["A5", "PEAD갭유지", s.a5_pead], ["A6", "OBV매집", s.a6_obv],
-      ["A7", "Minervini", s.a7_trend], ["A8", "저변동성", s.a8_lowvol],
-      ["A9", "RSI적정", s.a9_rsi], ["A10", "거래량base", s.a10_base]
+    // Detail — 실전 4등급 인자 표시
+    const trendItems = [
+      ["A1", "종가>200MA", s.a1_ma200], ["A2", "종가>60MA", s.a2_ma60],
+      ["A3", "정배열60>200", s.a3_align], ["A4", "200MA상승", s.a4_ma200up]
     ];
-    let proGrid = '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:8px 0 6px;font-size:0.7rem">';
-    proItems.forEach(([k,l,v]) => {
-      proGrid += `<div style="background:${v?'#F0FDF4':'#FEF2F2'};padding:5px;border-radius:5px;text-align:center;border:1px solid ${v?'#86EFAC':'#FECACA'}">
-        <div style="color:#94A3B8;font-size:0.6rem;font-weight:600">${k}.${l}</div>
-        <b style="color:${v?'#16A34A':'#DC2626'}">${v?'✓':'✗'}</b>
-      </div>`;
-    });
-    proGrid += '</div>';
+    const fundItems = [
+      ["B1", "EPS흑자", s.b1_eps], ["B2", "PER적정", s.b2_per],
+      ["B3", "목표가+5%", s.b3_target]
+    ];
+    const huntItems = [
+      ["D1", "20MA±5%", s.d1_pullback], ["D2", ">5MA", s.d2_above_ma5],
+      ["D3", "양봉", s.d3_bullish], ["D4", "거래1.2x", s.d4_vol_pickup],
+      ["D5", "RSI40-65", s.d5_rsi_ok]
+    ];
+    const brkItems = [
+      ["E1", "52주90%+", s.e1_new_high], ["E2", "거래2x+", s.e2_vol_burst],
+      ["E3", "당일+3%", s.e3_price_up]
+    ];
 
-    const phaseInfo = `<div style="background:#FAF5FF;border:1px solid #DDD6FE;border-radius:8px;padding:8px 10px;margin:6px 0;font-size:0.75rem;line-height:1.5;color:#5B21B6">
-      <div style="font-weight:700;margin-bottom:3px">🎯 코일스프링 + PRO 점수</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center">
-        <div><div style="font-size:0.6rem;color:#7C3AED">P1점수</div><b style="font-size:0.95rem;color:#16A34A">${s.p1Score||0}/10</b></div>
-        <div><div style="font-size:0.6rem;color:#7C3AED">PRO점수</div><b style="font-size:0.95rem;color:#2563EB">${s.proCount||0}/10</b></div>
-        <div><div style="font-size:0.6rem;color:#7C3AED">최종점수</div><b style="font-size:0.95rem;color:#DC2626">${Math.round(s.finalScore||0)}</b></div>
-        <div><div style="font-size:0.6rem;color:#7C3AED">등급</div><b style="font-size:0.85rem">${gradeInfo.emoji}${gradeInfo.label}</b></div>
+    const mkGrid = (items, cols) => {
+      let g = `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:4px;margin:4px 0;font-size:0.7rem">`;
+      items.forEach(([k,l,v]) => {
+        g += `<div style="background:${v?'#F0FDF4':'#FEF2F2'};padding:5px;border-radius:5px;text-align:center;border:1px solid ${v?'#86EFAC':'#FECACA'}">
+          <div style="color:#94A3B8;font-size:0.6rem;font-weight:600">${k}.${l}</div>
+          <b style="color:${v?'#16A34A':'#DC2626'}">${v?'✓':'✗'}</b>
+        </div>`;
+      });
+      return g + '</div>';
+    };
+
+    const proGrid = `
+      <div style="font-size:0.7rem;font-weight:700;color:#16A34A;margin-top:8px;margin-bottom:2px">A. 추세 정배열 (Weinstein·Minervini)</div>${mkGrid(trendItems,4)}
+      <div style="font-size:0.7rem;font-weight:700;color:#0891B2;margin-top:6px;margin-bottom:2px">B. 펀더멘털 (염승환·O'Neil)</div>${mkGrid(fundItems,3)}
+      <div style="font-size:0.7rem;font-weight:700;color:#DC2626;margin-top:6px;margin-bottom:2px">D. HUNT 트리거 (남석관·Marty Schwartz)</div>${mkGrid(huntItems,5)}
+      <div style="font-size:0.7rem;font-weight:700;color:#D97706;margin-top:6px;margin-bottom:2px">E. BREAKOUT 트리거 (Minervini·O'Neil)</div>${mkGrid(brkItems,3)}
+    `;
+
+    const phaseInfo = `<div style="background:${gradeInfo.bg}10;border:1px solid ${gradeInfo.bg}66;border-radius:8px;padding:8px 10px;margin:6px 0;font-size:0.75rem;line-height:1.5">
+      <div style="font-weight:700;margin-bottom:3px;color:${gradeInfo.bg}">🎯 ${gradeInfo.emoji} ${gradeInfo.label} 등급</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;text-align:center">
+        <div><div style="font-size:0.6rem;color:#64748B">A 정배열</div><b style="font-size:0.95rem;color:${(s.aCount||0)===4?'#16A34A':'#64748B'}">${s.aCount||0}/4</b></div>
+        <div><div style="font-size:0.6rem;color:#64748B">B 펀더</div><b style="font-size:0.95rem;color:${(s.bCount||0)>=2?'#16A34A':'#64748B'}">${s.bCount||0}/3</b></div>
+        <div><div style="font-size:0.6rem;color:#64748B">C 섹터</div><b style="font-size:0.95rem;color:${s.inLeadingSector?'#16A34A':'#64748B'}">${s.inLeadingSector?'✓':'✗'}</b></div>
+        <div><div style="font-size:0.6rem;color:#64748B">트리거</div><b style="font-size:0.85rem">${s.huntTrigger?'🟢HUNT':s.breakoutTrigger?'🔴BREAK':'-'}</b></div>
+        <div><div style="font-size:0.6rem;color:#64748B">최종점수</div><b style="font-size:0.95rem;color:#DC2626">${Math.round(s.finalScore||0)}</b></div>
       </div>
-      ${(s.bbLowerBreak||s.sectorBonus>0)?`<div style="margin-top:6px;font-size:0.7rem;padding-top:6px;border-top:1px dashed #DDD6FE">
+      ${(s.bbLowerBreak||s.sectorBonus>=25)?`<div style="margin-top:6px;font-size:0.7rem;padding-top:6px;border-top:1px dashed ${gradeInfo.bg}44">
         ${s.bbLowerBreak?`<span style="color:#7C3AED;font-weight:700">🟣 BB(20,2) 하단 ${s.bbBreakClose?'종가':'인트라데이'} 상승돌파</span>`:''}
-        ${s.sectorBonus>0?`<span style="color:#0891B2;font-weight:700;margin-left:8px">🏷️ ${s.sector} 섹터 +${s.sectorBonus}점</span>`:''}
+        ${s.sectorBonus>=25?`<span style="color:#0891B2;font-weight:700;margin-left:8px">🏷️ ${s.sector} 주도섹터 +${s.sectorBonus}점</span>`:''}
       </div>`:''}
     </div>`;
 
     h += `<div class="card-detail${isOpen ? ' show' : ''}">
       ${phaseInfo}
       ${proGrid}
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:6px 0;font-size:0.72rem">
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin:6px 0;font-size:0.72rem">
         <div style="background:#F8FAFC;padding:6px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
-          <div style="color:#94A3B8;font-size:0.6rem;font-weight:600">6개월 수익</div>
-          <b style="color:${(s.ret6m||0)>=15?'#16A34A':(s.ret6m||0)>=0?'#2563EB':'#DC2626'}">${(s.ret6m||0)>=0?'+':''}${(s.ret6m||0).toFixed(1)}%</b>
+          <div style="color:#94A3B8;font-size:0.6rem;font-weight:600">EPS</div>
+          <b style="color:${(s.eps||0)>0?'#16A34A':'#DC2626'}">${(s.eps||0)>0?'+':''}${(s.eps||0).toFixed(0)}</b>
         </div>
         <div style="background:#F8FAFC;padding:6px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
-          <div style="color:#94A3B8;font-size:0.6rem;font-weight:600">60일 변동성</div>
-          <b style="color:${(s.annualVol60||100)<45?'#16A34A':'#DC2626'}">${(s.annualVol60||0).toFixed(0)}%</b>
+          <div style="color:#94A3B8;font-size:0.6rem;font-weight:600">PER</div>
+          <b style="color:${(s.per>0&&s.per<=30)?'#16A34A':'#DC2626'}">${(s.per||0).toFixed(1)}</b>
         </div>
         <div style="background:#F8FAFC;padding:6px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
-          <div style="color:#94A3B8;font-size:0.6rem;font-weight:600">BB폭</div>
-          <b style="color:${(s.bbWidthPct||100)<18?'#16A34A':'#64748B'}">${(s.bbWidthPct||0).toFixed(1)}%</b>
+          <div style="color:#94A3B8;font-size:0.6rem;font-weight:600">목표+%</div>
+          <b style="color:${(s.targetUpside||0)>=10?'#16A34A':(s.targetUpside||0)>0?'#64748B':'#DC2626'}">${(s.targetUpside||0)>=0?'+':''}${(s.targetUpside||0).toFixed(0)}%</b>
+        </div>
+        <div style="background:#F8FAFC;padding:6px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#94A3B8;font-size:0.6rem;font-weight:600">3M수익</div>
+          <b style="color:${(s.ret3m||0)>=0?'#16A34A':'#DC2626'}">${(s.ret3m||0)>=0?'+':''}${(s.ret3m||0).toFixed(0)}%</b>
+        </div>
+        <div style="background:#F8FAFC;padding:6px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+          <div style="color:#94A3B8;font-size:0.6rem;font-weight:600">52주위치</div>
+          <b style="color:${(s.proximity52w||0)>=85?'#DC2626':(s.proximity52w||0)>=70?'#D97706':'#64748B'}">${(s.proximity52w||0).toFixed(0)}%</b>
         </div>
         <div style="background:#F8FAFC;padding:6px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
           <div style="color:#94A3B8;font-size:0.6rem;font-weight:600">거래대금</div>
