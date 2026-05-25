@@ -908,6 +908,7 @@ body {
 <script>
 // ── State ──
 let DATA = [];
+let PICK = null;          // 오늘의 추천 1순위 (정렬과 무관하게 고정)
 let sortBy = "rank";
 let filterBy = "all";
 let openCards = new Set();
@@ -1010,12 +1011,15 @@ async function doScan() {
         ⚠️ 화요일 매수 금지 (백테스트 승률 30%)</span>`;
     }
 
-    // 백엔드에서 이미 rankScore 순으로 정렬됨 → 1위 = 상승확률 최고
-    if (DATA.length > 0) {
-      DATA[0]._pick = true;
-    }
+    // ── 오늘의 추천 1순위 계산 (정렬과 무관하게 고정) ──
+    // 우선순위: PRO > BUY > WATCH > COILING > BB_BREAK, 같은 등급 내 finalScore 최고
+    const GO = {"PRO":0,"BUY":1,"WATCH":2,"COILING":3,"BB_BREAK":4};
+    const sorted = [...DATA].sort((a,b) =>
+      (GO[a.grade]??5) - (GO[b.grade]??5) || (b.finalScore||0) - (a.finalScore||0));
+    PICK = sorted[0] || null;
+    DATA.forEach(s => s._pick = (PICK && s.code === PICK.code));
 
-    openCards = new Set(DATA.length > 0 ? [DATA[0].code] : []);
+    openCards = new Set(PICK ? [PICK.code] : []);
 
     // Update header stats
     updateStats(data);
@@ -1099,24 +1103,88 @@ function renderToolbar() {
   filters.forEach(([k, l]) => {
     h += `<button class="chip${filterBy === k ? ' active-filter' : ''}" onclick="setFilter('${k}')">${l}</button>`;
   });
+  h += '<div style="flex-basis:100%;height:0"></div><div style="font-size:0.72rem;color:#94A3B8;padding:4px 0 0;width:100%">⚠️ 정렬·필터는 <b>비교용</b>입니다. 매수 추천은 항상 최상단 ⭐ 카드.</div>';
   document.getElementById("toolbar").innerHTML = h;
 }
 
 // ── Render Cards ──
 function renderCards() {
-  const list = getFiltered();
+  // PICK은 정렬/필터와 무관하게 항상 최상단 고정 배너로 표시
+  // 일반 목록(getFiltered)에서는 PICK 종목을 제외 (중복 방지)
+  const filteredAll = getFiltered();
+  const list = PICK ? filteredAll.filter(s => s.code !== PICK.code) : filteredAll;
 
-  if (!list.length) {
-    document.getElementById("cardList").innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">🔍</div>
-        <div class="empty-text">해당 필터 조건에 맞는 종목이 없습니다</div>
-        <div class="empty-sub">필터를 변경하거나 다른 날짜로 검색해보세요</div>
-      </div>`;
-    return;
+  let h = '';
+
+  // ⭐ 추천 1순위 고정 배너 카드
+  if (PICK) {
+    const g = {
+      "PRO":      {bg:"#16A34A", emoji:"🟢", label:"PRO", txt:"학술 9~10/10 통과 - 최고 신뢰도"},
+      "BUY":      {bg:"#DC2626", emoji:"🔴", label:"BUY", txt:"P1 압축 완성 + 폭발 트리거 발동"},
+      "WATCH":    {bg:"#D97706", emoji:"🟡", label:"WATCH", txt:"압축 완료 - 폭발 대기 (관찰)"},
+      "COILING":  {bg:"#2563EB", emoji:"🔵", label:"COILING", txt:"압축 진행 중 (조기 포착)"},
+      "BB_BREAK": {bg:"#7C3AED", emoji:"🟣", label:"BB돌파", txt:"BB(20,2) 하단 상승돌파"}
+    }[PICK.grade] || {bg:"#64748B", emoji:"⚫", label:"-", txt:"-"};
+    const bb = PICK.bbLowerBreak ? ' 🟣BB돌파동시' : '';
+    const sec = (PICK.sectorBonus > 0) ? ` · ${PICK.sector}+${PICK.sectorBonus}` : '';
+    const cr2 = PICK.chgToday !== undefined ? PICK.chgToday.toFixed(2) : 0;
+    const isUp2 = cr2 >= 0;
+    h += `<div style="background:linear-gradient(135deg,${g.bg}15,${g.bg}05);border:3px solid ${g.bg};border-radius:14px;margin-bottom:16px;overflow:hidden;box-shadow:0 4px 20px ${g.bg}33">
+      <div style="background:${g.bg};color:#fff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div style="font-weight:800;font-size:0.95rem;letter-spacing:1px">⭐ 오늘의 매수 추천 (단 1종목)</div>
+        <div style="font-size:0.78rem;opacity:0.95">${g.emoji}${g.label}${bb}${sec} · Final ${Math.round(PICK.finalScore||0)}</div>
+      </div>
+      <div style="padding:14px 16px;cursor:pointer" onclick="toggleCard('${PICK.code}')">
+        <div style="display:flex;justify-content:space-between;align-items:start;gap:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <div style="font-size:1.4rem;font-weight:800;color:#0F172A">${PICK.name} <span style="font-size:0.85rem;color:#64748B;font-weight:500">${PICK.code}</span></div>
+            <div style="font-size:0.78rem;color:#64748B;margin-top:2px">${PICK.market||''} · 시총 ${mktCap(PICK.marketCap)} · 거래량 ${(PICK.volume/10000).toFixed(0)}만주</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:1.7rem;font-weight:800;color:#0F172A">${fmt(PICK.close)}<span style="font-size:0.85rem;color:#64748B;font-weight:500">원</span></div>
+            <div style="font-size:0.95rem;font-weight:700;color:${isUp2?'#DC2626':'#2563EB'}">${isUp2?'▲':'▼'} ${Math.abs(cr2)}%</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px">
+          <div style="background:#fff;border:1px solid ${g.bg}44;border-radius:8px;padding:8px;text-align:center">
+            <div style="font-size:0.65rem;color:#64748B;font-weight:600">P1 압축</div>
+            <div style="font-size:1.1rem;font-weight:800;color:${g.bg}">${PICK.p1Score||0}/10</div>
+          </div>
+          <div style="background:#fff;border:1px solid ${g.bg}44;border-radius:8px;padding:8px;text-align:center">
+            <div style="font-size:0.65rem;color:#64748B;font-weight:600">PRO 학술</div>
+            <div style="font-size:1.1rem;font-weight:800;color:${g.bg}">${PICK.proCount||0}/10</div>
+          </div>
+          <div style="background:#fff;border:1px solid ${g.bg}44;border-radius:8px;padding:8px;text-align:center">
+            <div style="font-size:0.65rem;color:#64748B;font-weight:600">거래량</div>
+            <div style="font-size:1.1rem;font-weight:800;color:#DC2626">${(PICK.volMult||0).toFixed(1)}x</div>
+          </div>
+          <div style="background:#fff;border:1px solid ${g.bg}44;border-radius:8px;padding:8px;text-align:center">
+            <div style="font-size:0.65rem;color:#64748B;font-weight:600">6M 수익</div>
+            <div style="font-size:1.1rem;font-weight:800;color:${(PICK.ret6m||0)>=0?'#16A34A':'#DC2626'}">${(PICK.ret6m||0)>=0?'+':''}${(PICK.ret6m||0).toFixed(0)}%</div>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid ${g.bg}44;border-radius:8px;padding:10px 12px;margin-top:10px;font-size:0.82rem;line-height:1.6">
+          <div style="font-weight:700;color:${g.bg};margin-bottom:4px">💡 ${g.txt}</div>
+          <div><b>매수가</b> ${fmt(PICK.buyPrice)}원 (종가+0.3%) | <b>손절</b> ${fmt(PICK.stoploss)}원 (${pct(PICK.buyPrice,PICK.stoploss)}%)</div>
+          <div><b>T1</b> ${fmt(PICK.target1)}원 (+${pct(PICK.buyPrice,PICK.target1)}%, 1/2 매도) | <b>T2</b> ${fmt(PICK.target2)}원 (+${pct(PICK.buyPrice,PICK.target2)}%, 잔량매도)</div>
+          <div style="color:#64748B;font-size:0.74rem;margin-top:3px">상세 보려면 카드 클릭 ▼</div>
+        </div>
+      </div>
+    </div>`;
   }
 
-  let h = '<div class="card-list">';
+  // 일반 목록 (정렬·필터 적용, PICK 제외)
+  if (!list.length) {
+    h += `<div class="empty-state" style="margin-top:10px">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-text">필터 조건에 맞는 추가 종목이 없습니다</div>
+        <div class="empty-sub">⭐ 추천 카드만 검토하세요</div>
+      </div>`;
+    document.getElementById("cardList").innerHTML = h;
+    return;
+  }
+  h += '<div style="font-size:0.78rem;color:#64748B;padding:6px 4px 8px;font-weight:600">📋 비교 후보 목록 (' + list.length + '개)</div>';
+  h += '<div class="card-list">';
   list.forEach((s, i) => {
     const cr = s.chgToday !== undefined ? s.chgToday.toFixed(2) : (((s.close - s.open) / s.open) * 100).toFixed(2);
     const isUp = cr >= 0;
@@ -1135,9 +1203,7 @@ function renderCards() {
     const bbMark = s.bbLowerBreak ? '<span style="background:#7C3AED;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.65rem;margin-left:4px;font-weight:700">🟣BB돌파</span>' : '';
     const secMark = (s.sectorBonus > 0) ? `<span style="background:#0891B2;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.65rem;margin-left:4px;font-weight:700">${s.sector}+${s.sectorBonus}</span>` : '';
 
-    const isPick = i === 0;
-    h += `<div class="card" style="${isPick ? 'border:2px solid '+gradeInfo.bg+'; box-shadow:0 0 12px '+gradeInfo.bg+'33' : ''}">
-      ${isPick ? `<div style="background:${gradeInfo.bg};color:#fff;text-align:center;padding:6px 0;font-weight:700;font-size:0.85rem;border-radius:10px 10px 0 0;letter-spacing:1px">⭐ 오늘의 1순위 (${gradeInfo.emoji}${gradeInfo.label} · Final ${Math.round(s.finalScore||0)})</div>` : ''}
+    h += `<div class="card">
       <div class="card-header" onclick="toggleCard('${s.code}')">
         <div class="card-left">
           <span class="rank ${rankClass}">${i + 1}</span>
