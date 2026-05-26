@@ -895,11 +895,13 @@ body {
       <div><b style="color:var(--red)">D5</b> RSI 40~65 (과매도 탈출, 과열 회피)</div>
     </div>
 
-    <div class="legend-title" style="margin-top:12px">E. BREAKOUT 트리거 — 추격 매수 (Minervini·O'Neil)</div>
+    <div class="legend-title" style="margin-top:12px">E. BREAKOUT 트리거 — 추격 매수 (Minervini·O'Neil + 과매수 안전장치)</div>
     <div class="legend-grid" style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));">
       <div><b style="color:#D97706">E1</b> 52주 신고가 90% 이내 (모멘텀)</div>
       <div><b style="color:#D97706">E2</b> 거래량 ≥ 20일평균 × 2배 (수급 폭발)</div>
       <div><b style="color:#D97706">E3</b> 당일 종가 ≥ 전일 × 1.03 (+3%)</div>
+      <div><b style="color:#D97706">E4</b> RSI &lt; 75 (과매수 회피 — 인바디 케이스 방지)</div>
+      <div><b style="color:#D97706">E5</b> 20MA 거리 &lt; 20% (추격매수 위험 회피)</div>
     </div>
 
     <div class="legend-title" style="margin-top:12px">C. 주도섹터 / 순환매 (현재웅·박세익)</div>
@@ -1166,7 +1168,8 @@ function renderCardDetail(s, gradeInfo) {
   ];
   const brkItems = [
     ["E1", "52주90%+", s.e1_new_high], ["E2", "거래2x+", s.e2_vol_burst],
-    ["E3", "당일+3%", s.e3_price_up]
+    ["E3", "당일+3%", s.e3_price_up],
+    ["E4", "RSI<75", s.e4_rsi_ok], ["E5", "20MA<20%", s.e5_ma20_near]
   ];
   const candleItems = [
     ["K1", "종가>전일", s.k1_up_close],
@@ -1190,7 +1193,7 @@ function renderCardDetail(s, gradeInfo) {
     <div style="font-size:0.7rem;font-weight:700;color:#16A34A;margin-top:6px;margin-bottom:2px">A. 추세 정배열 (Weinstein·Minervini)</div>${mkGrid(trendItems,4)}
     <div style="font-size:0.7rem;font-weight:700;color:#0891B2;margin-top:6px;margin-bottom:2px">B. 펀더멘털 (염승환·O'Neil)</div>${mkGrid(fundItems,3)}
     <div style="font-size:0.7rem;font-weight:700;color:#DC2626;margin-top:6px;margin-bottom:2px">D. HUNT 트리거 (남석관·Marty Schwartz)</div>${mkGrid(huntItems,5)}
-    <div style="font-size:0.7rem;font-weight:700;color:#D97706;margin-top:6px;margin-bottom:2px">E. BREAKOUT 트리거 (Minervini·O'Neil)</div>${mkGrid(brkItems,3)}
+    <div style="font-size:0.7rem;font-weight:700;color:#D97706;margin-top:6px;margin-bottom:2px">E. BREAKOUT 트리거 (Minervini·O'Neil + 과매수 안전장치)</div>${mkGrid(brkItems,5)}
   `;
 
   const phaseInfo = `<div style="background:${gradeInfo.bg}10;border:1px solid ${gradeInfo.bg}66;border-radius:8px;padding:8px 10px;margin:6px 0;font-size:0.75rem;line-height:1.5">

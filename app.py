@@ -736,7 +736,12 @@ def screen_pro(df, name="", code="", mcap=0, fundamental=None):
     e1_new_high  = bool(proximity_52w >= 0.90)       # 52주 고가 10% 이내
     e2_vol_burst = bool(vol_mult_20 >= 2.0)          # 거래량 20일평균 2배+
     e3_price_up  = bool(c[i] >= c[i-1] * 1.03)       # 당일 +3% 이상
-    breakout_trigger = bool(e1_new_high and e2_vol_burst and e3_price_up)
+    # E4. RSI < 75 (과매수 회피) - 인바디 케이스 RSI 85.5 손절 방지
+    e4_rsi_ok    = bool(rv < 75)
+    # E5. 20MA 거리 < 20% (추격매수 위험 회피) - 20일선과 너무 멀지 않을 것
+    e5_ma20_near = bool(abs(ma20_dist) < 20)
+    breakout_trigger = bool(e1_new_high and e2_vol_burst and e3_price_up
+                            and e4_rsi_ok and e5_ma20_near)
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # BB(20,2) 하단 상승돌파 보조 신호 (평균회귀 기회)
@@ -867,6 +872,7 @@ def screen_pro(df, name="", code="", mcap=0, fundamental=None):
         "d1_pullback": d1_pullback, "d2_above_ma5": d2_above_ma5,
         "d3_bullish": d3_bullish, "d4_vol_pickup": d4_vol_pickup, "d5_rsi_ok": d5_rsi_ok,
         "e1_new_high": e1_new_high, "e2_vol_burst": e2_vol_burst, "e3_price_up": e3_price_up,
+        "e4_rsi_ok": e4_rsi_ok, "e5_ma20_near": e5_ma20_near,
 
         # ── K. 캔들 품질 (당일 종가 매수 자격) ──
         "k1_up_close": k1_up_close,              # 종가 > 전일 종가
@@ -1260,6 +1266,8 @@ def run_scan(date_str, demo=False):
             "e1_new_high": r.get("e1_new_high", False),
             "e2_vol_burst": r.get("e2_vol_burst", False),
             "e3_price_up": r.get("e3_price_up", False),
+            "e4_rsi_ok": r.get("e4_rsi_ok", False),
+            "e5_ma20_near": r.get("e5_ma20_near", False),
             # ── K. 캔들 품질 ──
             "k1_up_close": r.get("k1_up_close", False),
             "k2_bullish": r.get("k2_bullish", False),
