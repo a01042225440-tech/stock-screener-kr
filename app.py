@@ -725,7 +725,33 @@ def screen_pro(df, name="", code="", mcap=0, fundamental=None):
     d3_bullish    = bool(o[i] < c[i])                # 양봉
     d4_vol_pickup = bool(vol_mult_5 >= 1.2)          # 거래량 5일 평균 1.2배+ (백테스트: +6.2% 가장 강력)
     d5_rsi_ok     = bool(50 <= rv <= 75)             # RSI 50-75 (백테스트: 60-80 청산률 최고)
-    hunt_trigger = bool(d1_pullback and d2_above_ma5 and d3_bullish and d4_vol_pickup and d5_rsi_ok)
+
+    # F1. 첫 번째 눌림목만 허용 (영상 기반 - "3번째 눌림 진입 안 함")
+    # 풀백 정의: "20MA 위 +2% 이상으로 올라간 구간"의 수를 카운트
+    # 히스테리시스: above 진입 = 종가 > 20MA × 1.02 / below 이탈 = 종가 < 20MA × 0.97
+    # → 잔잔한 변동은 무시, 진짜 큰 폭의 위→아래→위 흐름만 카운트
+    if i >= 79:
+        c_window = c[i-78:i+1]
+        sma20_window = pd.Series(c_window).rolling(20).mean().values
+        above_segments = 0      # 20MA 위 구간 개수
+        state = "below"
+        for j in range(19, 79):  # 마지막 60일
+            sma_v = sma20_window[j]
+            if not np.isnan(sma_v) and sma_v > 0:
+                ratio = c_window[j] / sma_v
+                if state == "below" and ratio > 1.02:    # +2% 위로 올라가면 새 구간 시작
+                    above_segments += 1
+                    state = "above"
+                elif state == "above" and ratio < 0.97:  # -3% 아래로 떨어지면 풀백
+                    state = "below"
+        # 구간 1개 = 1차 진입(터치없음), 2개 = 1차 풀백 후 회복, 3개 = 2차 풀백 후 회복
+        pullback_count = max(0, above_segments - 1)
+    else:
+        pullback_count = 0
+    f1_first_pullback = bool(pullback_count <= 2)   # 1차/2차 눌림만 (3차+ 거부)
+
+    hunt_trigger = bool(d1_pullback and d2_above_ma5 and d3_bullish
+                        and d4_vol_pickup and d5_rsi_ok and f1_first_pullback)
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # [트리거 E - BREAKOUT] 추격 매수 (Minervini + O'Neil)
@@ -873,6 +899,7 @@ def screen_pro(df, name="", code="", mcap=0, fundamental=None):
         "breakoutTrigger": breakout_trigger,
         "d1_pullback": d1_pullback, "d2_above_ma5": d2_above_ma5,
         "d3_bullish": d3_bullish, "d4_vol_pickup": d4_vol_pickup, "d5_rsi_ok": d5_rsi_ok,
+        "f1_first_pullback": f1_first_pullback, "pullbackCount": int(pullback_count),
         "e1_new_high": e1_new_high, "e2_vol_burst": e2_vol_burst, "e3_price_up": e3_price_up,
         "e4_rsi_ok": e4_rsi_ok, "e5_ma20_near": e5_ma20_near,
 
@@ -1265,6 +1292,8 @@ def run_scan(date_str, demo=False):
             "d3_bullish": r.get("d3_bullish", False),
             "d4_vol_pickup": r.get("d4_vol_pickup", False),
             "d5_rsi_ok": r.get("d5_rsi_ok", False),
+            "f1_first_pullback": r.get("f1_first_pullback", False),
+            "pullbackCount": r.get("pullbackCount", 0),
             "e1_new_high": r.get("e1_new_high", False),
             "e2_vol_burst": r.get("e2_vol_burst", False),
             "e3_price_up": r.get("e3_price_up", False),

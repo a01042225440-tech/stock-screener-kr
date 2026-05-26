@@ -886,13 +886,14 @@ body {
       <div><b style="color:#0891B2">B3</b> 증권사 목표가 ≥ 현재가 × 1.05 — <b style="color:#DC2626">필수</b></div>
     </div>
 
-    <div class="legend-title" style="margin-top:12px">D. HUNT 트리거 — 저점 매수 (남석관 눌림목 + Marty Schwartz) <span style="color:#7C3AED;font-size:0.7rem;font-weight:600">[1년 백테스트 최적화 적용]</span></div>
+    <div class="legend-title" style="margin-top:12px">D+F. HUNT 트리거 — 저점 매수 <span style="color:#7C3AED;font-size:0.7rem;font-weight:600">[1년 백테스트 최적화 + 영상 가이드 적용]</span></div>
     <div class="legend-grid" style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));">
       <div><b style="color:var(--red)">D1</b> 20일선 ±10% 안 (눌림목·돌파)</div>
       <div><b style="color:var(--red)">D2</b> 종가 &gt; 5일선 (단기 반등)</div>
       <div><b style="color:var(--red)">D3</b> 양봉 (시가 &lt; 종가)</div>
       <div><b style="color:var(--red)">D4</b> 거래량 ≥ 5일평균 × 1.2 (가장 강력)</div>
       <div><b style="color:var(--red)">D5</b> RSI 50~75 (백테스트 60-80 청산률 최고)</div>
+      <div><b style="color:#7C3AED">F1</b> <b>1차·2차 눌림목만</b> (60일 내 20MA±3% 터치 ≤2회) — 영상 가이드</div>
     </div>
 
     <div class="legend-title" style="margin-top:12px">E. BREAKOUT 트리거 — 추격 매수 (Minervini·O'Neil + 과매수 안전장치)</div>
@@ -1168,7 +1169,8 @@ function renderCardDetail(s, gradeInfo) {
   const huntItems = [
     ["D1", "20MA±10%", s.d1_pullback], ["D2", ">5MA", s.d2_above_ma5],
     ["D3", "양봉", s.d3_bullish], ["D4", "거래1.2x", s.d4_vol_pickup],
-    ["D5", "RSI50-75", s.d5_rsi_ok]
+    ["D5", "RSI50-75", s.d5_rsi_ok],
+    ["F1", `${s.pullbackCount||1}차눌림`, s.f1_first_pullback]
   ];
   const brkItems = [
     ["E1", "52주90%+", s.e1_new_high], ["E2", "거래2x+", s.e2_vol_burst],
