@@ -1319,12 +1319,23 @@ def run_scan(date_str, demo=False):
     for r in results:
         r["rankScore"] = r.get("finalScore", 0)
 
-    # 등급 우선순위: HUNT(저점매수) > BREAKOUT(추격) > TREND(추세진입) > WATCH(예비) > BB_BREAK
-    GRADE_ORDER = {"HUNT": 0, "BREAKOUT": 1, "TREND": 2, "WATCH": 3, "BB_BREAK": 4}
+    # 등급 우선순위: HUNT(저점매수) > BREAKOUT(추격) > BB_BREAK > TREND > WATCH
+    GRADE_ORDER = {"HUNT": 0, "BREAKOUT": 1, "BB_BREAK": 2, "TREND": 3, "WATCH": 4}
     results.sort(key=lambda x: (
         GRADE_ORDER.get(x.get("grade", "WATCH"), 5),
         -x.get("finalScore", 0)
     ))
+
+    # ─── 매수 가능 등급만, 최대 10개 미만 ───
+    # HUNT/BREAKOUT(필수 모든 조건 통과) + BB_BREAK(보조 평균회귀) 만 출력
+    # TREND/WATCH(K-블록 또는 트리거 미충족)은 제외
+    BUY_GRADES = {"HUNT", "BREAKOUT", "BB_BREAK"}
+    primary = [r for r in results if r.get("grade") in BUY_GRADES]
+    # 그래도 0개면 TREND 1순위라도 보여줌 (참고용)
+    if not primary:
+        primary = [r for r in results if r.get("grade") == "TREND"][:3]
+    # 10개 미만으로 자름 (사용자 요청: 10개 미만)
+    results = primary[:9]
 
     # 순위 부여
     for i, r in enumerate(results):

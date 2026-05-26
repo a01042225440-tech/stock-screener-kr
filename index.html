@@ -788,7 +788,7 @@ body {
       </div>
       <div class="header-stats" id="headerStats">
         <div class="stat-item">
-          <div class="stat-label">발굴</div>
+          <div class="stat-label">매수후보</div>
           <div class="stat-value" style="color:var(--blue)" id="statCount">-</div>
         </div>
         <div class="stat-item">
@@ -800,8 +800,8 @@ body {
           <div class="stat-value" style="color:var(--red)" id="statBREAKOUT">-</div>
         </div>
         <div class="stat-item">
-          <div class="stat-label">🟡TREND</div>
-          <div class="stat-value" style="color:var(--yellow)" id="statTREND">-</div>
+          <div class="stat-label">🟣BB돌파</div>
+          <div class="stat-value" style="color:var(--purple)" id="statBB">-</div>
         </div>
       </div>
     </div>
@@ -1082,12 +1082,12 @@ function updateStats(data) {
   const cnt = d.length;
   const hunt_n = d.filter(x => x.grade === "HUNT").length;
   const brk_n  = d.filter(x => x.grade === "BREAKOUT").length;
-  const trend_n = d.filter(x => x.grade === "TREND").length;
+  const bb_n   = d.filter(x => x.grade === "BB_BREAK").length;
 
-  document.getElementById("statCount").textContent = cnt;
+  document.getElementById("statCount").textContent = cnt + "개";
   document.getElementById("statHUNT").textContent = hunt_n + "개";
   document.getElementById("statBREAKOUT").textContent = brk_n + "개";
-  document.getElementById("statTREND").textContent = trend_n + "개";
+  document.getElementById("statBB").textContent = bb_n + "개";
 }
 
 // ── Filter & Sort ──
@@ -1130,7 +1130,7 @@ function renderToolbar() {
   ];
   const filters = [
     ["all", "전체"], ["hunt", "🟢HUNT"], ["breakout", "🔴BREAKOUT"],
-    ["trend", "🟡TREND"], ["watch", "🔵WATCH"], ["bb", "🟣BB돌파"], ["sector", "주도섹터"]
+    ["bb", "🟣BB돌파"], ["sector", "주도섹터"]
   ];
 
   let h = '<span class="toolbar-label">정렬</span>';
