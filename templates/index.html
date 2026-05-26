@@ -1063,8 +1063,12 @@ async function doScan() {
     // Update header stats
     updateStats(data);
     const tuesdayWarn = data.isTuesday ? ' <span style="color:#DC2626;font-weight:700">⚠️ 화요일=매수금지</span>' : '';
+    // 휴장일 경고 (요청일 ≠ 실제 분석일이면)
+    const holidayWarn = data.isHoliday
+      ? `<span style="background:#FEF3C7;border:1px solid #FBBF24;color:#92400E;padding:3px 8px;border-radius:4px;font-weight:700;font-size:0.78rem">⚠️ ${data.date}(${data.dayOfWeek})는 휴장일 → 마지막 거래일 ${data.actualDataDate} 종가 기준 분석</span>`
+      : '';
     document.getElementById("scanInfo").innerHTML =
-      `<span class="mode-badge mode-live">● LIVE</span> &nbsp;${data.date}(${data.dayOfWeek}) · ${data.timestamp}${tuesdayWarn}`;
+      `<span class="mode-badge mode-live">● LIVE</span> &nbsp;${data.date}(${data.dayOfWeek}) · ${data.timestamp}${tuesdayWarn}${holidayWarn ? '<br>' + holidayWarn : ''}`;
 
     // Show toolbar & render
     document.getElementById("toolbar").style.display = "flex";

@@ -1401,9 +1401,20 @@ def _save_and_sync_results(results, date_str):
     import subprocess
     dow = datetime.strptime(date_str, "%Y-%m-%d").weekday()
     dow_names = ["월","화","수","목","금","토","일"]
+    # 실제 분석된 마지막 거래일 추출 (휴장일 감지용)
+    actual_data_date = date_str
+    if results:
+        for r in results:
+            dd = r.get("dataDate")
+            if dd:
+                actual_data_date = dd
+                break
+    is_holiday = (actual_data_date != date_str)
     payload = {
         "results": results,
         "date": date_str,
+        "actualDataDate": actual_data_date,
+        "isHoliday": is_holiday,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "mode": "KRX+Naver",
         "count": len(results),
