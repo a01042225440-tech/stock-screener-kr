@@ -759,19 +759,36 @@ def screen_pro(df, name="", code="", mcap=0, fundamental=None):
     bb_lower_break    = bool(bb_break_close or bb_break_intraday)
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    # 등급 판정 (실전 트레이더 4단계)
+    # [필수 K] 캔들 품질 (당일 종가 매수 자격)
+    # 사용자 정의: 종가>전일종가 + 양봉 + 윗꼬리 짧은 상승추세 캔들
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    body = abs(c[i] - o[i])
+    upper_wick = h[i] - max(c[i], o[i])
+    lower_wick = min(c[i], o[i]) - l[i]
+    candle_range = h[i] - l[i]
+    body_ratio = body / candle_range if candle_range > 0 else 0
+    upper_wick_ratio = upper_wick / body if body > 0 else 999
+
+    k1_up_close   = bool(c[i] > c[i-1])              # K1. 종가 > 전일 종가
+    k2_bullish    = bool(o[i] < c[i])                 # K2. 양봉 (시가 < 종가)
+    k3_short_wick = bool(body > 0 and upper_wick <= body * 0.3)  # K3. 윗꼬리 ≤ 몸통 × 0.3
+    candle_pass   = bool(k1_up_close and k2_bullish and k3_short_wick)
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # 등급 판정 (실전 트레이더 4단계) — K-블록 필수
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # 전체 A 정배열 충족 (A1~A4 모두) + B 펀더 2개+ 가 기본 자격
     trend_full   = bool(a_count == 4)            # 4개 전부 (Weinstein Stage 2)
     fund_ok      = bool(b_count >= 2)            # 펀더 3개 중 2개+
 
     grade = None
-    if trend_full and fund_ok and in_leading_sector and hunt_trigger:
-        grade = "HUNT"          # 🟢 저점 매수
-    elif trend_full and fund_ok and in_leading_sector and breakout_trigger:
-        grade = "BREAKOUT"      # 🔴 추격 매수
+    # HUNT/BREAKOUT은 K-블록(상승추세 캔들) 필수
+    if trend_full and fund_ok and in_leading_sector and hunt_trigger and candle_pass:
+        grade = "HUNT"          # 🟢 저점 매수 (당일 종가 매수, 1주일 +10% 목표)
+    elif trend_full and fund_ok and in_leading_sector and breakout_trigger and candle_pass:
+        grade = "BREAKOUT"      # 🔴 추격 매수 (당일 종가 매수, 1주일 +10% 목표)
     elif trend_full and fund_ok:
-        grade = "TREND"         # 🟡 추세 진입 (섹터 약함 or 트리거 미완성)
+        grade = "TREND"         # 🟡 추세 진입 (캔들/섹터/트리거 일부 부족)
     elif a_count >= 3:
         grade = "WATCH"         # 🔵 예비 (정배열만)
     elif bb_lower_break:
@@ -791,7 +808,8 @@ def screen_pro(df, name="", code="", mcap=0, fundamental=None):
 
     target_upside = (target_price - c[i]) / c[i] * 100 if target_price > 0 and c[i] > 0 else 0
 
-    final_score = (a_count * 10) + (b_count * 10) + sector_bonus + trigger_score
+    candle_score = (int(k1_up_close) + int(k2_bullish) + int(k3_short_wick)) * 5  # 최대 +15
+    final_score = (a_count * 10) + (b_count * 10) + sector_bonus + trigger_score + candle_score
     if target_upside >= 20: final_score += 10
     elif target_upside >= 10: final_score += 5
 
@@ -849,6 +867,15 @@ def screen_pro(df, name="", code="", mcap=0, fundamental=None):
         "d1_pullback": d1_pullback, "d2_above_ma5": d2_above_ma5,
         "d3_bullish": d3_bullish, "d4_vol_pickup": d4_vol_pickup, "d5_rsi_ok": d5_rsi_ok,
         "e1_new_high": e1_new_high, "e2_vol_burst": e2_vol_burst, "e3_price_up": e3_price_up,
+
+        # ── K. 캔들 품질 (당일 종가 매수 자격) ──
+        "k1_up_close": k1_up_close,              # 종가 > 전일 종가
+        "k2_bullish": k2_bullish,                # 양봉
+        "k3_short_wick": k3_short_wick,          # 윗꼬리 ≤ 몸통×0.3
+        "candlePass": candle_pass,               # K1+K2+K3 모두 충족
+        "bodyRatio": round(body_ratio, 2),       # 몸통/전체범위
+        "upperWickRatio": round(min(upper_wick_ratio, 99), 2),  # 윗꼬리/몸통
+
         "ma20Dist": round(ma20_dist, 2),
         "proximity52w": round(proximity_52w * 100, 1),
         "volMult5": round(vol_mult_5, 2),
@@ -885,32 +912,42 @@ def tick(p, ref):
     return (p // 1000) * 1000
 
 def calc_price_pro(cl, lo, atr, bb_info=None):
+    """
+    당일 종가 매수 + 1주일(5영업일) 내 +10% 청산 전략.
+    - buy: 당일 종가 그대로
+    - target1 = target2 = 매수가 × 1.10 (사용자 명시: 10% 도달시 전량매도)
+    - 손절: 1.5 ATR 또는 -7% 또는 저가-1% 중 가장 높은 것
+    - 최대 보유: 5영업일 (1주일) → 미달성 시 종가 청산
+    """
     if cl <= 0 or atr <= 0:
         return None
-    # 매수가: 종가 +0.3% (익일 시초가 슬리피지, 최적화 결과 0.3%)
-    buy = tick(int(cl * 1.003), cl)
 
-    # 손절: ATR x1.5 또는 저가-1% 또는 최대-7% 중 높은 값
+    buy = tick(int(cl), cl)                       # 당일 종가 그대로 매수
+    target_10pct = tick(int(buy * 1.10), cl)      # +10% 청산가 (T1 = T2)
+
+    # 손절: ATR×1.5 또는 -7% 또는 저가-1% 중 높은 값
     sl_atr = int(buy - 1.5 * atr)
     sl_low = int(lo * 0.99)
-    sl_max = int(buy * 0.93)
+    sl_max = int(buy * 0.93)                       # 최대 -7%
     sl = tick(max(sl_atr, sl_low, sl_max), cl)
 
     risk = buy - sl
     if risk <= 0:
         return None
 
-    # 목표1: BB상한선 또는 2R
-    t1_bb = int(bb_info["bb_upper"]) if bb_info and bb_info.get("bb_upper", 0) > buy else int(buy + 2.0 * risk)
-    t1 = tick(max(t1_bb, int(buy + 1.5 * risk)), cl)
-
-    # 목표2: 3R (추세 확장)
-    t2 = tick(int(buy + 3.0 * risk), cl)
-
-    rr = round((t1 - buy) / risk, 2) if risk > 0 else 0
+    rr = round((target_10pct - buy) / risk, 2) if risk > 0 else 0
     risk_pct = round((buy - sl) / buy * 100, 1)
-    return {"buy": buy, "t1": t1, "t2": t2, "sl": sl,
-            "rr": rr, "atr": round(atr), "risk_pct": risk_pct, "risk_won": risk}
+    return {
+        "buy": buy,
+        "t1": target_10pct,    # +10% 도달 = 청산
+        "t2": target_10pct,    # 동일 (사용자 명시: 10% 전량매도)
+        "sl": sl,
+        "rr": rr,
+        "atr": round(atr),
+        "risk_pct": risk_pct,
+        "risk_won": risk,
+        "max_hold": 5,         # 5영업일 (1주일)
+    }
 
 # =============================================
 #  고속 스캔 엔진
@@ -1223,12 +1260,21 @@ def run_scan(date_str, demo=False):
             "e1_new_high": r.get("e1_new_high", False),
             "e2_vol_burst": r.get("e2_vol_burst", False),
             "e3_price_up": r.get("e3_price_up", False),
+            # ── K. 캔들 품질 ──
+            "k1_up_close": r.get("k1_up_close", False),
+            "k2_bullish": r.get("k2_bullish", False),
+            "k3_short_wick": r.get("k3_short_wick", False),
+            "candlePass": r.get("candlePass", False),
+            "bodyRatio": r.get("bodyRatio", 0),
+            "upperWickRatio": r.get("upperWickRatio", 0),
             "ma20Dist": r.get("ma20Dist", 0),
             "proximity52w": r.get("proximity52w", 0),
             "volMult5": r.get("volMult5", 0),
             "volMult20": r.get("volMult20", 0),
             "targetUpside": r.get("targetUpside", 0),
             "ret3m": r.get("ret3m", 0),
+            # ── 매매 룰 (1주일 +10% 전량매도) ──
+            "maxHold": p.get("max_hold", 5),
         }
 
     with ThreadPoolExecutor(max_workers=20) as executor:
