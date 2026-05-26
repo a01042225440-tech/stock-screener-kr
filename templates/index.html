@@ -775,6 +775,8 @@ body {
   body { padding-bottom: max(0px, env(safe-area-inset-bottom)); }
 }
 </style>
+<!-- lightweight-charts (TradingView 무료 차트 라이브러리, 45KB) -->
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
 
@@ -1066,6 +1068,8 @@ async function doScan() {
     document.getElementById("toolbar").style.display = "flex";
     renderToolbar();
     renderCards();
+    // 자동 펼친 PICK 카드의 차트 로드
+    if (PICK) setTimeout(() => drawChart(PICK.code), 100);
 
   } catch (err) {
     clearInterval(pollTimer);
@@ -1204,9 +1208,20 @@ function renderCardDetail(s, gradeInfo) {
     </div>`:''}
   </div>`;
 
-  // 차트 placeholder (lazy-load 추후 추가)
-  const chartArea = `<div id="chart-${s.code}" data-code="${s.code}" style="background:#F8FAFC;border:1px dashed #CBD5E1;border-radius:8px;padding:10px;margin:8px 0;text-align:center;font-size:0.78rem;color:#64748B;min-height:80px;display:flex;align-items:center;justify-content:center">
-    📊 일봉차트 3개월 (준비 중)
+  // 차트 영역 (클릭으로 펼쳐질 때 lazy load)
+  const chartArea = `<div style="margin:8px 0">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div style="font-size:0.78rem;font-weight:700;color:#0F172A">📊 일봉차트 (3개월)</div>
+      <div style="font-size:0.65rem;color:#64748B">
+        <span style="color:#DC2626">━ 청산가(+10%)</span> &nbsp;
+        <span style="color:#2563EB">━ 매수가</span> &nbsp;
+        <span style="color:#7C2D12">━ 손절</span> &nbsp;
+        <span style="color:#16A34A">━ MA20</span> &nbsp;
+        <span style="color:#D97706">━ MA60</span> &nbsp;
+        <span style="color:#7C3AED">━ MA200</span>
+      </div>
+    </div>
+    <div id="chart-${s.code}" data-code="${s.code}" data-buy="${s.buyPrice}" data-target="${s.target1}" data-stop="${s.stoploss}" style="width:100%;height:320px;background:#fff;border:1px solid #E2E8F0;border-radius:8px"></div>
   </div>`;
 
   return `
@@ -1541,6 +1556,123 @@ function toggleCard(code) {
   if (openCards.has(code)) openCards.delete(code);
   else openCards.add(code);
   renderCards();
+  // 카드를 펼친 경우 차트 lazy load
+  if (openCards.has(code)) {
+    // renderCards 후 DOM 갱신을 기다림
+    setTimeout(() => drawChart(code), 50);
+  }
+}
+
+// ── lightweight-charts로 일봉차트 3개월 그리기 ──
+const CHART_CACHE = {};   // code → 차트 데이터 캐시 (한번 fetch 후 재사용)
+
+async function drawChart(code) {
+  const container = document.getElementById(`chart-${code}`);
+  if (!container) return;
+  // 이미 그려져 있으면 스킵
+  if (container.dataset.rendered === '1') return;
+  if (typeof LightweightCharts === 'undefined') {
+    container.innerHTML = '<div style="padding:20px;text-align:center;color:#DC2626;font-size:0.78rem">⚠️ 차트 라이브러리 로드 실패 (네트워크 확인)</div>';
+    return;
+  }
+  container.innerHTML = '<div style="padding:20px;text-align:center;color:#64748B;font-size:0.78rem">⏳ 차트 로드 중...</div>';
+
+  let data = CHART_CACHE[code];
+  if (!data) {
+    try {
+      const dateVal = document.getElementById("dateInput").value || '';
+      const url = `/api/chart/${code}?days=63${dateVal ? '&date='+dateVal : ''}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      data = await res.json();
+      if (data.error) throw new Error(data.error);
+      CHART_CACHE[code] = data;
+    } catch (err) {
+      container.innerHTML = `<div style="padding:20px;text-align:center;color:#DC2626;font-size:0.78rem">차트 로드 실패: ${err.message}</div>`;
+      return;
+    }
+  }
+
+  // 컨테이너 비우기
+  container.innerHTML = '';
+  container.dataset.rendered = '1';
+
+  // 차트 생성
+  const chart = LightweightCharts.createChart(container, {
+    width: container.clientWidth,
+    height: 320,
+    layout: {
+      background: { color: '#ffffff' },
+      textColor: '#334155',
+      fontSize: 11,
+    },
+    grid: {
+      vertLines: { color: '#F1F5F9' },
+      horzLines: { color: '#F1F5F9' },
+    },
+    rightPriceScale: { borderColor: '#CBD5E1' },
+    timeScale: { borderColor: '#CBD5E1', timeVisible: false },
+    crosshair: { mode: 1 },
+  });
+
+  // 캔들스틱 (한국 관례: 양봉=빨강, 음봉=파랑)
+  const candleSeries = chart.addCandlestickSeries({
+    upColor: '#DC2626', downColor: '#2563EB',
+    borderUpColor: '#DC2626', borderDownColor: '#2563EB',
+    wickUpColor: '#DC2626', wickDownColor: '#2563EB',
+  });
+  candleSeries.setData(data.candles);
+
+  // 거래량 (별도 패널)
+  const volumeSeries = chart.addHistogramSeries({
+    priceFormat: { type: 'volume' },
+    priceScaleId: 'volume',
+    color: '#94A3B8',
+  });
+  volumeSeries.priceScale().applyOptions({
+    scaleMargins: { top: 0.75, bottom: 0 },
+  });
+  volumeSeries.setData(data.volumes);
+
+  // 이동평균선
+  if (data.ma20 && data.ma20.length > 0) {
+    const ma20Series = chart.addLineSeries({ color: '#16A34A', lineWidth: 1, priceLineVisible: false });
+    ma20Series.setData(data.ma20);
+  }
+  if (data.ma60 && data.ma60.length > 0) {
+    const ma60Series = chart.addLineSeries({ color: '#D97706', lineWidth: 1, priceLineVisible: false });
+    ma60Series.setData(data.ma60);
+  }
+  if (data.ma200 && data.ma200.length > 0) {
+    const ma200Series = chart.addLineSeries({ color: '#7C3AED', lineWidth: 1, priceLineVisible: false });
+    ma200Series.setData(data.ma200);
+  }
+
+  // 매수가/청산가/손절가 수평선 오버레이
+  const buy = parseFloat(container.dataset.buy);
+  const target = parseFloat(container.dataset.target);
+  const stop = parseFloat(container.dataset.stop);
+  if (buy > 0) candleSeries.createPriceLine({
+    price: buy, color: '#2563EB', lineWidth: 2, lineStyle: 2,
+    axisLabelVisible: true, title: `매수 ${buy.toLocaleString()}`
+  });
+  if (target > 0) candleSeries.createPriceLine({
+    price: target, color: '#DC2626', lineWidth: 2, lineStyle: 2,
+    axisLabelVisible: true, title: `청산 +10% ${target.toLocaleString()}`
+  });
+  if (stop > 0) candleSeries.createPriceLine({
+    price: stop, color: '#7C2D12', lineWidth: 2, lineStyle: 2,
+    axisLabelVisible: true, title: `손절 ${stop.toLocaleString()}`
+  });
+
+  // 마지막 60일 보이도록 fit
+  chart.timeScale().fitContent();
+
+  // 리사이즈 핸들러
+  const ro = new ResizeObserver(entries => {
+    for (const e of entries) chart.applyOptions({ width: e.contentRect.width });
+  });
+  ro.observe(container);
 }
 </script>
 </body>

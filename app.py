@@ -1326,15 +1326,16 @@ def run_scan(date_str, demo=False):
         -x.get("finalScore", 0)
     ))
 
-    # ─── 매수 가능 등급만, 최대 10개 미만 ───
-    # HUNT/BREAKOUT(필수 모든 조건 통과) + BB_BREAK(보조 평균회귀) 만 출력
-    # TREND/WATCH(K-블록 또는 트리거 미충족)은 제외
+    # ─── 매수 가능 등급만 + 양봉만, 최대 10개 미만 ───
+    # HUNT/BREAKOUT(필수 모든 조건 통과) + BB_BREAK(보조) 중 양봉(시가<종가)만 출력
     BUY_GRADES = {"HUNT", "BREAKOUT", "BB_BREAK"}
-    primary = [r for r in results if r.get("grade") in BUY_GRADES]
-    # 그래도 0개면 TREND 1순위라도 보여줌 (참고용)
+    primary = [r for r in results
+               if r.get("grade") in BUY_GRADES and r.get("k2_bullish")]
+    # 0개면 TREND 중 양봉만 참고용
     if not primary:
-        primary = [r for r in results if r.get("grade") == "TREND"][:3]
-    # 10개 미만으로 자름 (사용자 요청: 10개 미만)
+        primary = [r for r in results
+                   if r.get("grade") == "TREND" and r.get("k2_bullish")][:3]
+    # 10개 미만으로 자름
     results = primary[:9]
 
     # 순위 부여
@@ -1471,6 +1472,66 @@ def api_scan():
 @app.route("/api/status")
 def api_status():
     return jsonify(scan_status)
+
+@app.route("/api/chart/<code>")
+def api_chart(code):
+    """일봉차트용 OHLCV (3개월 = 63영업일). lightweight-charts 호환 포맷."""
+    days = int(flask_request.args.get("days", 63))
+    date_str = flask_request.args.get("date", datetime.now().strftime("%Y-%m-%d"))
+    try:
+        # 이동평균 계산용 여유분 포함해서 250일 가져오기
+        df = naver_ohlcv_fast(code, days=250, target_date=date_str)
+        if df is None:
+            return jsonify({"error": "no data"}), 404
+        df = df[df.index <= pd.Timestamp(date_str)]
+        if len(df) < 5:
+            return jsonify({"error": "insufficient data"}), 404
+
+        # 이동평균
+        close = df["Close"].astype(float)
+        ma20  = close.rolling(20).mean()
+        ma60  = close.rolling(60).mean()
+        ma200 = close.rolling(200).mean()
+
+        # 마지막 N영업일만 반환
+        df_tail = df.tail(days)
+        ma20_tail  = ma20.tail(days)
+        ma60_tail  = ma60.tail(days)
+        ma200_tail = ma200.tail(days)
+
+        candles = []
+        volumes = []
+        ma20_arr = []
+        ma60_arr = []
+        ma200_arr = []
+        for idx, row in df_tail.iterrows():
+            t = idx.strftime("%Y-%m-%d") if hasattr(idx, 'strftime') else str(idx)
+            o, h_, l_, c_ = int(row["Open"]), int(row["High"]), int(row["Low"]), int(row["Close"])
+            candles.append({"time": t, "open": o, "high": h_, "low": l_, "close": c_})
+            # 거래량 바 색상 (양봉=빨강, 음봉=파랑)
+            volumes.append({"time": t, "value": int(row["Volume"]),
+                            "color": "#DC262680" if c_ >= o else "#2563EB80"})
+        for t_idx, v_ in ma20_tail.items():
+            t = t_idx.strftime("%Y-%m-%d")
+            if not pd.isna(v_): ma20_arr.append({"time": t, "value": float(v_)})
+        for t_idx, v_ in ma60_tail.items():
+            t = t_idx.strftime("%Y-%m-%d")
+            if not pd.isna(v_): ma60_arr.append({"time": t, "value": float(v_)})
+        for t_idx, v_ in ma200_tail.items():
+            t = t_idx.strftime("%Y-%m-%d")
+            if not pd.isna(v_): ma200_arr.append({"time": t, "value": float(v_)})
+
+        return jsonify({
+            "code": code,
+            "days": len(candles),
+            "candles": candles,
+            "volumes": volumes,
+            "ma20": ma20_arr,
+            "ma60": ma60_arr,
+            "ma200": ma200_arr,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # =============================================
 #  미국 주식 라우트
