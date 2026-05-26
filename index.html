@@ -1283,6 +1283,47 @@ function renderCardDetail(s, gradeInfo) {
       <span>RSI <b>${s.rsi || '-'}</b></span>
       <span>거래배율 <b style="color:var(--red)">${s.volumeRatio || '-'}x</b></span>
     </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:6px 0;font-size:0.78rem">
+      <div style="background:${(s.foreignNet5d||0)>0?'#DCFCE7':'#FEE2E2'};padding:6px 8px;border-radius:6px;text-align:center">
+        <div style="color:#6B7280;font-size:0.7rem">외국인 5일</div>
+        <b style="color:${(s.foreignNet5d||0)>0?'#16A34A':'#DC2626'}">${(s.foreignNet5d||0)>0?'+':''}${fmt(s.foreignNet5d||0)}</b>
+        <div style="font-size:0.65rem;color:#9CA3AF">보유 ${s.foreignHold||0}%</div>
+      </div>
+      <div style="background:${(s.instNet5d||0)>0?'#DCFCE7':'#FEE2E2'};padding:6px 8px;border-radius:6px;text-align:center">
+        <div style="color:#6B7280;font-size:0.7rem">기관 5일</div>
+        <b style="color:${(s.instNet5d||0)>0?'#16A34A':'#DC2626'}">${(s.instNet5d||0)>0?'+':''}${fmt(s.instNet5d||0)}</b>
+        <div style="font-size:0.65rem;color:#9CA3AF">매수${s.instBuyDays||0}일/5일</div>
+      </div>
+      <div style="background:${((s.foreignNet5d||0)>0&&(s.instNet5d||0)>0)?'#FEF9C3':'#F3F4F6'};padding:6px 8px;border-radius:6px;text-align:center">
+        <div style="color:#6B7280;font-size:0.7rem">수급 판정</div>
+        <b style="color:${((s.foreignNet5d||0)>0&&(s.instNet5d||0)>0)?'#CA8A04':((s.foreignNet5d||0)>0||(s.instNet5d||0)>0)?'#2563EB':'#DC2626'}">${
+          ((s.foreignNet5d||0)>0&&(s.instNet5d||0)>0)?'🔥 쌍끌이':((s.instNet5d||0)>0)?'기관 매수':((s.foreignNet5d||0)>0)?'외인 매수':'매도 우위'
+        }</b>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:4px 0 6px;font-size:0.72rem">
+      <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+        <div style="color:#94A3B8;font-size:0.65rem">PER</div>
+        <b style="color:${(s.per>0&&s.per<=15)?'#16A34A':(s.per>50||s.per<0)?'#DC2626':'#374151'}">${s.per?s.per.toFixed(1)+'배':'N/A'}</b>
+      </div>
+      <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+        <div style="color:#94A3B8;font-size:0.65rem">PBR</div>
+        <b>${s.pbr?s.pbr.toFixed(2)+'배':'N/A'}</b>
+      </div>
+      <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+        <div style="color:#94A3B8;font-size:0.65rem">배당률</div>
+        <b>${s.divYield?s.divYield.toFixed(1)+'%':'N/A'}</b>
+      </div>
+      <div style="background:${(s.targetPrice&&s.close&&s.targetPrice>s.close)?'#F0FDF4':'#FEF2F2'};padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+        <div style="color:#94A3B8;font-size:0.65rem">목표가</div>
+        <b style="color:${(s.targetPrice>s.close)?'#16A34A':'#DC2626'}">${s.targetPrice?fmt(s.targetPrice):'N/A'}</b>
+        ${s.targetPrice&&s.close?`<div style="font-size:0.6rem;color:#6B7280">${((s.targetPrice-s.close)/s.close*100).toFixed(0)}%</div>`:''}
+      </div>
+      <div style="background:${(s.sectorRatio>=60)?'#F0FDF4':'#FEF2F2'};padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
+        <div style="color:#94A3B8;font-size:0.65rem">업종강도</div>
+        <b style="color:${(s.sectorRatio>=60)?'#16A34A':'#DC2626'}">${s.sectorRatio?s.sectorRatio.toFixed(0)+'%':'N/A'}</b>
+      </div>
+    </div>
   `;
 }
 
@@ -1429,47 +1470,6 @@ function renderCards() {
 
     h += `<div class="card-detail${isOpen ? ' show' : ''}">
       ${renderCardDetail(s, gradeInfo)}
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:6px 0;font-size:0.78rem">
-        <div style="background:${(s.foreignNet5d||0)>0?'#DCFCE7':'#FEE2E2'};padding:6px 8px;border-radius:6px;text-align:center">
-          <div style="color:#6B7280;font-size:0.7rem">외국인 5일</div>
-          <b style="color:${(s.foreignNet5d||0)>0?'#16A34A':'#DC2626'}">${(s.foreignNet5d||0)>0?'+':''}${fmt(s.foreignNet5d||0)}</b>
-          <div style="font-size:0.65rem;color:#9CA3AF">보유 ${s.foreignHold||0}%</div>
-        </div>
-        <div style="background:${(s.instNet5d||0)>0?'#DCFCE7':'#FEE2E2'};padding:6px 8px;border-radius:6px;text-align:center">
-          <div style="color:#6B7280;font-size:0.7rem">기관 5일</div>
-          <b style="color:${(s.instNet5d||0)>0?'#16A34A':'#DC2626'}">${(s.instNet5d||0)>0?'+':''}${fmt(s.instNet5d||0)}</b>
-          <div style="font-size:0.65rem;color:#9CA3AF">매수${s.instBuyDays||0}일/5일</div>
-        </div>
-        <div style="background:${((s.foreignNet5d||0)>0&&(s.instNet5d||0)>0)?'#FEF9C3':'#F3F4F6'};padding:6px 8px;border-radius:6px;text-align:center">
-          <div style="color:#6B7280;font-size:0.7rem">수급 판정</div>
-          <b style="color:${((s.foreignNet5d||0)>0&&(s.instNet5d||0)>0)?'#CA8A04':((s.foreignNet5d||0)>0||(s.instNet5d||0)>0)?'#2563EB':'#DC2626'}">${
-            ((s.foreignNet5d||0)>0&&(s.instNet5d||0)>0)?'쌍끌이':((s.instNet5d||0)>0)?'기관매수':((s.foreignNet5d||0)>0)?'외인매수':'매도우위'
-          }</b>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:4px 0;font-size:0.72rem">
-        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
-          <div style="color:#94A3B8;font-size:0.65rem">PER</div>
-          <b style="color:${(s.per>0&&s.per<=15)?'#16A34A':(s.per>50||s.per<0)?'#DC2626':'#374151'}">${s.per?s.per.toFixed(1)+'배':'N/A'}</b>
-        </div>
-        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
-          <div style="color:#94A3B8;font-size:0.65rem">PBR</div>
-          <b>${s.pbr?s.pbr.toFixed(2)+'배':'N/A'}</b>
-        </div>
-        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
-          <div style="color:#94A3B8;font-size:0.65rem">배당률</div>
-          <b>${s.divYield?s.divYield.toFixed(1)+'%':'N/A'}</b>
-        </div>
-        <div style="background:${(s.targetPrice&&s.close&&s.targetPrice>s.close)?'#F0FDF4':'#FEF2F2'};padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
-          <div style="color:#94A3B8;font-size:0.65rem">목표가</div>
-          <b style="color:${(s.targetPrice>s.close)?'#16A34A':'#DC2626'}">${s.targetPrice?fmt(s.targetPrice):'N/A'}</b>
-          ${s.targetPrice&&s.close?`<div style="font-size:0.6rem;color:#6B7280">${((s.targetPrice-s.close)/s.close*100).toFixed(0)}%</div>`:''}
-        </div>
-        <div style="background:${(s.sectorRatio>=60)?'#F0FDF4':'#FEF2F2'};padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
-          <div style="color:#94A3B8;font-size:0.65rem">업종강도</div>
-          <b style="color:${(s.sectorRatio>=60)?'#16A34A':'#DC2626'}">${s.sectorRatio?s.sectorRatio.toFixed(0)+'%':'N/A'}</b>
-        </div>
-      </div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:6px 0;font-size:0.72rem">
         <div style="background:#F0F4FF;padding:5px;border-radius:5px;text-align:center;border:1px solid #BFDBFE">
           <div style="color:#6366F1;font-size:0.6rem;font-weight:600">52주위치</div>
