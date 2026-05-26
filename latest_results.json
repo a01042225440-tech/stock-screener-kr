@@ -1350,12 +1350,12 @@
       "rank": 9
     }
   ],
-  "date": "2026-05-26",
-  "timestamp": "2026-05-26 21:36:00",
+  "date": "2026-05-25",
+  "timestamp": "2026-05-26 21:38:58",
   "mode": "KRX+Naver",
   "count": 9,
-  "dayOfWeek": "화",
-  "isTuesday": true,
+  "dayOfWeek": "월",
+  "isTuesday": false,
   "tradeRules": {
     "slip": "0.3%",
     "t1SellRatio": "1/2",
