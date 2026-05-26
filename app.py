@@ -692,10 +692,12 @@ def screen_pro(df, name="", code="", mcap=0, fundamental=None):
     target_price = float(fund.get("target_price", 0) or 0)
     sector_ratio = float(fund.get("sector_ratio", 50) or 50)
 
-    b1 = bool(eps > 0)                                      # B1. EPS > 0 (흑자)
-    b2 = bool(0 < per <= 30)                                # B2. PER 적정 (0~30)
-    b3 = bool(target_price > 0 and target_price >= c[i] * 1.05)  # B3. 증권사 목표가 +5%+
+    b1 = bool(eps > 0)                                      # B1. EPS > 0 (흑자) — 필수
+    b2 = bool(0 < per <= 30)                                # B2. PER 적정 (0~30) — 보너스 (백테스트 -3.9% 역효과로 필수에서 강등)
+    b3 = bool(target_price > 0 and target_price >= c[i] * 1.05)  # B3. 증권사 목표가 +5%+ — 필수
     b_count = int(b1) + int(b2) + int(b3)
+    # 펀더 통과 자격: B1(흑자) + B3(목표가) 둘 다 필수, B2(PER)는 표시용 보너스
+    b_required_ok = bool(b1 and b3)
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # [선택 C] 주도섹터/순환매 (현재웅·박세익)
@@ -718,11 +720,11 @@ def screen_pro(df, name="", code="", mcap=0, fundamental=None):
     rv = calc_rsi(pd.Series(c), 14).iloc[-1]
     rv = float(rv) if not np.isnan(rv) else 50.0
 
-    d1_pullback   = bool(-5 <= ma20_dist <= 5)      # 20일선 ±5% (눌림목 또는 갓 돌파)
+    d1_pullback   = bool(-10 <= ma20_dist <= 10)    # 20일선 ±10% (백테스트: 0~5% 청산 8.4%, 5~10% 5.6%, 10~20% 8.5% 모두 양호)
     d2_above_ma5  = bool(c[i] > sma5)               # 5일선 위
     d3_bullish    = bool(o[i] < c[i])                # 양봉
-    d4_vol_pickup = bool(vol_mult_5 >= 1.2)          # 거래량 5일 평균 1.2배+
-    d5_rsi_ok     = bool(40 <= rv <= 65)             # RSI 40-65 (과매도 탈출)
+    d4_vol_pickup = bool(vol_mult_5 >= 1.2)          # 거래량 5일 평균 1.2배+ (백테스트: +6.2% 가장 강력)
+    d5_rsi_ok     = bool(50 <= rv <= 75)             # RSI 50-75 (백테스트: 60-80 청산률 최고)
     hunt_trigger = bool(d1_pullback and d2_above_ma5 and d3_bullish and d4_vol_pickup and d5_rsi_ok)
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -782,12 +784,14 @@ def screen_pro(df, name="", code="", mcap=0, fundamental=None):
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # 등급 판정 (실전 트레이더 4단계) — K-블록 필수
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    # 전체 A 정배열 충족 (A1~A4 모두) + B 펀더 2개+ 가 기본 자격
+    # 전체 A 정배열 충족 (A1~A4 모두) + B1(흑자) AND B3(목표가) 필수
+    # B2(PER)는 백테스트 -3.9% 역효과로 보너스만 (필수 자격 영향 없음)
     trend_full   = bool(a_count == 4)            # 4개 전부 (Weinstein Stage 2)
-    fund_ok      = bool(b_count >= 2)            # 펀더 3개 중 2개+
+    fund_ok      = b_required_ok                 # B1 AND B3 (B2는 표시용)
 
     grade = None
     # HUNT/BREAKOUT은 K-블록(상승추세 캔들) 필수
+    # ※ BB_BREAK 등급은 백테스트 결과 청산도달 16% 평균 +0.21%로 제거됨
     if trend_full and fund_ok and in_leading_sector and hunt_trigger and candle_pass:
         grade = "HUNT"          # 🟢 저점 매수 (당일 종가 매수, 1주일 +10% 목표)
     elif trend_full and fund_ok and in_leading_sector and breakout_trigger and candle_pass:
@@ -796,8 +800,6 @@ def screen_pro(df, name="", code="", mcap=0, fundamental=None):
         grade = "TREND"         # 🟡 추세 진입 (캔들/섹터/트리거 일부 부족)
     elif a_count >= 3:
         grade = "WATCH"         # 🔵 예비 (정배열만)
-    elif bb_lower_break:
-        grade = "BB_BREAK"      # 🟣 BB하단 돌파 (별도 평균회귀 기회)
     else:
         with _debug_lock: _debug_reject["A_trend"] += 1
         return None
@@ -1334,16 +1336,22 @@ def run_scan(date_str, demo=False):
         -x.get("finalScore", 0)
     ))
 
-    # ─── 매수 가능 등급만 + 양봉만, 최대 10개 미만 ───
-    # HUNT/BREAKOUT(필수 모든 조건 통과) + BB_BREAK(보조) 중 양봉(시가<종가)만 출력
-    BUY_GRADES = {"HUNT", "BREAKOUT", "BB_BREAK"}
+    # ─── 매수 가능 등급만 + 양봉 + 최종점수 100+ ───
+    # 백테스트 1년 결과 기반 (550 trades):
+    #   - BB_BREAK 제거 (청산 16%, 평균 +0.21% 부적합)
+    #   - 최종점수 100+ 필터 (0-80 평균 -0.15% / 80-100 +0.19% / 100+ +1.7%)
+    BUY_GRADES = {"HUNT", "BREAKOUT"}
     primary = [r for r in results
-               if r.get("grade") in BUY_GRADES and r.get("k2_bullish")]
-    # 0개면 TREND 중 양봉만 참고용
+               if r.get("grade") in BUY_GRADES
+               and r.get("k2_bullish")
+               and r.get("finalScore", 0) >= 100]
+    # 0개면 점수 80+ 종목 참고용 표시
     if not primary:
         primary = [r for r in results
-                   if r.get("grade") == "TREND" and r.get("k2_bullish")][:3]
-    # 10개 미만으로 자름
+                   if r.get("grade") in BUY_GRADES
+                   and r.get("k2_bullish")
+                   and r.get("finalScore", 0) >= 80][:3]
+    # 최대 9개
     results = primary[:9]
 
     # 순위 부여
