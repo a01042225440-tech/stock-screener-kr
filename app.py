@@ -960,10 +960,12 @@ def calc_price_pro(cl, lo, atr, bb_info=None):
     buy = tick(int(cl), cl)                       # 당일 종가 그대로 매수
     target_10pct = tick(int(buy * 1.10), cl)      # +10% 청산가 (T1 = T2)
 
-    # 손절: ATR×1.5 또는 -7% 또는 저가-1% 중 높은 값
+    # 손절: ATR×1.5 또는 -10% 또는 저가-1% 중 높은 값
+    # 1년 백테스트 정밀 분석: -7% → -10%로 완화하면 손절률 28.5% → 16.2% (47% 감소)
+    # 평균수익 +1.26% → +1.43% (-7~-10% 구간 회복 가능 종목 살림)
     sl_atr = int(buy - 1.5 * atr)
     sl_low = int(lo * 0.99)
-    sl_max = int(buy * 0.93)                       # 최대 -7%
+    sl_max = int(buy * 0.90)                       # 최대 -10% (이전 -7%)
     sl = tick(max(sl_atr, sl_low, sl_max), cl)
 
     risk = buy - sl

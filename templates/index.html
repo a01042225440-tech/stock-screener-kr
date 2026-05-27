@@ -924,7 +924,7 @@ body {
       &nbsp;&nbsp;• <b>매수</b>: 당일 종가 그대로 매수<br>
       &nbsp;&nbsp;• <b>🎯 청산</b>: 매수가 ×1.10 (<b style="color:#DC2626">+10%</b>) 도달 시 <b>전량 매도</b><br>
       &nbsp;&nbsp;• <b>최대 보유</b>: <b style="color:#DC2626">5영업일 (1주일)</b> — 청산가 미달 시 5일째 종가에 전량 청산<br>
-      &nbsp;&nbsp;• <b>손절</b>: 매수가 - 1.5×ATR (최대 -7%)<br>
+      &nbsp;&nbsp;• <b>손절</b>: 매수가 - 1.5×ATR (최대 <b style="color:#DC2626">-10%</b>, 정밀분석으로 -7%→-10% 완화)<br>
       <b>최종점수</b>: (A×10) + (B×10) + (K×5) + 섹터보너스 + 트리거점수(HUNT 30·BREAKOUT 25·BB 10) + 목표가보너스<br>
       <b>사전 필터</b>: 시총 1,000억+ / 거래대금 10억+ / 현재가 2,000원+ / 신규상장 60일 제외 / 관리·SPAC·ETF·우선주 제외<br>
       <b>매출 우상향</b>: 네이버 무료 API 한계로 EPS&gt;0 + 증권사 목표가 +5%+ 로 proxy (분기 매출 YoY는 DART API 연동 필요)<br>
@@ -1275,7 +1275,7 @@ function renderCardDetail(s, gradeInfo) {
       <div><b>매수:</b> <b style="color:#2563EB">당일 종가 매수</b> = ${fmt(s.buyPrice)}원</div>
       <div><b>🎯 청산:</b> ${fmt(s.target1)}원 (<b style="color:#DC2626">+10%</b>) 도달시 <b style="color:#16A34A">전량 매도</b></div>
       <div><b>최대 보유:</b> <b style="color:#DC2626">5영업일 (1주일)</b> — 청산가 미달 시 5일째 종가에 전량 매도</div>
-      <div><b>손절:</b> ${fmt(s.stoploss)}원 이하 도달시 <b style="color:#DC2626">전량 매도</b> (최대 -${s.riskPct || '7'}%, 1.5×ATR)</div>
+      <div><b>손절:</b> ${fmt(s.stoploss)}원 이하 도달시 <b style="color:#DC2626">전량 매도</b> (최대 -${s.riskPct || '10'}%, 1.5×ATR)</div>
       <div><b>캔들 조건:</b> 종가&gt;전일종가(K1) + 양봉(K2) + 윗꼬리≤몸통×0.3(K3) — HUNT/BREAKOUT은 모두 충족</div>
     </div>
     <div class="ohlc-row">
