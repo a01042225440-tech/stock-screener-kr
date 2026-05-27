@@ -720,11 +720,15 @@ def screen_pro(df, name="", code="", mcap=0, fundamental=None):
     rv = calc_rsi(pd.Series(c), 14).iloc[-1]
     rv = float(rv) if not np.isnan(rv) else 50.0
 
-    d1_pullback   = bool(-10 <= ma20_dist <= 10)    # 20일선 ±10% (백테스트: 0~5% 청산 8.4%, 5~10% 5.6%, 10~20% 8.5% 모두 양호)
+    # 660 trades 정밀 분석 (청산 vs 손절):
+    #   - 20MA 거리 >0%: 청산률 32-47% / 0% 미만: 청산률 11-25%
+    #   - 거래량 1.5x+: 청산률 40-45% / 1.5x 미만: 21-29%
+    #   - RSI 55-70: 청산률 40% / 30-50: 12-24%
+    d1_pullback   = bool(0 <= ma20_dist <= 15)      # 20MA >0% (음수 종목은 청산률 11-25%로 위험)
     d2_above_ma5  = bool(c[i] > sma5)               # 5일선 위
     d3_bullish    = bool(o[i] < c[i])                # 양봉
-    d4_vol_pickup = bool(vol_mult_5 >= 1.2)          # 거래량 5일 평균 1.2배+ (백테스트: +6.2% 가장 강력)
-    d5_rsi_ok     = bool(30 <= rv <= 70)             # RSI 30-70 (사용자 지정)
+    d4_vol_pickup = bool(vol_mult_5 >= 1.5)          # 거래량 1.5x+ (1.2 → 1.5, 청산률 29 → 40%)
+    d5_rsi_ok     = bool(50 <= rv <= 70)             # RSI 50-70 (30-70 → 50-70, sweet spot)
 
     # F1. 첫 번째 눌림목만 허용 (영상 기반 - "3번째 눌림 진입 안 함")
     # 풀백 정의: "20MA 위 +2% 이상으로 올라간 구간"의 수를 카운트
