@@ -794,16 +794,12 @@ body {
           <div class="stat-value" style="color:var(--blue)" id="statCount">-</div>
         </div>
         <div class="stat-item">
-          <div class="stat-label">🟢HUNT</div>
-          <div class="stat-value" style="color:var(--green)" id="statHUNT">-</div>
+          <div class="stat-label">분산매수</div>
+          <div class="stat-value" style="color:var(--green);font-size:1rem">상위 3</div>
         </div>
         <div class="stat-item">
-          <div class="stat-label">🔴BREAKOUT</div>
-          <div class="stat-value" style="color:var(--red)" id="statBREAKOUT">-</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-label">🟣BB돌파</div>
-          <div class="stat-value" style="color:var(--purple)" id="statBB">-</div>
+          <div class="stat-label">청산/손절</div>
+          <div class="stat-value" style="color:var(--red);font-size:1rem">+10%/-5%</div>
         </div>
       </div>
     </div>
@@ -1090,16 +1086,7 @@ async function doScan() {
 }
 
 function updateStats(data) {
-  const d = data.results;
-  const cnt = d.length;
-  const hunt_n = d.filter(x => x.grade === "HUNT").length;
-  const brk_n  = d.filter(x => x.grade === "BREAKOUT").length;
-  const bb_n   = d.filter(x => x.grade === "BB_BREAK").length;
-
-  document.getElementById("statCount").textContent = cnt + "개";
-  document.getElementById("statHUNT").textContent = hunt_n + "개";
-  document.getElementById("statBREAKOUT").textContent = brk_n + "개";
-  document.getElementById("statBB").textContent = bb_n + "개";
+  document.getElementById("statCount").textContent = data.results.length + "개";
 }
 
 // ── Filter & Sort ──
@@ -1135,25 +1122,14 @@ function setSort(v) { sortBy = v; renderToolbar(); renderCards(); }
 function setFilter(v) { filterBy = v; renderToolbar(); renderCards(); }
 
 function renderToolbar() {
-  const sorts = [
-    ["rank", "등급순"], ["final", "최종점수"], ["a", "정배열A"],
-    ["b", "펀더B"], ["target", "목표가+%"], ["volume", "거래량"],
-    ["today", "당일%"], ["supply", "수급순"]
-  ];
+  // 정렬 제거 (3종목 분산 룰이라 무의미). 필터만 간략화
   const filters = [
-    ["all", "전체"], ["hunt", "🟢HUNT"], ["breakout", "🔴BREAKOUT"],
-    ["sector", "주도섹터"]
+    ["all", "전체"], ["hunt", "🟢HUNT"], ["breakout", "🔴BREAKOUT"]
   ];
-
-  let h = '<span class="toolbar-label">정렬</span>';
-  sorts.forEach(([k, l]) => {
-    h += `<button class="chip${sortBy === k ? ' active-sort' : ''}" onclick="setSort('${k}')">${l}</button>`;
-  });
-  h += '<span class="toolbar-sep"></span><span class="toolbar-label">필터</span>';
+  let h = '<span class="toolbar-label">필터</span>';
   filters.forEach(([k, l]) => {
     h += `<button class="chip${filterBy === k ? ' active-filter' : ''}" onclick="setFilter('${k}')">${l}</button>`;
   });
-  h += '<div style="flex-basis:100%;height:0"></div><div style="font-size:0.72rem;color:#94A3B8;padding:4px 0 0;width:100%">⚠️ 정렬·필터는 <b>비교용</b>입니다. 매수 추천은 항상 최상단 ⭐ 카드.</div>';
   document.getElementById("toolbar").innerHTML = h;
 }
 
@@ -1448,6 +1424,7 @@ function renderCards() {
     const bbMark = s.bbLowerBreak ? '<span style="background:#7C3AED;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.65rem;margin-left:4px;font-weight:700">🟣BB돌파</span>' : '';
     const secMark = (s.sectorBonus > 0) ? `<span style="background:#0891B2;color:#fff;padding:2px 6px;border-radius:4px;font-size:0.65rem;margin-left:4px;font-weight:700">${s.sector}+${s.sectorBonus}</span>` : '';
 
+    // 매매 액션 중심 1줄 카드 — 매수/청산/손절 강조
     h += `<div class="card">
       <div class="card-header" onclick="toggleCard('${s.code}')">
         <div class="card-left">
@@ -1457,30 +1434,23 @@ function renderCards() {
               <span style="background:${gradeInfo.bg};color:#fff;padding:3px 7px;border-radius:5px;font-size:0.7rem;font-weight:800;margin-right:6px">${gradeInfo.emoji}${gradeInfo.label}</span>
               <span class="stock-name">${s.name}</span>
               <span class="stock-code">${s.code}</span>
-              ${bbMark}${secMark}
+              ${secMark}
             </div>
-            <div class="stock-meta">${s.market ? s.market + ' · ' : ''}시총 ${mktCap(s.marketCap)} · 거래량 ${(s.volume / 10000).toFixed(0)}만주</div>
+            <div class="stock-meta">시총 ${mktCap(s.marketCap)} · 당일 <b style="color:${isUp?'#DC2626':'#2563EB'}">${isUp?'▲':'▼'}${Math.abs(cr)}%</b></div>
           </div>
         </div>
-        <div class="card-right">
-          <div class="price-block">
-            <div class="price-value">${fmt(s.close)}<span class="price-unit">원</span></div>
-            <div class="price-change ${isUp ? 'change-up' : 'change-down'}">${isUp ? '▲' : '▼'} ${Math.abs(cr)}%</div>
+        <div class="card-right" style="gap:6px">
+          <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:6px;padding:4px 8px;text-align:center;min-width:75px">
+            <div style="font-size:0.6rem;color:#2563EB;font-weight:700">💰 매수</div>
+            <div style="font-size:0.85rem;font-weight:800;color:#1E3A8A">${fmt(s.buyPrice)}</div>
           </div>
-          <div class="mini-stat">
-            <div class="mini-label">최종점수</div>
-            <div class="momentum-bar">
-              <div class="momentum-track"><div class="momentum-fill" style="width:${Math.min((s.finalScore||0)/2, 100)}%;background:${mc}"></div></div>
-              <span class="momentum-num" style="color:${mc}">${Math.round(s.finalScore||0)}</span>
-            </div>
+          <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:6px;padding:4px 8px;text-align:center;min-width:75px">
+            <div style="font-size:0.6rem;color:#DC2626;font-weight:700">🎯 +10%</div>
+            <div style="font-size:0.85rem;font-weight:800;color:#7F1D1D">${fmt(s.target1)}</div>
           </div>
-          <div class="mini-stat">
-            <div class="mini-label">A/B</div>
-            <div class="mini-value" style="color:${((s.aCount||0)===4&&(s.bCount||0)>=2)?'#16A34A':'#64748B'}">${s.aCount||0}/${s.bCount||0}</div>
-          </div>
-          <div class="mini-stat">
-            <div class="mini-label">20MA</div>
-            <div class="mini-value" style="color:${Math.abs(s.ma20Dist||0)<=5?'#16A34A':'#64748B'}">${(s.ma20Dist||0)>=0?'+':''}${(s.ma20Dist||0).toFixed(1)}%</div>
+          <div style="background:#F1F5F9;border:1px solid #CBD5E1;border-radius:6px;padding:4px 8px;text-align:center;min-width:75px">
+            <div style="font-size:0.6rem;color:#64748B;font-weight:700">🛑 손절</div>
+            <div style="font-size:0.85rem;font-weight:800;color:#475569">${fmt(s.stoploss)}</div>
           </div>
           <span class="arrow${isOpen ? ' open' : ''}">▼</span>
         </div>
@@ -1488,54 +1458,10 @@ function renderCards() {
 
     h += `<div class="card-detail${isOpen ? ' show' : ''}">
       ${renderCardDetail(s, gradeInfo)}
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:6px 0;font-size:0.72rem">
-        <div style="background:#F0F4FF;padding:5px;border-radius:5px;text-align:center;border:1px solid #BFDBFE">
-          <div style="color:#6366F1;font-size:0.6rem;font-weight:600">52주위치</div>
-          <b style="color:${(s.pos52w||0)<40?'#16A34A':(s.pos52w||0)>85?'#DC2626':'#2563EB'}">${(s.pos52w||0).toFixed(0)}%</b>
-          <div style="font-size:0.58rem;color:#9CA3AF">고가-${(s.distFromHigh||0).toFixed(0)}%</div>
-        </div>
-        <div style="background:${s.squeeze?'#FEF9C3':'#F8FAFC'};padding:5px;border-radius:5px;text-align:center;border:1px solid ${s.squeeze?'#FDE047':'#E2E8F0'}">
-          <div style="color:#6366F1;font-size:0.6rem;font-weight:600">스퀴즈</div>
-          <b style="color:${s.squeeze?'#CA8A04':'#6B7280'}">${s.squeeze?'감지':'없음'}</b>
-          <div style="font-size:0.58rem;color:#9CA3AF">ATR ${(s.atrRatio||1).toFixed(2)}</div>
+      <div style="display:none">
+        <div>${(s.pos52w||0).toFixed(0)}% ${(s.distFromHigh||0).toFixed(0)} ${s.squeeze?1:0} ${(s.atrRatio||1).toFixed(2)} ${(s.vwapDist||0).toFixed(1)} ${(s.cmf||0).toFixed(3)} ${(s.adx||0).toFixed(0)} ${(s.rSquared||0).toFixed(2)} ${(s.rocAccel||0).toFixed(1)}</div>
         </div>
         <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
-          <div style="color:#6366F1;font-size:0.6rem;font-weight:600">VWAP</div>
-          <b style="color:${(s.vwapDist||0)>=0&&(s.vwapDist||0)<=3?'#16A34A':'#6B7280'}">${(s.vwapDist||0)>0?'+':''}${(s.vwapDist||0).toFixed(1)}%</b>
-        </div>
-        <div style="background:${(s.cmf||0)>0.05?'#F0FDF4':'#FEF2F2'};padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
-          <div style="color:#6366F1;font-size:0.6rem;font-weight:600">CMF</div>
-          <b style="color:${(s.cmf||0)>0?'#16A34A':'#DC2626'}">${(s.cmf||0).toFixed(3)}</b>
-          <div style="font-size:0.58rem;color:#9CA3AF">${(s.cmf||0)>0.15?'강한유입':(s.cmf||0)>0.05?'유입':(s.cmf||0)>0?'약유입':'유출'}</div>
-        </div>
-        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
-          <div style="color:#6366F1;font-size:0.6rem;font-weight:600">추세품질</div>
-          <b style="color:${(s.adx||0)>20?'#16A34A':'#6B7280'}">ADX ${(s.adx||0).toFixed(0)}</b>
-          <div style="font-size:0.58rem;color:#9CA3AF">R² ${(s.rSquared||0).toFixed(2)}</div>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:2px 0 6px;font-size:0.72rem">
-        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
-          <div style="color:#7C3AED;font-size:0.6rem;font-weight:600">ROC가속</div>
-          <b style="color:${(s.rocAccel||0)>0?'#16A34A':'#DC2626'}">${(s.rocAccel||0)>0?'+':''}${(s.rocAccel||0).toFixed(1)}</b>
-        </div>
-        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
-          <div style="color:#7C3AED;font-size:0.6rem;font-weight:600">압축도</div>
-          <b>${(s.compression||1).toFixed(2)}</b>
-          <div style="font-size:0.58rem;color:#9CA3AF">${(s.insideDays||0)}일 내포</div>
-        </div>
-        <div style="background:#F8FAFC;padding:5px;border-radius:5px;text-align:center;border:1px solid #E2E8F0">
-          <div style="color:#7C3AED;font-size:0.6rem;font-weight:600">Z-Score</div>
-          <b style="color:${(s.z20||0)<-0.5?'#16A34A':(s.z20||0)>2?'#DC2626':'#6B7280'}">단기${(s.z20||0).toFixed(1)} 장기${(s.z60||0).toFixed(1)}</b>
-        </div>
-        <div style="background:${(s.advancedTotal||0)>=20?'#F0FDF4':(s.advancedTotal||0)>=10?'#FFFBEB':'#F8FAFC'};padding:5px;border-radius:5px;text-align:center;border:1px solid ${(s.advancedTotal||0)>=20?'#86EFAC':(s.advancedTotal||0)>=10?'#FDE047':'#E2E8F0'}">
-          <div style="color:#7C3AED;font-size:0.6rem;font-weight:600">고급점수</div>
-          <b style="color:${(s.advancedTotal||0)>=20?'#16A34A':(s.advancedTotal||0)>=10?'#CA8A04':'#DC2626'}">${s.advancedTotal||0}점</b>
-        </div>
-      </div>
-      <div class="badge-group">
-        <div class="badge-title">충족 조건</div>
-        <div>${s.conditionsMet.map(c => `<span class="badge" style="background:${BADGE_COLORS[c.charAt(0)] || '#6B7280'}">${c}</span>`).join("")}</div>
       </div>
     </div></div>`;
   });
