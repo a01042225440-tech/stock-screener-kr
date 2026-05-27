@@ -1,12 +1,12 @@
 {
   "results": [],
-  "date": "2026-05-28",
-  "actualDataDate": "2026-05-28",
+  "date": "2026-05-27",
+  "actualDataDate": "2026-05-27",
   "isHoliday": false,
-  "timestamp": "2026-05-28 00:33:44",
+  "timestamp": "2026-05-28 00:34:03",
   "mode": "KRX+Naver",
   "count": 0,
-  "dayOfWeek": "목",
+  "dayOfWeek": "수",
   "isTuesday": false,
   "tradeRules": {
     "slip": "0.3%",
