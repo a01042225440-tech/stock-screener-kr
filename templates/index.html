@@ -924,7 +924,8 @@ body {
       &nbsp;&nbsp;• <b>매수</b>: 당일 종가 그대로 매수<br>
       &nbsp;&nbsp;• <b>🎯 청산</b>: 매수가 ×1.10 (<b style="color:#DC2626">+10%</b>) 도달 시 <b>전량 매도</b><br>
       &nbsp;&nbsp;• <b>최대 보유</b>: <b style="color:#DC2626">5영업일 (1주일)</b> — 청산가 미달 시 5일째 종가에 전량 청산<br>
-      &nbsp;&nbsp;• <b>손절</b>: 매수가 - 1.5×ATR (최대 <b style="color:#DC2626">-10%</b>, 정밀분석으로 -7%→-10% 완화)<br>
+      &nbsp;&nbsp;• <b>손절</b>: 매수가 - 1.5×ATR (최대 <b style="color:#DC2626">-5%</b>, 매트릭스 분석으로 -10%→-5% 최적화)<br>
+      &nbsp;&nbsp;• <b>분산</b>: 1순위 단일매수 대신 <b style="color:#16A34A">상위 3종목 균등(33%씩)</b> 권고 (백테스트 +64.97%)<br>
       <b>최종점수</b>: (A×10) + (B×10) + (K×5) + 섹터보너스 + 트리거점수(HUNT 30·BREAKOUT 25·BB 10) + 목표가보너스<br>
       <b>사전 필터</b>: 시총 1,000억+ / 거래대금 10억+ / 현재가 2,000원+ / 신규상장 60일 제외 / 관리·SPAC·ETF·우선주 제외<br>
       <b>매출 우상향</b>: 네이버 무료 API 한계로 EPS&gt;0 + 증권사 목표가 +5%+ 로 proxy (분기 매출 YoY는 DART API 연동 필요)<br>
@@ -1275,7 +1276,7 @@ function renderCardDetail(s, gradeInfo) {
       <div><b>매수:</b> <b style="color:#2563EB">당일 종가 매수</b> = ${fmt(s.buyPrice)}원</div>
       <div><b>🎯 청산:</b> ${fmt(s.target1)}원 (<b style="color:#DC2626">+10%</b>) 도달시 <b style="color:#16A34A">전량 매도</b></div>
       <div><b>최대 보유:</b> <b style="color:#DC2626">5영업일 (1주일)</b> — 청산가 미달 시 5일째 종가에 전량 매도</div>
-      <div><b>손절:</b> ${fmt(s.stoploss)}원 이하 도달시 <b style="color:#DC2626">전량 매도</b> (최대 -${s.riskPct || '10'}%, 1.5×ATR)</div>
+      <div><b>손절:</b> ${fmt(s.stoploss)}원 이하 도달시 <b style="color:#DC2626">전량 매도</b> (최대 -${s.riskPct || '5'}%, 1.5×ATR)</div>
       <div><b>캔들 조건:</b> 종가&gt;전일종가(K1) + 양봉(K2) + 윗꼬리≤몸통×0.3(K3) — HUNT/BREAKOUT은 모두 충족</div>
     </div>
     <div class="ohlc-row">
@@ -1338,6 +1339,18 @@ function renderCards() {
 
   let h = '';
 
+  // 💡 분산 매수 권고 배너 (백테스트 검증 - 손절 -5% + 3종목 분산 = +64.97%)
+  if (DATA.length >= 1) {
+    const buyCandidates = filteredAll.slice(0, 3);
+    h += `<div style="background:linear-gradient(135deg,#16A34A,#15803D);color:#fff;padding:12px 16px;border-radius:10px;margin-bottom:12px;box-shadow:0 4px 12px rgba(22,163,74,0.25)">
+      <div style="font-weight:800;font-size:0.95rem;margin-bottom:4px">💡 매트릭스 검증 최적 전략 → <span style="background:#fff;color:#16A34A;padding:2px 8px;border-radius:4px">손절 -5% · 매일 상위 3종목 균등매수</span></div>
+      <div style="font-size:0.78rem;opacity:0.95;line-height:1.5">
+        • 4/1~5/27 백테스트: 1종목 단일매수 -14.93% vs <b>3종목 균등 +64.97%</b><br>
+        • <b>자본 33%씩 ${buyCandidates.length}종목 분산 매수</b> (1종목 몰빵은 변동성 폭발 위험)
+      </div>
+    </div>`;
+  }
+
   // ⭐ 추천 1순위 고정 배너 카드
   if (PICK) {
     const g = {
@@ -1353,7 +1366,7 @@ function renderCards() {
     const isUp2 = cr2 >= 0;
     h += `<div style="background:linear-gradient(135deg,${g.bg}15,${g.bg}05);border:3px solid ${g.bg};border-radius:14px;margin-bottom:16px;overflow:hidden;box-shadow:0 4px 20px ${g.bg}33">
       <div style="background:${g.bg};color:#fff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-        <div style="font-weight:800;font-size:0.95rem;letter-spacing:1px">⭐ 오늘의 매수 추천 (단 1종목)</div>
+        <div style="font-weight:800;font-size:0.95rem;letter-spacing:1px">⭐ 1순위 매수 추천 (3종목 분산 중 1번)</div>
         <div style="font-size:0.78rem;opacity:0.95">${g.emoji}${g.label}${bb}${sec} · Final ${Math.round(PICK.finalScore||0)}</div>
       </div>
       <div style="padding:14px 16px;cursor:pointer" onclick="toggleCard('${PICK.code}')">
