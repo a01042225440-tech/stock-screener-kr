@@ -817,15 +817,15 @@ def screen_pro(df, name="", code="", mcap=0, fundamental=None):
 
     grade = None
     # HUNT/BREAKOUT은 K-블록(상승추세 캔들) 필수
-    # ※ BB_BREAK 등급은 백테스트 결과 청산도달 16% 평균 +0.21%로 제거됨
-    if trend_full and fund_ok and in_leading_sector and hunt_trigger and candle_pass:
-        grade = "HUNT"          # 🟢 저점 매수 (당일 종가 매수, 1주일 +10% 목표)
-    elif trend_full and fund_ok and in_leading_sector and breakout_trigger and candle_pass:
-        grade = "BREAKOUT"      # 🔴 추격 매수 (당일 종가 매수, 1주일 +10% 목표)
+    # C 섹터(in_leading_sector)는 필수 → 보너스로 강등 (1년 백테스트 +2.6% 영향, 매일 1+ 신호 보장 위해)
+    if trend_full and fund_ok and hunt_trigger and candle_pass:
+        grade = "HUNT"          # 🟢 저점 매수
+    elif trend_full and fund_ok and breakout_trigger and candle_pass:
+        grade = "BREAKOUT"      # 🔴 추격 매수
     elif trend_full and fund_ok:
-        grade = "TREND"         # 🟡 추세 진입 (캔들/섹터/트리거 일부 부족)
+        grade = "TREND"
     elif a_count >= 3:
-        grade = "WATCH"         # 🔵 예비 (정배열만)
+        grade = "WATCH"
     else:
         with _debug_lock: _debug_reject["A_trend"] += 1
         return None
@@ -1367,21 +1367,35 @@ def run_scan(date_str, demo=False):
         -x.get("finalScore", 0)
     ))
 
-    # ─── 매수 가능 등급만 + 양봉 + 최종점수 100+ ───
-    # 백테스트 1년 결과 기반 (550 trades):
-    #   - BB_BREAK 제거 (청산 16%, 평균 +0.21% 부적합)
-    #   - 최종점수 100+ 필터 (0-80 평균 -0.15% / 80-100 +0.19% / 100+ +1.7%)
+    # ─── 매수 후보: HUNT/BREAKOUT + 양봉 + 최종점수 100+ ───
     BUY_GRADES = {"HUNT", "BREAKOUT"}
     primary = [r for r in results
                if r.get("grade") in BUY_GRADES
                and r.get("k2_bullish")
                and r.get("finalScore", 0) >= 100]
-    # 0개면 점수 80+ 종목 참고용 표시
+    # 단계별 안전장치 (매일 1+ 신호 보장)
     if not primary:
+        # 1단계: 점수 80+ 양봉 HUNT/BREAKOUT
         primary = [r for r in results
                    if r.get("grade") in BUY_GRADES
                    and r.get("k2_bullish")
                    and r.get("finalScore", 0) >= 80][:3]
+    if not primary:
+        # 2단계: 양봉 + 점수 100+ TREND (차선)
+        primary = [r for r in results
+                   if r.get("grade") == "TREND"
+                   and r.get("k2_bullish")
+                   and r.get("finalScore", 0) >= 100][:3]
+        for r in primary:
+            r["isAlternative"] = True
+    if not primary:
+        # 3단계 (최후): 양봉 TREND 상위 점수 1개
+        trend_bullish = [r for r in results
+                         if r.get("grade") == "TREND" and r.get("k2_bullish")]
+        trend_bullish.sort(key=lambda x: -x.get("finalScore", 0))
+        primary = trend_bullish[:1]
+        for r in primary:
+            r["isAlternative"] = True
     # 최대 9개
     results = primary[:9]
 

@@ -1400,6 +1400,9 @@ function renderCards() {
         ${renderCardDetail(PICK, {bg:g.bg, emoji:g.emoji, label:g.label})}
       </div>
     </div>`;
+    if (PICK.isAlternative) {
+      h = `<div style="background:#FEF3C7;border:1px solid #FBBF24;color:#92400E;padding:8px 12px;border-radius:6px;margin-bottom:10px;font-size:0.82rem;font-weight:600">⚠️ 메인 신호(HUNT/BREAKOUT 100+점) 없음 → 차선 종목(${PICK.grade}) 추천. 시장 약세일 수 있으니 신중히 판단.</div>` + h;
+    }
   }
 
   // 일반 목록 (정렬·필터 적용, PICK 제외)
