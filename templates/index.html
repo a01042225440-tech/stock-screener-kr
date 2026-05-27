@@ -892,7 +892,7 @@ body {
       <div><b style="color:var(--red)">D2</b> 종가 &gt; 5일선 (단기 반등)</div>
       <div><b style="color:var(--red)">D3</b> 양봉 (시가 &lt; 종가)</div>
       <div><b style="color:var(--red)">D4</b> 거래량 ≥ 5일평균 × 1.2 (가장 강력)</div>
-      <div><b style="color:var(--red)">D5</b> RSI 50~75 (백테스트 60-80 청산률 최고)</div>
+      <div><b style="color:var(--red)">D5</b> RSI 30~70 (사용자 지정)</div>
       <div><b style="color:#7C3AED">F1</b> <b>1차·2차 눌림목만</b> (60일 내 20MA±3% 터치 ≤2회) — 영상 가이드</div>
     </div>
 
@@ -901,7 +901,7 @@ body {
       <div><b style="color:#D97706">E1</b> 52주 신고가 90% 이내 (모멘텀)</div>
       <div><b style="color:#D97706">E2</b> 거래량 ≥ 20일평균 × 2배 (수급 폭발)</div>
       <div><b style="color:#D97706">E3</b> 당일 종가 ≥ 전일 × 1.03 (+3%)</div>
-      <div><b style="color:#D97706">E4</b> RSI &lt; 75 (과매수 회피 — 인바디 케이스 방지)</div>
+      <div><b style="color:#D97706">E4</b> RSI ≤ 70 (과매수 회피 — 사용자 지정)</div>
       <div><b style="color:#D97706">E5</b> 20MA 거리 &lt; 20% (추격매수 위험 회피)</div>
     </div>
 
@@ -1169,13 +1169,13 @@ function renderCardDetail(s, gradeInfo) {
   const huntItems = [
     ["D1", "20MA±10%", s.d1_pullback], ["D2", ">5MA", s.d2_above_ma5],
     ["D3", "양봉", s.d3_bullish], ["D4", "거래1.2x", s.d4_vol_pickup],
-    ["D5", "RSI50-75", s.d5_rsi_ok],
+    ["D5", "RSI30-70", s.d5_rsi_ok],
     ["F1", `${s.pullbackCount||1}차눌림`, s.f1_first_pullback]
   ];
   const brkItems = [
     ["E1", "52주90%+", s.e1_new_high], ["E2", "거래2x+", s.e2_vol_burst],
     ["E3", "당일+3%", s.e3_price_up],
-    ["E4", "RSI<75", s.e4_rsi_ok], ["E5", "20MA<20%", s.e5_ma20_near]
+    ["E4", "RSI≤70", s.e4_rsi_ok], ["E5", "20MA<20%", s.e5_ma20_near]
   ];
   const candleItems = [
     ["K1", "종가>전일", s.k1_up_close],

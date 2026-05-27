@@ -724,7 +724,7 @@ def screen_pro(df, name="", code="", mcap=0, fundamental=None):
     d2_above_ma5  = bool(c[i] > sma5)               # 5일선 위
     d3_bullish    = bool(o[i] < c[i])                # 양봉
     d4_vol_pickup = bool(vol_mult_5 >= 1.2)          # 거래량 5일 평균 1.2배+ (백테스트: +6.2% 가장 강력)
-    d5_rsi_ok     = bool(50 <= rv <= 75)             # RSI 50-75 (백테스트: 60-80 청산률 최고)
+    d5_rsi_ok     = bool(30 <= rv <= 70)             # RSI 30-70 (사용자 지정)
 
     # F1. 첫 번째 눌림목만 허용 (영상 기반 - "3번째 눌림 진입 안 함")
     # 풀백 정의: "20MA 위 +2% 이상으로 올라간 구간"의 수를 카운트
@@ -764,8 +764,8 @@ def screen_pro(df, name="", code="", mcap=0, fundamental=None):
     e1_new_high  = bool(proximity_52w >= 0.90)       # 52주 고가 10% 이내
     e2_vol_burst = bool(vol_mult_20 >= 2.0)          # 거래량 20일평균 2배+
     e3_price_up  = bool(c[i] >= c[i-1] * 1.03)       # 당일 +3% 이상
-    # E4. RSI < 75 (과매수 회피) - 인바디 케이스 RSI 85.5 손절 방지
-    e4_rsi_ok    = bool(rv < 75)
+    # E4. RSI ≤ 70 (과매수 회피, 사용자 지정 30-70 범위 상한)
+    e4_rsi_ok    = bool(rv <= 70)
     # E5. 20MA 거리 < 20% (추격매수 위험 회피) - 20일선과 너무 멀지 않을 것
     e5_ma20_near = bool(abs(ma20_dist) < 20)
     breakout_trigger = bool(e1_new_high and e2_vol_burst and e3_price_up
