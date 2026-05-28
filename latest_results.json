@@ -464,14 +464,14 @@
       "rank": 3
     }
   ],
-  "date": "2026-05-28",
+  "date": "2026-05-29",
   "actualDataDate": "2026-05-28",
-  "isHoliday": false,
+  "isHoliday": true,
   "strategyVersion": "2026.05.28-stop5-tp10-ma20pos-vol15-rsi5070-Cbonus-F1-min3picks",
-  "timestamp": "2026-05-28 23:55:44",
+  "timestamp": "2026-05-29 00:02:08",
   "mode": "KRX+Naver",
   "count": 3,
-  "dayOfWeek": "목",
+  "dayOfWeek": "금",
   "isTuesday": false,
   "tradeRules": {
     "slip": "0.3%",
