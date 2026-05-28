@@ -1600,6 +1600,91 @@ def api_scan():
 def api_status():
     return jsonify(scan_status)
 
+# =============================================
+#  텔레그램 알림 (매수 후보 발송)
+# =============================================
+def _load_telegram_config():
+    """telegram_config.json에서 봇 토큰/chat_id 로드"""
+    cfg_path = os.path.join(os.path.dirname(__file__), "telegram_config.json")
+    try:
+        with open(cfg_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+def send_telegram(message):
+    """텔레그램으로 메시지 발송"""
+    cfg = _load_telegram_config()
+    if not cfg or not cfg.get("bot_token") or not cfg.get("chat_id"):
+        return False, "telegram_config.json 없음 또는 토큰/chat_id 미설정"
+    try:
+        url = f"https://api.telegram.org/bot{cfg['bot_token']}/sendMessage"
+        r = _session.post(url, json={
+            "chat_id": cfg["chat_id"],
+            "text": message,
+            "parse_mode": "HTML"
+        }, timeout=10)
+        if r.status_code == 200:
+            return True, "발송 성공"
+        return False, f"텔레그램 오류 {r.status_code}: {r.text[:100]}"
+    except Exception as e:
+        return False, f"발송 실패: {e}"
+
+def format_telegram_message(payload):
+    """스캔 결과를 텔레그램 메시지로 포맷"""
+    date = payload.get("date", "")
+    dow = payload.get("dayOfWeek", "")
+    results = payload.get("results", [])
+    status = payload.get("dataStatus", "")
+
+    lines = [f"📊 <b>오늘의 매수 후보</b> ({date} {dow})"]
+    if status == "intraday":
+        lines.append(f"⏳ 당일 미반영 → {payload.get('actualDataDate')} 종가 기준 (장 마감 후 재확인)")
+    elif status == "holiday":
+        lines.append(f"⚠️ 휴장일 → {payload.get('actualDataDate')} 기준")
+    lines.append("")
+    lines.append("💡 <b>상위 3종목 자본 33%씩 분산매수</b>")
+    lines.append("")
+
+    if not results:
+        lines.append("오늘은 조건 충족 종목 없음")
+    else:
+        for i, s in enumerate(results[:3], 1):
+            grade = s.get("grade", "")
+            emoji = {"HUNT": "🟢", "BREAKOUT": "🔴", "TREND": "🟡"}.get(grade, "⚪")
+            alt = " ⚠️차선" if s.get("isAlternative") else ""
+            lines.append(f"<b>{i}. {emoji}{grade}{alt} {s.get('name')}</b> ({s.get('code')})")
+            lines.append(f"   💰매수 {s.get('buyPrice'):,}원")
+            lines.append(f"   🎯청산 {s.get('target1'):,}원 (+10%)")
+            lines.append(f"   🛑손절 {s.get('stoploss'):,}원")
+            lines.append(f"   섹터 {s.get('sector','-')} · RSI {s.get('rsi','-')} · 거래량 {s.get('volMult5','-')}x")
+            lines.append("")
+    lines.append("⏱ 매수: 당일 종가 | 청산: +10% 도달 또는 5영업일째 종가")
+    lines.append("🛑 손절 -5% 반드시 지키기")
+    return "\n".join(lines)
+
+@app.route("/api/notify")
+def api_notify():
+    """오늘 매수 후보를 텔레그램으로 발송"""
+    date_str = flask_request.args.get("date", "") or datetime.now().strftime("%Y-%m-%d")
+    try:
+        tgt = datetime.strptime(date_str, "%Y-%m-%d")
+        if tgt > datetime.now():
+            date_str = datetime.now().strftime("%Y-%m-%d")
+    except ValueError:
+        return jsonify({"error": "Date format error"}), 400
+
+    cached = _load_cached_results(date_str)
+    if cached:
+        payload = cached
+    else:
+        results = run_scan(date_str)
+        payload = _save_and_sync_results(results, date_str)
+
+    msg = format_telegram_message(payload)
+    ok, info = send_telegram(msg)
+    return jsonify({"sent": ok, "info": info, "preview": msg, "count": payload.get("count", 0)})
+
 @app.route("/api/chart/<code>")
 def api_chart(code):
     """일봉차트용 OHLCV (3개월 = 63영업일). lightweight-charts 호환 포맷."""

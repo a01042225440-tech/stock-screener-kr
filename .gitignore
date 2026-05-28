@@ -11,3 +11,6 @@ email_draft.html
 *.vbs
 *.ps1
 .env
+
+# 텔레그램 봇 설정 (토큰 보안)
+telegram_config.json
