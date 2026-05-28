@@ -20,7 +20,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install numpy pandas requests
+        run: pip install numpy pandas requests flask
 
       - name: Send Telegram notification
         env:
