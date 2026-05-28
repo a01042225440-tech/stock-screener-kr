@@ -26,7 +26,7 @@ app = Flask(__name__, template_folder=".", static_folder=".", static_url_path="/
 
 # ─── 전략 버전 (조건 변경 시 올리면 캐시 자동 무효화) ───
 # 손절-5% / 청산+10% / D1 20MA>0% / D4 거래량1.5x / D5 RSI50-70 / C섹터보너스 / F1첫풀백
-STRATEGY_VERSION = "2026.05.28-stop5-tp10-ma20pos-vol15-rsi5070-Cbonus-F1"
+STRATEGY_VERSION = "2026.05.28-stop5-tp10-ma20pos-vol15-rsi5070-Cbonus-F1-min3picks"
 
 # =============================================
 #  고속 HTTP 세션 (커넥션 풀링)
@@ -1386,37 +1386,44 @@ def run_scan(date_str, demo=False):
         -x.get("finalScore", 0)
     ))
 
-    # ─── 매수 후보: HUNT/BREAKOUT + 양봉 + 최종점수 100+ ───
+    # ─── 매수 후보: 항상 3종목 채우기 (분할매수용) ───
+    # 누적 방식: 좋은 등급부터 채우고, 3개 미만이면 다음 단계로 보충
     BUY_GRADES = {"HUNT", "BREAKOUT"}
-    primary = [r for r in results
-               if r.get("grade") in BUY_GRADES
-               and r.get("k2_bullish")
-               and r.get("finalScore", 0) >= 100]
-    # 단계별 안전장치 (매일 1+ 신호 보장)
-    if not primary:
-        # 1단계: 점수 80+ 양봉 HUNT/BREAKOUT
-        primary = [r for r in results
-                   if r.get("grade") in BUY_GRADES
-                   and r.get("k2_bullish")
-                   and r.get("finalScore", 0) >= 80][:3]
-    if not primary:
-        # 2단계: 양봉 + 점수 100+ TREND (차선)
-        primary = [r for r in results
-                   if r.get("grade") == "TREND"
-                   and r.get("k2_bullish")
-                   and r.get("finalScore", 0) >= 100][:3]
-        for r in primary:
-            r["isAlternative"] = True
-    if not primary:
-        # 3단계 (최후): 양봉 TREND 상위 점수 1개
-        trend_bullish = [r for r in results
-                         if r.get("grade") == "TREND" and r.get("k2_bullish")]
-        trend_bullish.sort(key=lambda x: -x.get("finalScore", 0))
-        primary = trend_bullish[:1]
-        for r in primary:
-            r["isAlternative"] = True
-    # 최대 9개
-    results = primary[:9]
+    MIN_PICKS = 3   # 분산매수 최소 종목 수
+    selected = []
+    used = set()
+
+    def add_from(pool, target, mark_alt=False):
+        for r in pool:
+            if len(selected) >= target: break
+            if r["code"] in used: continue
+            if mark_alt:
+                r["isAlternative"] = True
+            selected.append(r)
+            used.add(r["code"])
+
+    # 1순위: HUNT/BREAKOUT + 양봉 + 점수 100+ (메인 신호, 최대 9개 다 표시)
+    tier1 = [r for r in results
+             if r.get("grade") in BUY_GRADES and r.get("k2_bullish")
+             and r.get("finalScore", 0) >= 100]
+    add_from(tier1, 9)
+
+    # 3개 미만이면 2순위: HUNT/BREAKOUT + 양봉 + 점수 80~100 (3개까지만 보충)
+    if len(selected) < MIN_PICKS:
+        tier2 = sorted([r for r in results
+                        if r.get("grade") in BUY_GRADES and r.get("k2_bullish")
+                        and 80 <= r.get("finalScore", 0) < 100],
+                       key=lambda x: -x.get("finalScore", 0))
+        add_from(tier2, MIN_PICKS, mark_alt=True)
+
+    # 그래도 3개 미만이면 3순위: TREND 양봉 점수순 (3개까지만 보충)
+    if len(selected) < MIN_PICKS:
+        tier3 = sorted([r for r in results
+                        if r.get("grade") == "TREND" and r.get("k2_bullish")],
+                       key=lambda x: -x.get("finalScore", 0))
+        add_from(tier3, MIN_PICKS, mark_alt=True)
+
+    results = selected[:9]
 
     # 순위 부여
     for i, r in enumerate(results):
