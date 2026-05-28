@@ -24,6 +24,10 @@ from flask import Flask, render_template, jsonify, request as flask_request
 
 app = Flask(__name__, template_folder=".", static_folder=".", static_url_path="/static")
 
+# ─── 전략 버전 (조건 변경 시 올리면 캐시 자동 무효화) ───
+# 손절-5% / 청산+10% / D1 20MA>0% / D4 거래량1.5x / D5 RSI50-70 / C섹터보너스 / F1첫풀백
+STRATEGY_VERSION = "2026.05.28-stop5-tp10-ma20pos-vol15-rsi5070-Cbonus-F1"
+
 # =============================================
 #  고속 HTTP 세션 (커넥션 풀링)
 # =============================================
@@ -1464,6 +1468,7 @@ def _save_and_sync_results(results, date_str):
         "date": date_str,
         "actualDataDate": actual_data_date,
         "isHoliday": is_holiday,
+        "strategyVersion": STRATEGY_VERSION,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "mode": "KRX+Naver",
         "count": len(results),
@@ -1509,14 +1514,20 @@ def _save_and_sync_results(results, date_str):
     return payload
 
 def _load_cached_results(date_str):
-    """저장된 결과 파일 로드 (Render에서 사용)"""
+    """저장된 결과 파일 로드. 날짜 + 전략 버전 둘 다 일치할 때만 캐시 사용.
+    조건(전략)이 바뀌면 STRATEGY_VERSION이 달라져 자동으로 캐시 무효화 → 재스캔."""
     results_path = os.path.join(os.path.dirname(__file__), "latest_results.json")
     try:
         with open(results_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        if data.get("date") == date_str:
-            print(f"  [CACHE] Serving cached results for {date_str} ({data.get('count',0)} stocks)")
-            return data
+        if data.get("date") != date_str:
+            return None
+        # 전략 버전 불일치 = 조건 변경됨 → 캐시 무시하고 재스캔
+        if data.get("strategyVersion") != STRATEGY_VERSION:
+            print(f"  [CACHE] Version mismatch ({data.get('strategyVersion')} != {STRATEGY_VERSION}) → re-scan")
+            return None
+        print(f"  [CACHE] Serving cached results for {date_str} ({data.get('count',0)} stocks)")
+        return data
     except Exception:
         pass
     return None
