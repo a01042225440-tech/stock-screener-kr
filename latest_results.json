@@ -470,7 +470,7 @@
   "isHoliday": true,
   "dataStatus": "intraday",
   "strategyVersion": "2026.05.29-stop5-tp10-ma20pos-vol15-rsi5070-Cbonus-F1-min3picks-altK1",
-  "timestamp": "2026-05-29 00:31:37",
+  "timestamp": "2026-05-29 00:41:47",
   "mode": "KRX+Naver",
   "count": 3,
   "dayOfWeek": "금",
