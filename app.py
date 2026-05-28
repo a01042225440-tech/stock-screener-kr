@@ -140,11 +140,22 @@ def naver_all_rising_parallel():
     return kospi + kosdaq
 
 def naver_ohlcv_fast(code, days=250, target_date=None):
-    """세션 기반 고속 OHLCV 조회 + 캐시"""
+    """세션 기반 고속 OHLCV 조회 + 캐시
+    ★ stale 방지: 캐시 데이터 마지막 날짜가 요청일보다 이전이면 재fetch
+       (장중에 생성된 캐시가 당일 종가를 누락하는 버그 수정)"""
     cache_key = f"{code}_{target_date}" if target_date else code
     cached = get_cached_ohlcv(cache_key)
     if cached is not None:
-        return cached
+        # 캐시 데이터가 요청 날짜를 커버하는지 확인
+        stale = False
+        if target_date and cached is not False and hasattr(cached, "index") and len(cached) > 0:
+            last_cached = cached.index[-1].strftime("%Y%m%d")
+            tgt_compact = target_date.replace("-", "")
+            # 캐시 마지막 < 요청일 → 당일 데이터 누락 가능 → 재fetch
+            if last_cached < tgt_compact:
+                stale = True
+        if not stale:
+            return cached
 
     end = datetime.strptime(target_date, "%Y-%m-%d") if target_date else datetime.now()
     start = end - timedelta(days=int(days * 1.5))
