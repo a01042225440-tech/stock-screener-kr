@@ -26,7 +26,11 @@ app = Flask(__name__, template_folder=".", static_folder=".", static_url_path="/
 
 # ─── 전략 버전 (조건 변경 시 올리면 캐시 자동 무효화) ───
 # 손절-5% / 청산+10% / D1 20MA>0% / D4 거래량1.5x / D5 RSI50-70 / C섹터보너스 / F1첫풀백
-STRATEGY_VERSION = "2026.05.29-stop5-tp10-ma20pos-vol15-rsi5070-Cbonus-F1-min3picks-altK1"
+STRATEGY_VERSION = "2026.05.29-stop5-tp10-ma20pos-vol15-rsi5070-Cbonus-F1-min3picks-altK1-pxcap20"
+
+# ─── 주가 상한 (소액 분산매수용) ───
+# 100만원 시드 → 3종목 33만원씩 → 20만원 이하면 1주+ 보유 가능
+MAX_PRICE = 200000   # 현재가 20만원 초과 종목 제외 (0이면 무제한)
 
 # =============================================
 #  고속 HTTP 세션 (커넥션 풀링)
@@ -660,6 +664,10 @@ def screen_pro(df, name="", code="", mcap=0, fundamental=None):
         with _debug_lock: _debug_reject["qual_listing"] += 1
         return None
     if c[i] < 2000:
+        with _debug_lock: _debug_reject["qual_price"] += 1
+        return None
+    # 주가 상한 (소액 분산매수용) — 20만원 초과 제외
+    if MAX_PRICE > 0 and c[i] > MAX_PRICE:
         with _debug_lock: _debug_reject["qual_price"] += 1
         return None
     if mcap > 0 and mcap < 1000:
