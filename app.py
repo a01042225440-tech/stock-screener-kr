@@ -26,7 +26,7 @@ app = Flask(__name__, template_folder=".", static_folder=".", static_url_path="/
 
 # ─── 전략 버전 (조건 변경 시 올리면 캐시 자동 무효화) ───
 # 손절-5% / 청산+10% / D1 20MA>0% / D4 거래량1.5x / D5 RSI50-70 / C섹터보너스 / F1첫풀백
-STRATEGY_VERSION = "2026.05.28-stop5-tp10-ma20pos-vol15-rsi5070-Cbonus-F1-min3picks"
+STRATEGY_VERSION = "2026.05.29-stop5-tp10-ma20pos-vol15-rsi5070-Cbonus-F1-min3picks-altK1"
 
 # =============================================
 #  고속 HTTP 세션 (커넥션 풀링)
@@ -1408,7 +1408,8 @@ def run_scan(date_str, demo=False):
              and r.get("finalScore", 0) >= 100]
     add_from(tier1, 9)
 
-    # 3개 미만이면 2순위: HUNT/BREAKOUT + 양봉 + 점수 80~100 (3개까지만 보충)
+    # 3개 미만이면 2순위: HUNT/BREAKOUT + 점수 80~100 (3개까지만 보충)
+    # (HUNT/BREAKOUT은 이미 candle_pass=K1+K2+K3 통과한 등급)
     if len(selected) < MIN_PICKS:
         tier2 = sorted([r for r in results
                         if r.get("grade") in BUY_GRADES and r.get("k2_bullish")
@@ -1416,10 +1417,12 @@ def run_scan(date_str, demo=False):
                        key=lambda x: -x.get("finalScore", 0))
         add_from(tier2, MIN_PICKS, mark_alt=True)
 
-    # 그래도 3개 미만이면 3순위: TREND 양봉 점수순 (3개까지만 보충)
+    # 그래도 3개 미만이면 3순위: TREND (K1 전일상승 + K2 양봉 필수) 점수순
+    # ※ K1(종가>전일종가) 필수 추가 — 차선도 "전일보다 오른 양봉"만 (사용자 지적 반영)
     if len(selected) < MIN_PICKS:
         tier3 = sorted([r for r in results
-                        if r.get("grade") == "TREND" and r.get("k2_bullish")],
+                        if r.get("grade") == "TREND"
+                        and r.get("k1_up_close") and r.get("k2_bullish")],
                        key=lambda x: -x.get("finalScore", 0))
         add_from(tier3, MIN_PICKS, mark_alt=True)
 
