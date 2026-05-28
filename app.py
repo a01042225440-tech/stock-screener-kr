@@ -1480,12 +1480,23 @@ def _save_and_sync_results(results, date_str):
             if dd:
                 actual_data_date = dd
                 break
-    is_holiday = (actual_data_date != date_str)
+    # 데이터 시점 상태 판정
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    data_mismatch = (actual_data_date != date_str)
+    # 요청일이 오늘이면 = 당일 데이터 미반영(장 마감 전), 과거면 = 휴장일
+    if data_mismatch and date_str >= today_str:
+        data_status = "intraday"   # 당일 데이터 미반영 (장중/장전)
+    elif data_mismatch:
+        data_status = "holiday"    # 과거 휴장일
+    else:
+        data_status = "confirmed"  # 정상 (요청일 = 데이터일)
+    is_holiday = data_mismatch
     payload = {
         "results": results,
         "date": date_str,
         "actualDataDate": actual_data_date,
         "isHoliday": is_holiday,
+        "dataStatus": data_status,
         "strategyVersion": STRATEGY_VERSION,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "mode": "KRX+Naver",
