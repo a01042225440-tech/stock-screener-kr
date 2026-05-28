@@ -1604,7 +1604,13 @@ def api_status():
 #  텔레그램 알림 (매수 후보 발송)
 # =============================================
 def _load_telegram_config():
-    """telegram_config.json에서 봇 토큰/chat_id 로드"""
+    """봇 토큰/chat_id 로드. 환경변수(클라우드) 우선, 없으면 로컬 파일."""
+    # 1) 환경변수 (Render 등 클라우드 — PC 꺼져도 작동)
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    if token and chat_id:
+        return {"bot_token": token, "chat_id": chat_id}
+    # 2) 로컬 파일 (PC에서 직접 실행 시)
     cfg_path = os.path.join(os.path.dirname(__file__), "telegram_config.json")
     try:
         with open(cfg_path, "r", encoding="utf-8") as f:
