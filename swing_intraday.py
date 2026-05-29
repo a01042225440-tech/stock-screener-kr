@@ -16,7 +16,7 @@ from app import send_telegram
 def main():
     kst = datetime.now(timezone.utc) + timedelta(hours=9)
     hm = kst.hour * 60 + kst.minute
-    in_buy = (15 * 60 + 5) <= hm <= (15 * 60 + 22)   # 15:05~15:22 매수 스캔 창
+    in_buy = (14 * 60 + 35) <= hm <= (14 * 60 + 58)   # 14:40 틱(3시 전) 매수 스캔 창
     pl = run_swing(intraday=True, do_buys=in_buy)
     sells = pl.get("sells", []); buys = pl.get("buys", [])
     sent = False
