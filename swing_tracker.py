@@ -101,9 +101,9 @@ def _load_positions():
         return []
 
 def _save_positions(positions):
+    # 'updated' 타임스탬프를 넣지 않음 → 포지션 실제 변동시에만 git diff 발생(커밋 노이즈 방지)
     with open(POS_FILE, "w", encoding="utf-8") as f:
-        json.dump({"positions": positions, "updated": datetime.now().strftime("%Y-%m-%d %H:%M")},
-                  f, ensure_ascii=False, indent=2)
+        json.dump({"positions": positions}, f, ensure_ascii=False, indent=2)
 
 def scan_buys(date_str, max_picks=10, intraday=False):
     """전 종목에서 저점매수 신호 스캔 (우량주 사전필터 + 거래대금순 상위 max_picks)"""
