@@ -15,9 +15,24 @@ from datetime import datetime
 import pandas as pd, numpy as np
 from concurrent.futures import ThreadPoolExecutor
 from app import (naver_ohlcv_fast, naver_all_rising_parallel,
-                 parse_num, is_excluded_by_name)
+                 parse_num, is_excluded_by_name, naver_today_ohlc)
 
 POS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "swing_positions.json")
+
+def _fetch(code, date_str, intraday=False):
+    """OHLCV 조회. intraday=True면 확정봉에 오늘 없을 때 분봉 종가근사 봉을 부착."""
+    df = naver_ohlcv_fast(code, 300, target_date=date_str)
+    if df is None:
+        return None
+    df = df[df.index <= pd.Timestamp(date_str)]
+    if intraday and len(df) > 0 and df.index[-1] < pd.Timestamp(date_str):
+        ohlc = naver_today_ohlc(code, date_str)
+        if ohlc:
+            o, h, l, c = ohlc
+            row = pd.DataFrame([{"Open": o, "High": h, "Low": l, "Close": c, "Volume": 0}],
+                               index=[pd.Timestamp(date_str)])
+            df = pd.concat([df, row])
+    return df
 
 def _indicators(df):
     s = df["Close"]
@@ -90,7 +105,7 @@ def _save_positions(positions):
         json.dump({"positions": positions, "updated": datetime.now().strftime("%Y-%m-%d %H:%M")},
                   f, ensure_ascii=False, indent=2)
 
-def scan_buys(date_str, max_picks=10):
+def scan_buys(date_str, max_picks=10, intraday=False):
     """전 종목에서 저점매수 신호 스캔 (우량주 사전필터 + 거래대금순 상위 max_picks)"""
     stocks = naver_all_rising_parallel()
     cands = []
@@ -104,9 +119,7 @@ def scan_buys(date_str, max_picks=10):
         cands.append({"code": code, "name": name, "trd": trd})
     hits = []
     def chk(c):
-        df = naver_ohlcv_fast(c["code"], 300, target_date=date_str)
-        if df is None: return
-        df = df[df.index <= pd.Timestamp(date_str)]
+        df = _fetch(c["code"], date_str, intraday=intraday)
         ok, info = buy_signal(df)
         if ok:
             hits.append({**c, **info})
@@ -115,8 +128,10 @@ def scan_buys(date_str, max_picks=10):
     hits.sort(key=lambda x: -x["trd"])
     return hits[:max_picks]
 
-def run_swing(date_str=None, auto_open=True):
-    """매도 점검 + 신규 매수신호 스캔. 포지션 갱신. payload 반환."""
+def run_swing(date_str=None, auto_open=True, intraday=False, do_buys=True):
+    """매도 점검(+선택적 신규 매수신호 스캔). 포지션 갱신. payload 반환.
+    intraday=True: 장중 분봉 종가근사로 신호 계산(장중 즉시 알림용).
+    do_buys=False: 매수 스캔 생략(매도 모니터링만, 가볍게)."""
     date_str = date_str or datetime.now().strftime("%Y-%m-%d")
     positions = _load_positions()
     held_codes = {p["code"] for p in positions}
@@ -124,9 +139,7 @@ def run_swing(date_str=None, auto_open=True):
     # 1) 보유 포지션 매도 점검
     sells, keep = [], []
     for p in positions:
-        df = naver_ohlcv_fast(p["code"], 300, target_date=date_str)
-        if df is not None:
-            df = df[df.index <= pd.Timestamp(date_str)]
+        df = _fetch(p["code"], date_str, intraday=intraday)
         s, reason, info = sell_check(df, p["buyPrice"], p["buyDate"])
         if s:
             sells.append({**p, "reason": reason, **info})
@@ -136,8 +149,8 @@ def run_swing(date_str=None, auto_open=True):
             p["regime"] = info.get("regime", "")
             keep.append(p)
 
-    # 2) 신규 매수신호 스캔
-    buys = scan_buys(date_str)
+    # 2) 신규 매수신호 스캔 (do_buys일 때만)
+    buys = scan_buys(date_str, intraday=intraday) if do_buys else []
     new_positions = list(keep)
     MAX_OPEN = 15   # 동시 보유 상한 (시드 분산 현실 고려)
     if auto_open:
