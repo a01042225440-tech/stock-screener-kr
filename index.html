@@ -827,7 +827,7 @@ body {
       <div class="initial-icon">실</div>
       <div class="initial-title">실전 트레이더 스크리너 (HUNT·BREAKOUT)</div>
       <div class="initial-desc">
-        <b>전략</b>: 당일 종가 매수 → <b style="color:#DC2626">1주일(5영업일) 안 +10% 전량매도</b><br>
+        <b>전략</b>: 당일 종가 매수 → <b style="color:#DC2626">6영업일 안 +10% 전량매도</b> · <b style="color:#DC2626">약세장(코스피&lt;60일선) 매수보류</b><br>
         <b>캔들 필수(K1~K3)</b>: 종가&gt;전일 + 양봉 + 윗꼬리 짧은 상승추세 캔들<br>
         <b>등급</b>: 🟢HUNT(저점매수) · 🔴BREAKOUT(추격) · 🟡TREND · 🔵WATCH · 🟣BB돌파
       </div>
@@ -916,11 +916,12 @@ body {
     </div>
 
     <div class="legend-note" style="margin-top:14px">
-      <b>매매법 (1주일 +10% 단기 스윙)</b>:<br>
+      <b>매매법 (단기 스윙 +10%)</b>:<br>
       &nbsp;&nbsp;• <b>매수</b>: 당일 종가 그대로 매수<br>
       &nbsp;&nbsp;• <b>🎯 청산</b>: 매수가 ×1.10 (<b style="color:#DC2626">+10%</b>) 도달 시 <b>전량 매도</b><br>
-      &nbsp;&nbsp;• <b>최대 보유</b>: <b style="color:#DC2626">5영업일 (1주일)</b> — 청산가 미달 시 5일째 종가에 전량 청산<br>
+      &nbsp;&nbsp;• <b>최대 보유</b>: <b style="color:#DC2626">6영업일</b> — 청산가 미달 시 6일째 종가에 전량 청산 (연구원 검증: 5→6일 강건 개선)<br>
       &nbsp;&nbsp;• <b>손절</b>: 매수가 - 1.5×ATR (최대 <b style="color:#DC2626">-5%</b>, 매트릭스 분석으로 -10%→-5% 최적화)<br>
+      &nbsp;&nbsp;• <b>시장게이트</b>: <b style="color:#DC2626">코스피&lt;60일선(약세장) → 신규매수 보류</b> (재앙적 하락일 회피, MDD↓)<br>
       &nbsp;&nbsp;• <b>분산</b>: 1순위 단일매수 대신 <b style="color:#16A34A">상위 3종목 균등(33%씩)</b> 권고 (백테스트 +64.97%)<br>
       <b>최종점수</b>: (A×10) + (B×10) + (K×5) + 섹터보너스 + 트리거점수(HUNT 30·BREAKOUT 25·BB 10) + 목표가보너스<br>
       <b>사전 필터</b>: 시총 1,000억+ / 거래대금 10억+ / 현재가 2,000원+ / 신규상장 60일 제외 / 관리·SPAC·ETF·우선주 제외<br>
@@ -1245,16 +1246,16 @@ function renderCardDetail(s, gradeInfo) {
     </div>
     <div class="price-grid">
       ${priceItem("매수가", s.buyPrice, "당일 종가 매수", "pi-buy")}
-      ${priceItem("🎯 청산가 (1주일 +10%)", s.target1, "+" + pct(s.buyPrice, s.target1) + "% 도달시 전량매도", "pi-t1")}
-      ${priceItem("최대 보유", s.maxHold || 5, "영업일 (미달성시 종가 청산)", "pi-t2")}
+      ${priceItem("🎯 청산가 (+10%)", s.target1, "+" + pct(s.buyPrice, s.target1) + "% 도달시 전량매도", "pi-t1")}
+      ${priceItem("최대 보유", s.maxHold || 6, "영업일 (미달성시 종가 청산)", "pi-t2")}
       ${priceItem("손절(1.5ATR)", s.stoploss, pct(s.buyPrice, s.stoploss) + "% | ATR:" + fmt(s.atr || 0), "pi-sl")}
     </div>
     ${priceBarHTML(s.buyPrice, s.target1, s.target2, s.stoploss)}
     <div style="background:#F0F4FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 12px;margin:8px 0;font-size:0.78rem;line-height:1.6;color:#1E3A5F">
-      <div style="font-weight:700;color:#1D4ED8;margin-bottom:4px">📋 매매 규칙 (1주일 +10% 단기 스윙)</div>
+      <div style="font-weight:700;color:#1D4ED8;margin-bottom:4px">📋 매매 규칙 (단기 스윙 +10%)</div>
       <div><b>매수:</b> <b style="color:#2563EB">당일 종가 매수</b> = ${fmt(s.buyPrice)}원</div>
       <div><b>🎯 청산:</b> ${fmt(s.target1)}원 (<b style="color:#DC2626">+10%</b>) 도달시 <b style="color:#16A34A">전량 매도</b></div>
-      <div><b>최대 보유:</b> <b style="color:#DC2626">5영업일 (1주일)</b> — 청산가 미달 시 5일째 종가에 전량 매도</div>
+      <div><b>최대 보유:</b> <b style="color:#DC2626">6영업일</b> — 청산가 미달 시 6일째 종가에 전량 매도</div>
       <div><b>손절:</b> ${fmt(s.stoploss)}원 이하 도달시 <b style="color:#DC2626">전량 매도</b> (최대 -${s.riskPct || '5'}%, 1.5×ATR)</div>
       <div><b>캔들 조건:</b> 종가&gt;전일종가(K1) + 양봉(K2) + 윗꼬리≤몸통×0.3(K3) — HUNT/BREAKOUT은 모두 충족</div>
     </div>
@@ -1384,8 +1385,8 @@ function renderCards() {
         <div style="background:#fff;border:1px solid ${g.bg}44;border-radius:8px;padding:10px 12px;margin-top:10px;font-size:0.82rem;line-height:1.6">
           <div style="font-weight:700;color:${g.bg};margin-bottom:4px">💡 ${g.txt}</div>
           <div><b>매수가</b> ${fmt(PICK.buyPrice)}원 (당일 종가) | <b>손절</b> ${fmt(PICK.stoploss)}원 (${pct(PICK.buyPrice,PICK.stoploss)}%)</div>
-          <div><b>🎯 청산가</b> ${fmt(PICK.target1)}원 (<b style="color:#DC2626">+10%</b>) — <b>1주일(5영업일) 안 도달 시 전량매도</b></div>
-          <div style="color:#64748B;font-size:0.74rem;margin-top:3px">미달성 시 5영업일 후 종가 청산 · <b>카드 클릭 시 상세/차트 표시 ▼</b></div>
+          <div><b>🎯 청산가</b> ${fmt(PICK.target1)}원 (<b style="color:#DC2626">+10%</b>) — <b>6영업일 안 도달 시 전량매도</b></div>
+          <div style="color:#64748B;font-size:0.74rem;margin-top:3px">미달성 시 6영업일 후 종가 청산 · <b>카드 클릭 시 상세/차트 표시 ▼</b></div>
         </div>
       </div>
       <div class="card-detail${openCards.has(PICK.code) ? ' show' : ''}" style="padding:0 16px 16px;background:#fff;border-top:1px solid ${g.bg}33">

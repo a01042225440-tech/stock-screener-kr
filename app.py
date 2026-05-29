@@ -26,7 +26,7 @@ app = Flask(__name__, template_folder=".", static_folder=".", static_url_path="/
 
 # ─── 전략 버전 (조건 변경 시 올리면 캐시 자동 무효화) ───
 # 손절-5% / 청산+10% / D1 20MA>0% / D4 거래량1.5x / D5 RSI50-70 / C섹터보너스 / F1첫풀백
-STRATEGY_VERSION = "2026.05.29-stop5-tp10-ma20pos-vol15-rsi5070-Cbonus-F1-min3picks-altK1-pxcap20"
+STRATEGY_VERSION = "2026.05.29-stop5-tp10-hold6-kospima60gate-ma20pos-vol15-rsi5070-Cbonus-F1-min3picks-altK1-pxcap20"
 
 # ─── 주가 상한 (소액 분산매수용) ───
 # 100만원 시드 → 3종목 33만원씩 → 20만원 이하면 1주+ 보유 가능
@@ -975,11 +975,13 @@ def tick(p, ref):
 
 def calc_price_pro(cl, lo, atr, bb_info=None):
     """
-    당일 종가 매수 + 1주일(5영업일) 내 +10% 청산 전략.
+    당일 종가 매수 + 6영업일 내 +10% 청산 전략.
     - buy: 당일 종가 그대로
     - target1 = target2 = 매수가 × 1.10 (사용자 명시: 10% 도달시 전량매도)
-    - 손절: 1.5 ATR 또는 -7% 또는 저가-1% 중 가장 높은 것
-    - 최대 보유: 5영업일 (1주일) → 미달성 시 종가 청산
+    - 손절: 1.5 ATR 또는 -5% 또는 저가-1% 중 가장 높은 것
+    - 최대 보유: 6영업일 → 미달성 시 종가 청산
+      (10명 연구원 교차검증: 보유 5→6일이 비용·과최적화 스트레스 모두 통과한
+       강건한 개선. 현실비용0.3% 반영 복리 +275%→+466%. MDD 동일수준)
     """
     if cl <= 0 or atr <= 0:
         return None
@@ -1010,8 +1012,51 @@ def calc_price_pro(cl, lo, atr, bb_info=None):
         "atr": round(atr),
         "risk_pct": risk_pct,
         "risk_won": risk,
-        "max_hold": 5,         # 5영업일 (1주일)
+        "max_hold": 6,         # 6영업일 (연구원 검증: 5→6일 강건한 개선)
     }
+
+# =============================================
+#  시장 레짐 게이트 (KOSPI 60일선)
+# =============================================
+_kospi_regime_cache = {}
+
+def get_kospi_regime(date_str=None):
+    """KOSPI 지수가 60일 이동평균 위/아래인지 판정.
+    10명 연구원 교차검증: 코스피<60일선(확인된 약세장)일 때 신규매수 보류시
+    재앙적 하락일을 회피 → 복리↑ + 최대낙폭(MDD) 34.5%→32.3%.
+    실패시 fail-open(above_ma60=True)으로 정상 동작 유지.
+    반환: {"above_ma60":bool, "close":float, "ma60":float, "ok":bool}"""
+    key = date_str or "latest"
+    if key in _kospi_regime_cache:
+        return _kospi_regime_cache[key]
+    result = {"above_ma60": True, "close": 0.0, "ma60": 0.0, "ok": False}
+    try:
+        end = datetime.strptime(date_str, "%Y-%m-%d") if date_str else datetime.now()
+        start = end - timedelta(days=180)
+        params = {"symbol": "KOSPI", "requestType": "1",
+                  "startTime": start.strftime("%Y%m%d"),
+                  "endTime": end.strftime("%Y%m%d"), "timeframe": "day"}
+        r = _session.get("https://fchart.stock.naver.com/siseJson.naver",
+                         params=params, timeout=15)
+        closes = []
+        for ln in r.text.strip().split("\n"):
+            ln = ln.strip().rstrip(",")
+            if ln.startswith("[") and ("'2" in ln or '"2' in ln):
+                pp = [x.strip().strip("'\"") for x in ln.strip("[]").split(",")]
+                if len(pp) >= 6:
+                    try:
+                        closes.append(float(pp[4]))   # 지수는 float
+                    except Exception:
+                        pass
+        if len(closes) >= 60:
+            ma60 = sum(closes[-60:]) / 60.0
+            last = closes[-1]
+            result = {"above_ma60": bool(last >= ma60), "close": last,
+                      "ma60": round(ma60, 2), "ok": True}
+    except Exception as e:
+        print(f"  [REGIME] KOSPI fetch 실패(fail-open): {e}")
+    _kospi_regime_cache[key] = result
+    return result
 
 # =============================================
 #  고속 스캔 엔진
@@ -1341,8 +1386,8 @@ def run_scan(date_str, demo=False):
             "volMult20": r.get("volMult20", 0),
             "targetUpside": r.get("targetUpside", 0),
             "ret3m": r.get("ret3m", 0),
-            # ── 매매 룰 (1주일 +10% 전량매도) ──
-            "maxHold": p.get("max_hold", 5),
+            # ── 매매 룰 (6영업일 내 +10% 전량매도) ──
+            "maxHold": p.get("max_hold", 6),
         }
 
     with ThreadPoolExecutor(max_workers=20) as executor:
@@ -1502,12 +1547,14 @@ def _save_and_sync_results(results, date_str):
     else:
         data_status = "confirmed"  # 정상 (요청일 = 데이터일)
     is_holiday = data_mismatch
+    regime = get_kospi_regime(actual_data_date)
     payload = {
         "results": results,
         "date": date_str,
         "actualDataDate": actual_data_date,
         "isHoliday": is_holiday,
         "dataStatus": data_status,
+        "marketRegime": regime,
         "strategyVersion": STRATEGY_VERSION,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "mode": "KRX+Naver",
@@ -1642,6 +1689,8 @@ def format_telegram_message(payload):
     dow = payload.get("dayOfWeek", "")
     results = payload.get("results", [])
     status = payload.get("dataStatus", "")
+    regime = payload.get("marketRegime") or {}
+    bear = regime.get("ok") and not regime.get("above_ma60", True)
 
     lines = [f"📊 <b>오늘의 매수 후보</b> ({date} {dow})"]
     if status == "intraday":
@@ -1649,7 +1698,12 @@ def format_telegram_message(payload):
     elif status == "holiday":
         lines.append(f"⚠️ 휴장일 → {payload.get('actualDataDate')} 기준")
     lines.append("")
-    lines.append("💡 <b>상위 3종목 자본 33%씩 분산매수</b>")
+    if bear:
+        lines.append("🔴 <b>약세장 경고: 코스피가 60일선 아래</b>")
+        lines.append(f"   (지수 {regime.get('close')} &lt; 60일선 {regime.get('ma60')})")
+        lines.append("   👉 <b>오늘 신규매수 보류 권고</b> (아래는 참고용 관심종목)")
+        lines.append("")
+    lines.append("💡 <b>상위 3종목 자본 33%씩 분산매수</b>" + ("  ※약세장이면 보류" if bear else ""))
     lines.append("")
 
     if not results:
@@ -1665,7 +1719,7 @@ def format_telegram_message(payload):
             lines.append(f"   🛑손절 {s.get('stoploss'):,}원")
             lines.append(f"   섹터 {s.get('sector','-')} · RSI {s.get('rsi','-')} · 거래량 {s.get('volMult5','-')}x")
             lines.append("")
-    lines.append("⏱ 매수: 당일 종가 | 청산: +10% 도달 또는 5영업일째 종가")
+    lines.append("⏱ 매수: 당일 종가 | 청산: +10% 도달 또는 6영업일째 종가")
     lines.append("🛑 손절 -5% 반드시 지키기")
     return "\n".join(lines)
 

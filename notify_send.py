@@ -10,7 +10,7 @@ try:
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 except: pass
 
-from app import run_scan, format_telegram_message, send_telegram
+from app import run_scan, format_telegram_message, send_telegram, get_kospi_regime
 
 def main():
     date = datetime.now().strftime("%Y-%m-%d")
@@ -29,9 +29,11 @@ def main():
     else:
         status = "confirmed"
 
+    regime = get_kospi_regime(actual)
     payload = {
         "date": date, "actualDataDate": actual, "dataStatus": status,
-        "dayOfWeek": dow_names[dow], "results": results, "count": len(results)
+        "dayOfWeek": dow_names[dow], "results": results, "count": len(results),
+        "marketRegime": regime,
     }
     msg = format_telegram_message(payload)
     ok, info = send_telegram(msg)
