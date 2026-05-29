@@ -1,3 +1,65 @@
 {
-  "positions": []
+  "positions": [
+    {
+      "code": "105560",
+      "name": "KB금융",
+      "buyDate": "2026-05-29",
+      "buyPrice": 150600
+    },
+    {
+      "code": "096770",
+      "name": "SK이노베이션",
+      "buyDate": "2026-05-29",
+      "buyPrice": 119200
+    },
+    {
+      "code": "010950",
+      "name": "S-Oil",
+      "buyDate": "2026-05-29",
+      "buyPrice": 107400
+    },
+    {
+      "code": "028300",
+      "name": "HLB",
+      "buyDate": "2026-05-29",
+      "buyPrice": 50800
+    },
+    {
+      "code": "006360",
+      "name": "GS건설",
+      "buyDate": "2026-05-29",
+      "buyPrice": 30500
+    },
+    {
+      "code": "448900",
+      "name": "한국피아이엠",
+      "buyDate": "2026-05-29",
+      "buyPrice": 102100
+    },
+    {
+      "code": "038500",
+      "name": "삼표시멘트",
+      "buyDate": "2026-05-29",
+      "buyPrice": 12360
+    },
+    {
+      "code": "012210",
+      "name": "삼미금속",
+      "buyDate": "2026-05-29",
+      "buyPrice": 11890
+    },
+    {
+      "code": "017550",
+      "name": "수산세보틱스",
+      "buyDate": "2026-05-29",
+      "buyPrice": 2830
+    },
+    {
+      "code": "282330",
+      "name": "BGF리테일",
+      "buyDate": "2026-05-29",
+      "buyPrice": 124200
+    }
+  ],
+  "updated": "2026-05-29 16:55"
 }
