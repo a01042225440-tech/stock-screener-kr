@@ -1115,9 +1115,8 @@ function renderCardDetail(s, gradeInfo) {
       <div><div style="font-size:0.6rem;color:#64748B">트리거</div><b style="font-size:0.85rem">${s.huntTrigger?'🟢HUNT':s.breakoutTrigger?'🔴BREAK':'-'}</b></div>
       <div><div style="font-size:0.6rem;color:#64748B">최종점수</div><b style="font-size:0.95rem;color:#DC2626">${Math.round(s.finalScore||0)}</b></div>
     </div>
-    ${(s.bbLowerBreak||s.sectorBonus>=25)?`<div style="margin-top:6px;font-size:0.7rem;padding-top:6px;border-top:1px dashed ${gradeInfo.bg}44">
-      ${s.bbLowerBreak?`<span style="color:#7C3AED;font-weight:700">🟣 BB(20,2) 하단 ${s.bbBreakClose?'종가':'인트라데이'} 상승돌파</span>`:''}
-      ${s.sectorBonus>=25?`<span style="color:#0891B2;font-weight:700;margin-left:8px">🏷️ ${s.sector} 주도섹터 +${s.sectorBonus}점</span>`:''}
+    ${s.sectorBonus>=25?`<div style="margin-top:6px;font-size:0.7rem;padding-top:6px;border-top:1px dashed ${gradeInfo.bg}44">
+      <span style="color:#0891B2;font-weight:700">🏷️ ${s.sector} 주도섹터 +${s.sectorBonus}점</span>
     </div>`:''}
   </div>`;
 
