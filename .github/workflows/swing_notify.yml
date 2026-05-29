@@ -1,0 +1,57 @@
+name: Swing Tracker Notify
+
+on:
+  schedule:
+    # 03:13 UTC = 12:13 KST 에 일찍 시작 → 16:40 KST(07:40 UTC)까지 대기 후 발송.
+    # 장 마감(15:30)·종가확정(16:30) 이후 '확정 데이터'로 저점매수 신호 + 보유 매도점검.
+    - cron: '13 3 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # swing_positions.json 커밋·푸시(포지션 영속화)용
+
+jobs:
+  swing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install numpy pandas requests flask
+
+      - name: Wait until 16:40 KST (scheduled runs only)
+        if: github.event_name == 'schedule'
+        run: |
+          TARGET=$(date -u -d "$(date -u +%Y-%m-%d) 07:40:00" +%s)
+          NOW=$(date -u +%s)
+          DIFF=$((TARGET - NOW))
+          echo "now(UTC)=$(date -u) target=07:40UTC diff=${DIFF}s"
+          if [ $DIFF -gt 0 ] && [ $DIFF -lt 21600 ]; then
+            echo "Sleeping ${DIFF}s to hit 16:40 KST (확정 종가 기준)..."
+            sleep $DIFF
+          fi
+
+      - name: Run swing tracker & notify
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python swing_notify.py
+
+      - name: Persist positions
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add swing_positions.json
+          if git diff --staged --quiet; then
+            echo "no position change"
+          else
+            git commit -m "chore: swing positions update ($(date -u +%Y-%m-%d))"
+            git push
+          fi
