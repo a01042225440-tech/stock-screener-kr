@@ -26,7 +26,7 @@ app = Flask(__name__, template_folder=".", static_folder=".", static_url_path="/
 
 # ─── 전략 버전 (조건 변경 시 올리면 캐시 자동 무효화) ───
 # 손절-5% / 청산+10% / D1 20MA>0% / D4 거래량1.5x / D5 RSI50-70 / C섹터보너스 / F1첫풀백
-STRATEGY_VERSION = "2026.05.29-stop5-tp10-hold6-kospima60gate-ma20pos-vol15-rsi5070-Cbonus-F1-min3picks-altK1-pxcap20"
+STRATEGY_VERSION = "2026.05.29-stop5-tp10-hold6-brkfirst-kospima60gate-ma20pos-vol15-rsi5070-Cbonus-F1-min3picks-altK1-pxcap20"
 
 # ─── 주가 상한 (소액 분산매수용) ───
 # 100만원 시드 → 3종목 33만원씩 → 20만원 이하면 1주+ 보유 가능
@@ -1475,8 +1475,11 @@ def run_scan(date_str, demo=False, intraday=True):
     for r in results:
         r["rankScore"] = r.get("finalScore", 0)
 
-    # 등급 우선순위: HUNT(저점매수) > BREAKOUT(추격) > BB_BREAK > TREND > WATCH
-    GRADE_ORDER = {"HUNT": 0, "BREAKOUT": 1, "BB_BREAK": 2, "TREND": 3, "WATCH": 4}
+    # 등급 우선순위: BREAKOUT(추격) > HUNT(저점매수) > TREND > WATCH
+    # ★ BREAKOUT 우선 (사용자 지적 검증): BREAKOUT 청산률 38.3% > HUNT 28.0%.
+    #   선정규칙을 BREAKOUT 우선으로 바꾸니 비용반영 복리 +466%→+594%,
+    #   최고5일 제거(강건성)에서도 +257%→+337%로 개선 (꼬리효과 아님).
+    GRADE_ORDER = {"BREAKOUT": 0, "HUNT": 1, "BB_BREAK": 2, "TREND": 3, "WATCH": 4}
     results.sort(key=lambda x: (
         GRADE_ORDER.get(x.get("grade", "WATCH"), 5),
         -x.get("finalScore", 0)
