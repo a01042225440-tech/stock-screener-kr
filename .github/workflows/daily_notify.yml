@@ -2,14 +2,16 @@ name: Daily Stock Notify
 
 on:
   schedule:
-    # UTC 06:00 = 한국시간(KST) 15:00, 월~금 (장 마감 직후)
-    - cron: '0 6 * * 1-5'
-  workflow_dispatch:   # 수동 실행 버튼도 제공
+    # 01:47 UTC = 한국시간 10:47 에 '일찍' 시작(비정각 분으로 스케줄 지연 최소화).
+    # 작업 안에서 15:13 KST(06:13 UTC)까지 대기 후 발송 → GitHub 스케줄 지연을
+    # 최대 ~4.4시간까지 흡수해 '정시(15:13)' 도착을 보장한다. (public repo = 분 무제한)
+    - cron: '47 1 * * 1-5'
+  workflow_dispatch:   # 수동 즉시 실행 (대기 없이 바로 발송)
 
 jobs:
   notify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 330   # 최대 ~4.4h 대기 + 스캔 여유
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,6 +23,20 @@ jobs:
 
       - name: Install dependencies
         run: pip install numpy pandas requests flask
+
+      - name: Wait until 15:13 KST (scheduled runs only)
+        if: github.event_name == 'schedule'
+        run: |
+          TARGET=$(date -u -d "$(date -u +%Y-%m-%d) 06:13:00" +%s)
+          NOW=$(date -u +%s)
+          DIFF=$((TARGET - NOW))
+          echo "now(UTC)=$(date -u) target=06:13UTC diff=${DIFF}s"
+          if [ $DIFF -gt 0 ] && [ $DIFF -lt 18000 ]; then
+            echo "Sleeping ${DIFF}s to hit 15:13 KST (장중 종가근사 신호용)..."
+            sleep $DIFF
+          else
+            echo "Past target or out-of-range -> 즉시 발송 (오늘 데이터 기준)"
+          fi
 
       - name: Send Telegram notification
         env:
