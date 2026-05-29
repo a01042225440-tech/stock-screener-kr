@@ -26,7 +26,7 @@ app = Flask(__name__, template_folder=".", static_folder=".", static_url_path="/
 
 # ─── 전략 버전 (조건 변경 시 올리면 캐시 자동 무효화) ───
 # 손절-5% / 청산+10% / D1 20MA>0% / D4 거래량1.5x / D5 RSI50-70 / C섹터보너스 / F1첫풀백
-STRATEGY_VERSION = "2026.05.29-stop5-tp10-hold6-brkfirst-kospima60gate-ma20pos-vol15-rsi5070-Cbonus-F1-min3picks-altK1-pxcap20"
+STRATEGY_VERSION = "2026.05.29-stop5-tp10-hold6-brkfirst-brk15tp-kospima60gate-ma20pos-vol15-rsi5070-Cbonus-F1-min3picks-altK1-pxcap20"
 
 # ─── 주가 상한 (소액 분산매수용) ───
 # 100만원 시드 → 3종목 33만원씩 → 20만원 이하면 1주+ 보유 가능
@@ -1204,6 +1204,15 @@ def run_scan(date_str, demo=False, intraday=True):
         p = calc_price_pro(last_close, last_low, r["atr"], bb_info)
         if p is None:
             return None
+        # ★ BREAKOUT은 모멘텀 돌파 → +15% 청산 (검증: 평균 +1.15%→+1.43%,
+        #   포트폴리오 복리 +594%→+637%, 강건성 +337%→+344% 통과).
+        #   HUNT/TREND는 +10% 유지(평균회귀라 +10%가 최적).
+        if r.get("grade") == "BREAKOUT":
+            p["t1"] = tick(int(p["buy"] * 1.15), p["buy"])
+            p["t2"] = p["t1"]
+            p["target_pct"] = 15
+        else:
+            p["target_pct"] = 10
         dd = df.index[-1]
         dd = dd.strftime("%Y-%m-%d") if hasattr(dd, 'strftime') else date_str
         inv_score = 0
@@ -1427,8 +1436,9 @@ def run_scan(date_str, demo=False, intraday=True):
             "volMult20": r.get("volMult20", 0),
             "targetUpside": r.get("targetUpside", 0),
             "ret3m": r.get("ret3m", 0),
-            # ── 매매 룰 (6영업일 내 +10% 전량매도) ──
+            # ── 매매 룰 (6영업일 내 청산; BREAKOUT +15% / 그외 +10%) ──
             "maxHold": p.get("max_hold", 6),
+            "targetPct": p.get("target_pct", 10),
             # 장중 분봉 임시캔들로 만든 '당일 종가근사' 신호 여부
             "isIntradayProxy": is_proxy,
         }
@@ -1765,12 +1775,13 @@ def format_telegram_message(payload):
             emoji = {"HUNT": "🟢", "BREAKOUT": "🔴", "TREND": "🟡"}.get(grade, "⚪")
             alt = " ⚠️차선" if s.get("isAlternative") else ""
             lines.append(f"<b>{i}. {emoji}{grade}{alt} {s.get('name')}</b> ({s.get('code')})")
+            tp = s.get('targetPct', 10)
             lines.append(f"   💰매수 {s.get('buyPrice'):,}원")
-            lines.append(f"   🎯청산 {s.get('target1'):,}원 (+10%)")
+            lines.append(f"   🎯청산 {s.get('target1'):,}원 (+{tp}%{' ·돌파' if tp!=10 else ''})")
             lines.append(f"   🛑손절 {s.get('stoploss'):,}원")
             lines.append(f"   섹터 {s.get('sector','-')} · RSI {s.get('rsi','-')} · 거래량 {s.get('volMult5','-')}x")
             lines.append("")
-    lines.append("⏱ 매수: 당일 종가 | 청산: +10% 도달 또는 6영업일째 종가")
+    lines.append("⏱ 매수: 당일 종가 | 청산: +목표% 도달 또는 6영업일째 종가 (BREAKOUT +15%, 그외 +10%)")
     lines.append("🛑 손절 -5% 반드시 지키기")
     return "\n".join(lines)
 
