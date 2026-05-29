@@ -1058,12 +1058,42 @@ def get_kospi_regime(date_str=None):
     _kospi_regime_cache[key] = result
     return result
 
+def naver_today_ohlc(code, date_str):
+    """장중(15:20 등) 당일 정규장(09:00~15:30) OHLC를 네이버 분봉에서 집계.
+    검증: 분봉 09:00~15:30 집계 OHLC = siseJson 확정 일봉과 100% 일치(2026-05-29 4종목).
+    ※ 분봉의 거래량 필드는 부정확 → 거래량은 호출측에서 리스트 누적거래량을 사용.
+    ※ ymd 필터로 '오늘'만 집계하므로 과거일 요청 시엔 None(안전).
+    반환 (open, high, low, close) 또는 None"""
+    try:
+        ymd = date_str.replace("-", "")
+        r = _session.get(
+            f"https://api.stock.naver.com/chart/domestic/item/{code}/minute",
+            timeout=10)
+        data = json.loads(r.text)
+        bars = [b for b in data
+                if str(b.get("localDateTime", ""))[:8] == ymd
+                and "0900" <= str(b.get("localDateTime", ""))[8:12] <= "1531"]
+        if not bars:
+            return None
+        o = int(float(bars[0]["openPrice"]))
+        h = max(int(float(b["highPrice"])) for b in bars)
+        l = min(int(float(b["lowPrice"])) for b in bars)
+        c = int(float(bars[-1]["currentPrice"]))
+        if o <= 0 or c <= 0 or h <= 0 or l <= 0:
+            return None
+        return o, h, l, c
+    except Exception:
+        return None
+
 # =============================================
 #  고속 스캔 엔진
 # =============================================
 scan_status = {"running": False, "progress": 0, "total": 0, "found": 0, "message": "", "phase": ""}
 
-def run_scan(date_str, demo=False):
+def run_scan(date_str, demo=False, intraday=True):
+    """intraday=True: 요청일이 오늘인데 확정 일봉이 아직 없으면(장중~16:30 전)
+    네이버 분봉으로 '당일 종가근사' 캔들을 만들어 오늘 신호를 계산한다.
+    (과거일/확정후엔 자동으로 비활성 — 안전)"""
     global scan_status
     results = []
 
@@ -1139,6 +1169,17 @@ def run_scan(date_str, demo=False):
             return None
         # 지정 날짜까지의 데이터만 사용
         df = df[df.index <= pd.Timestamp(date_str)]
+        # ── 장중 당일신호: 확정 일봉에 오늘이 없으면 분봉으로 임시 캔들 부착 ──
+        is_proxy = False
+        if intraday and len(df) > 0 and df.index[-1] < pd.Timestamp(date_str):
+            ohlc = naver_today_ohlc(code, date_str)
+            if ohlc:
+                o, h, l, c = ohlc
+                row = pd.DataFrame(
+                    [{"Open": o, "High": h, "Low": l, "Close": c, "Volume": cand["volume"]}],
+                    index=[pd.Timestamp(date_str)])
+                df = pd.concat([df, row])
+                is_proxy = True
         if len(df) < 201:
             return None
         # 펀더멘털을 screen_pro에 넘기기 위해 먼저 fetch
@@ -1388,6 +1429,8 @@ def run_scan(date_str, demo=False):
             "ret3m": r.get("ret3m", 0),
             # ── 매매 룰 (6영업일 내 +10% 전량매도) ──
             "maxHold": p.get("max_hold", 6),
+            # 장중 분봉 임시캔들로 만든 '당일 종가근사' 신호 여부
+            "isIntradayProxy": is_proxy,
         }
 
     with ThreadPoolExecutor(max_workers=20) as executor:
@@ -1547,6 +1590,9 @@ def _save_and_sync_results(results, date_str):
     else:
         data_status = "confirmed"  # 정상 (요청일 = 데이터일)
     is_holiday = data_mismatch
+    # 장중 분봉 임시캔들(당일 종가근사)로 만든 신호면 '잠정'으로 표시
+    if results and results[0].get("isIntradayProxy"):
+        data_status = "intraday_proxy"
     regime = get_kospi_regime(actual_data_date)
     payload = {
         "results": results,
@@ -1693,7 +1739,9 @@ def format_telegram_message(payload):
     bear = regime.get("ok") and not regime.get("above_ma60", True)
 
     lines = [f"📊 <b>오늘의 매수 후보</b> ({date} {dow})"]
-    if status == "intraday":
+    if status == "intraday_proxy":
+        lines.append("⏱ <b>장중 잠정신호</b> (현재가=종가 근사). 15:20~15:30 동시호가로 매수 권장")
+    elif status == "intraday":
         lines.append(f"⏳ 당일 미반영 → {payload.get('actualDataDate')} 종가 기준 (장 마감 후 재확인)")
     elif status == "holiday":
         lines.append(f"⚠️ 휴장일 → {payload.get('actualDataDate')} 기준")

@@ -1064,7 +1064,9 @@ async function doScan() {
     const tuesdayWarn = data.isTuesday ? ' <span style="color:#DC2626;font-weight:700">⚠️ 화요일=매수금지</span>' : '';
     // 데이터 시점 경고 (당일 미반영 vs 휴장일 구분)
     let holidayWarn = '';
-    if (data.dataStatus === 'intraday') {
+    if (data.dataStatus === 'intraday_proxy') {
+      holidayWarn = `<span style="background:#FEF9C3;border:1px solid #EAB308;color:#854D0E;padding:3px 8px;border-radius:4px;font-weight:700;font-size:0.78rem">⏱ ${data.date} <b>장중 잠정신호</b> (현재가=종가 근사) · 15:20~15:30 동시호가 매수 권장 · 마감 후 확정값과 약간 다를 수 있음</span>`;
+    } else if (data.dataStatus === 'intraday') {
       holidayWarn = `<span style="background:#DBEAFE;border:1px solid #3B82F6;color:#1E3A8A;padding:3px 8px;border-radius:4px;font-weight:700;font-size:0.78rem">⏳ ${data.date} 데이터 미반영 (장 마감 전) → 직전 거래일 ${data.actualDataDate} 종가 기준. 정확한 분석은 장 마감(15:30) 후 검색하세요</span>`;
     } else if (data.dataStatus === 'holiday' || data.isHoliday) {
       holidayWarn = `<span style="background:#FEF3C7;border:1px solid #FBBF24;color:#92400E;padding:3px 8px;border-radius:4px;font-weight:700;font-size:0.78rem">⚠️ ${data.date}(${data.dayOfWeek})는 휴장일 → 마지막 거래일 ${data.actualDataDate} 종가 기준 분석</span>`;

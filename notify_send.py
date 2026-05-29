@@ -24,7 +24,9 @@ def main():
         for r in results:
             if r.get("dataDate"):
                 actual = r["dataDate"]; break
-    if actual != date:
+    if results and results[0].get("isIntradayProxy"):
+        status = "intraday_proxy"   # 장중 분봉 종가근사 신호
+    elif actual != date:
         status = "intraday" if date >= datetime.now().strftime("%Y-%m-%d") else "holiday"
     else:
         status = "confirmed"
