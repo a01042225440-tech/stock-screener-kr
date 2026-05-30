@@ -1579,8 +1579,9 @@ def run_scan(date_str, demo=False, intraday=True):
 def index():
     return render_template("index.html")
 
-def _save_and_sync_results(results, date_str):
-    """스캔 결과를 JSON 파일로 저장 + GitHub push (Render 동기화)"""
+def _save_and_sync_results(results, date_str, swing_picks=None):
+    """스캔 결과를 JSON 파일로 저장 + GitHub push (Render 동기화).
+    swing_picks: BB조합 스윙 매수신호 목록 (대시보드 별도 섹션용)."""
     import subprocess
     dow = datetime.strptime(date_str, "%Y-%m-%d").weekday()
     dow_names = ["월","화","수","목","금","토","일"]
@@ -1609,6 +1610,7 @@ def _save_and_sync_results(results, date_str):
     regime = get_kospi_regime(actual_data_date)
     payload = {
         "results": results,
+        "swingPicks": swing_picks or [],
         "date": date_str,
         "actualDataDate": actual_data_date,
         "isHoliday": is_holiday,
@@ -1690,16 +1692,30 @@ def api_scan():
     except ValueError:
         return jsonify({"error": "Date format error"}), 400
 
-    # 1) 캐시된 결과가 있으면 우선 사용 (Render에서 동일 결과 보장)
+    # 1) 캐시된 결과가 있으면 우선 사용
     cached = _load_cached_results(date_str)
     if cached:
+        # 캐시에 스윙 결과 없으면 보충 스캔(가벼움)
+        if "swingPicks" not in cached:
+            try:
+                from swing_tracker import scan_buys as swing_scan
+                cached["swingPicks"] = swing_scan(date_str, intraday=True)
+            except Exception as e:
+                print(f"  [SWING] cached fill error: {e}")
+                cached["swingPicks"] = []
         return jsonify(cached)
 
-    # 2) 없으면 라이브 스캔
+    # 2) 없으면 라이브 스캔 (모멘텀 + 스윙 BB조합)
     results = run_scan(date_str)
+    try:
+        from swing_tracker import scan_buys as swing_scan
+        swing_picks = swing_scan(date_str, intraday=True)
+    except Exception as e:
+        print(f"  [SWING] scan error: {e}")
+        swing_picks = []
 
     # 3) 결과 저장 + GitHub 동기화
-    payload = _save_and_sync_results(results, date_str)
+    payload = _save_and_sync_results(results, date_str, swing_picks=swing_picks)
     return jsonify(payload)
 
 @app.route("/api/status")
