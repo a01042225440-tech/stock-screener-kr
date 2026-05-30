@@ -154,6 +154,7 @@
       "targetUpside": 25.7,
       "ret3m": -10.1,
       "maxHold": 6,
+      "targetPct": 10,
       "isIntradayProxy": false,
       "rankScore": 125,
       "rank": 1
@@ -310,6 +311,7 @@
       "targetUpside": 32.7,
       "ret3m": -13.7,
       "maxHold": 6,
+      "targetPct": 10,
       "isIntradayProxy": false,
       "rankScore": 120,
       "isAlternative": true,
@@ -467,12 +469,14 @@
       "targetUpside": 24.0,
       "ret3m": -7.3,
       "maxHold": 6,
+      "targetPct": 10,
       "isIntradayProxy": false,
       "rankScore": 120,
       "isAlternative": true,
       "rank": 3
     }
   ],
+  "swingPicks": [],
   "date": "2026-05-30",
   "actualDataDate": "2026-05-29",
   "isHoliday": true,
@@ -483,8 +487,8 @@
     "ma60": 6371.03,
     "ok": true
   },
-  "strategyVersion": "2026.05.29-stop5-tp10-hold6-kospima60gate-ma20pos-vol15-rsi5070-Cbonus-F1-min3picks-altK1-pxcap20",
-  "timestamp": "2026-05-30 01:57:59",
+  "strategyVersion": "2026.05.29-stop5-tp10-hold6-brkfirst-brk15tp-kospima60gate-ma20pos-vol15-rsi5070-Cbonus-F1-min3picks-altK1-pxcap20",
+  "timestamp": "2026-05-30 09:21:32",
   "mode": "KRX+Naver",
   "count": 3,
   "dayOfWeek": "토",
