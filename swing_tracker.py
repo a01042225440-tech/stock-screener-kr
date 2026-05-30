@@ -19,8 +19,9 @@ from app import (naver_ohlcv_fast, naver_all_rising_parallel,
 
 POS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "swing_positions.json")
 
-def _fetch(code, date_str, intraday=False):
-    """OHLCV 조회. intraday=True면 확정봉에 오늘 없을 때 분봉 종가근사 봉을 부착."""
+def _fetch(code, date_str, intraday=False, today_vol=0):
+    """OHLCV 조회. intraday=True면 확정봉에 오늘 없을 때 분봉 종가근사 봉을 부착.
+    today_vol: 장중 당일 누적거래량(거래량 필터용; 분봉엔 부정확하므로 리스트값 주입)."""
     df = naver_ohlcv_fast(code, 300, target_date=date_str)
     if df is None:
         return None
@@ -29,7 +30,7 @@ def _fetch(code, date_str, intraday=False):
         ohlc = naver_today_ohlc(code, date_str)
         if ohlc:
             o, h, l, c = ohlc
-            row = pd.DataFrame([{"Open": o, "High": h, "Low": l, "Close": c, "Volume": 0}],
+            row = pd.DataFrame([{"Open": o, "High": h, "Low": l, "Close": c, "Volume": today_vol}],
                                index=[pd.Timestamp(date_str)])
             df = pd.concat([df, row])
     return df
@@ -46,55 +47,57 @@ def _indicators(df):
     m60 = s.rolling(60).mean(); m200 = s.rolling(200).mean()
     return rsi, pctB, m20, m60, m200
 
+def _bb(df):
+    """볼린저(20,2) 상/중/하 + RSI/신호선 + 거래량5MA 반환"""
+    s = df["Close"]
+    m20 = s.rolling(20).mean(); sd = s.rolling(20).std()
+    lower = m20 - 2*sd; upper = m20 + 2*sd
+    d = s.diff(); up = d.clip(lower=0).rolling(14).mean(); dn = (-d.clip(upper=0)).rolling(14).mean()
+    rsi = 100 - 100/(1 + up/dn); sig = rsi.rolling(9).mean()
+    vma5 = df["Volume"].rolling(5).mean()
+    return lower, m20, upper, rsi, sig, vma5
+
 def buy_signal(df):
-    """최신 봉 기준 저점매수 신호 여부 + 지표 dict"""
-    if df is None or len(df) < 200:
+    """저점매수 신호: BB(20,2) 하한선 상향돌파 + 강한양봉 + RSI골든크로스 + 거래량1.3x.
+    (검증: 승률 61%, 거래당 +4.33%, 5월 조정장도 +3.96%로 유일하게 플러스)"""
+    if df is None or len(df) < 60:
         return False, {}
-    s = df["Close"]; o = df["Open"]
-    rsi, pctB, m20, m60, m200 = _indicators(df)
-    rsi_sig = rsi.rolling(9).mean()   # RSI 신호선(단순이평 9)
+    s = df["Close"]; o = df["Open"]; h = df["High"]; l = df["Low"]; v = df["Volume"]
+    lower, m20, upper, rsi, sig, vma5 = _bb(df)
     i = -1
-    oversold = (rsi.iloc[i] <= 35) or (pctB.iloc[i] <= 15)
-    reversal = (s.iloc[i] > s.iloc[i-1]) and (s.iloc[i] > o.iloc[i])
-    healthy = (not pd.isna(m200.iloc[i])) and (s.iloc[i] > m200.iloc[i])   # 장기 우상향만(칼 회피)
-    # ★ RSI 골든크로스(검증: 승률 58→64%, 거래당 +5.06→+5.52% 둘 다 개선)
-    golden = (not pd.isna(rsi_sig.iloc[i]) and not pd.isna(rsi_sig.iloc[i-1])
-              and rsi.iloc[i] > rsi_sig.iloc[i] and rsi.iloc[i-1] <= rsi_sig.iloc[i-1])
-    ok = bool(oversold and reversal and healthy and golden)
-    info = {"rsi": round(float(rsi.iloc[i]), 1), "pctB": round(float(pctB.iloc[i])),
-            "close": int(s.iloc[i])}
+    if pd.isna(lower.iloc[i]) or pd.isna(lower.iloc[i-1]) or pd.isna(sig.iloc[i-1]) or pd.isna(vma5.iloc[i]):
+        return False, {}
+    cross = (s.iloc[i-1] <= lower.iloc[i-1]) and (s.iloc[i] > lower.iloc[i])          # 하한선 상향돌파
+    rng = h.iloc[i] - l.iloc[i]
+    strong = rng > 0 and (s.iloc[i] - l.iloc[i]) / rng >= 0.6                          # 강한양봉(종가 상단60%)
+    golden = (rsi.iloc[i] > sig.iloc[i]) and (rsi.iloc[i-1] <= sig.iloc[i-1])          # RSI 골든크로스
+    volok = v.iloc[i] > vma5.iloc[i] * 1.3                                             # 거래량 1.3배
+    ok = bool(cross and strong and golden and volok)
+    info = {"rsi": round(float(rsi.iloc[i]), 1), "close": int(s.iloc[i]),
+            "lower": int(lower.iloc[i]), "upper": int(upper.iloc[i])}
     return ok, info
 
 def sell_check(df, buy_price, buy_date):
-    """보유 포지션의 적응형 매도 판정. 반환 (sell?, reason, info)"""
+    """매도 판정: 상한선 도달(익절) / 하한선 재이탈(무효손절) / -10% 재난손절 / 40일 만료.
+    반환 (sell?, reason, info)"""
     if df is None or len(df) < 60:
         return False, "", {}
     s = df["Close"]
-    rsi, pctB, m20, m60, m200 = _indicators(df)
+    lower, m20, upper, rsi, sig, vma5 = _bb(df)
     i = -1; px = float(s.iloc[i])
-    # 매수일 이후 고점(High)
-    held = df[df.index >= pd.Timestamp(buy_date)]
-    peak = float(held["High"].max()) if len(held) else px
-    strong = (not pd.isna(m20.iloc[i]) and m20.iloc[i] > m20.iloc[i-5]) and (px > float(m60.iloc[i]))
-    overbought = (rsi.iloc[i] >= 70) or (pctB.iloc[i] >= 95)
     profit = (px - buy_price)/buy_price*100
-    held_days = len(held)
+    held_days = len(df[df.index >= pd.Timestamp(buy_date)])
     sell, reason = False, ""
-    if px <= buy_price * 0.92:
-        sell, reason = True, "손절(-8%)"
-    elif held_days >= 30:
-        sell, reason = True, f"기간만료(30일, {profit:+.0f}%)"
-    elif strong:
-        if px <= peak * 0.92 and peak > buy_price * 1.03:
-            sell, reason = True, f"트레일링(고점{int(peak):,}대비-8%)"
-        elif rsi.iloc[i] >= 78:
-            sell, reason = True, "극과매수(RSI78+)"
-    else:
-        if overbought and px < float(s.iloc[i-1]):
-            sell, reason = True, "과매수 꺾임"
-    info = {"close": int(px), "rsi": round(float(rsi.iloc[i]), 1),
-            "peak": int(peak), "profit": round(profit, 1),
-            "regime": "추세" if strong else "박스"}
+    if px <= buy_price * 0.90:
+        sell, reason = True, "재난손절(-10%)"
+    elif (not pd.isna(lower.iloc[i])) and px < float(lower.iloc[i]):
+        sell, reason = True, f"무효손절(하한이탈, {profit:+.0f}%)"
+    elif (not pd.isna(upper.iloc[i])) and px >= float(upper.iloc[i]):
+        sell, reason = True, f"상한선 도달 익절(+{profit:.0f}%)"
+    elif held_days >= 40:
+        sell, reason = True, f"40일만료({profit:+.0f}%)"
+    info = {"close": int(px), "rsi": round(float(rsi.iloc[i]), 1), "profit": round(profit, 1),
+            "regime": "BB"}
     return sell, reason, info
 
 def _load_positions():
@@ -120,10 +123,10 @@ def scan_buys(date_str, max_picks=10, intraday=False):
         cl = parse_num(st.get("closePrice", "0")); trd = parse_num(st.get("accumulatedTradingValue", "0"))
         mc = parse_num(st.get("marketValue", "0")); vol = parse_num(st.get("accumulatedTradingVolume", "0"))
         if cl < 2000 or cl > 200000 or trd < 1000 or mc < 1000 or vol <= 0: continue
-        cands.append({"code": code, "name": name, "trd": trd})
+        cands.append({"code": code, "name": name, "trd": trd, "vol": vol})
     hits = []
     def chk(c):
-        df = _fetch(c["code"], date_str, intraday=intraday)
+        df = _fetch(c["code"], date_str, intraday=intraday, today_vol=c.get("vol", 0))
         ok, info = buy_signal(df)
         if ok:
             hits.append({**c, **info})
@@ -180,20 +183,20 @@ def format_swing_telegram(payload):
         L.append("")
     buys = payload.get("buys", [])
     if buys:
-        L.append("🟢 <b>저점매수 신호</b> (과매도+반등시작)")
+        L.append("🟢 <b>저점매수 신호</b> (BB하한 상향돌파+강한양봉+RSI골든+거래량)")
         for b in buys[:10]:
             L.append(f"  • <b>{b['name']}</b>({b['code']}) {b['close']:,}원 "
-                     f"(RSI{b['rsi']} %B{b['pctB']})")
+                     f"(목표 상한 {b.get('upper','-'):,} / RSI{b['rsi']})")
         L.append("")
     hold = payload.get("holdings", [])
     if hold:
         L.append(f"👜 <b>보유 추적중 {len(hold)}종목</b>")
         for h in sorted(hold, key=lambda x: -x.get("profit", 0))[:15]:
-            L.append(f"  · {h['name']} {h.get('profit',0):+.1f}% [{h.get('regime','')}]")
+            L.append(f"  · {h['name']} {h.get('profit',0):+.1f}%")
     if not sells and not buys and not hold:
         L.append("오늘 신호 없음")
     L.append("")
-    L.append("⏱ 매수: 신호일 종가 | 매도: 위 신호 시 / -8% 손절")
+    L.append("⏱ 매수: 신호일 종가 | 매도: BB상한 도달/하한 재이탈/-10% / 40일")
     return "\n".join(L)
 
 if __name__ == "__main__":
