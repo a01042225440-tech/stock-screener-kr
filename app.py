@@ -26,7 +26,7 @@ app = Flask(__name__, template_folder=".", static_folder=".", static_url_path="/
 
 # ─── 전략 버전 (조건 변경 시 올리면 캐시 자동 무효화) ───
 # 손절-5% / 청산+10% / D1 20MA>0% / D4 거래량1.5x / D5 RSI50-70 / C섹터보너스 / F1첫풀백
-STRATEGY_VERSION = "2026.05.31-stop10dlow-tp10-hold6-brkfirst-brk15tp-kospima60gate-ma20pos-vol15-rsi5070-Cbonus-F1-min3picks-altK1-pxcap20"
+STRATEGY_VERSION = "2026.05.31-stop10dlow-noPharmaBio-noPolitical-tp10-hold6-brkfirst-brk15tp-kospima60gate-ma20pos-vol15-rsi5070-Cbonus-F1-min3picks-altK1-pxcap20"
 
 # ─── 주가 상한 (소액 분산매수용) ───
 # 100만원 시드 → 3종목 33만원씩 → 20만원 이하면 1주+ 보유 가능
@@ -210,11 +210,33 @@ EXCLUDE_KEYWORDS = [
     "선물", "옵션",
 ]
 
+# 제약/바이오 제외 (사용자 지정: 뉴스·임상 이벤트로 급변 → 탈락)
+PHARMA_BIO_KEYWORDS = [
+    "제약", "바이오", "파마", "PHARM", "BIO", "신약", "헬스케어", "생명과학",
+    "제넥", "테라퓨", "셀트리온", "메디톡스", "에스티팜", "녹십자", "유한양행",
+    "한미약품", "대웅", "종근당", "보령", "동아에스티", "JW", "일동", "휴온스",
+]
+
+# 정치테마주 제외 (사용자 지정). ※ 정치테마는 가격/이름 데이터로 자동탐지 불가 —
+#   아래는 수동 관리 코드 목록. 선거 사이클마다 갱신 필요(완전성 보장 못 함).
+POLITICAL_THEME_CODES = {
+    # 예시(과거 회자된 종목들) — 필요시 추가/삭제하세요.
+    "065170", "024060", "036090", "012620", "016380",
+    "093920", "032300", "025560", "066620", "035080",
+}
+
 def is_excluded_by_name(name, code):
     name_upper = name.upper()
     for kw in EXCLUDE_KEYWORDS:
         if kw.upper() in name_upper:
             return True
+    # 제약/바이오 탈락
+    for kw in PHARMA_BIO_KEYWORDS:
+        if kw.upper() in name_upper:
+            return True
+    # 정치테마주 탈락 (수동 목록)
+    if code in POLITICAL_THEME_CODES:
+        return True
     if len(code) == 6 and code[-1] in ("5", "7", "8", "9", "K", "L"):
         return True
     if name.endswith("우") or name.endswith("우B") or name.endswith("우C"):
