@@ -1,10 +1,10 @@
-"""장중 모니터 (GitHub Actions, ~20분마다 실행) — 모멘텀 + 스윙 통합.
-- 매 실행: 모멘텀·스윙 보유 포지션 매도/손절 점검(장중 분봉) → 걸리면 '🔴 즉시 매도/손절' 알림
-- 14:40 KST 창: 스윙 저점매수 신호 스캔 → '🟢 매수신호' 알림 + 포지션 기록
-- (모멘텀 매수는 15:13 daily_notify에서 발송·기록)
-- 이벤트 있을 때만 텔레그램 발송(스팸 방지)
+"""장중 모니터 (GitHub Actions) — 모멘텀 + 스윙 통합, ~1분 해상도.
+- 크론 */5(5분, GitHub 최소) + 잡 내부 미니루프(MONITOR_ITERS회 × MONITOR_SLEEP초)
+  → 실질 1분 간격으로 매도/손절 점검(스팸 방지: 팔린 포지션은 파일에서 제거돼 재알림 없음)
+- 매수 스캔: 스윙 14:40~14:44 단일 틱에서 1회만(중복 방지). 모멘텀 매수는 15:13 daily_notify.
+- 이벤트(매도/손절/매수신호) 있을 때만 텔레그램 발송.
 """
-import os, sys
+import os, sys, time
 from datetime import datetime, timezone, timedelta
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 try:
@@ -15,45 +15,81 @@ from swing_tracker import run_swing, format_swing_telegram
 from momentum_tracker import check_sells as mom_check_sells
 from app import send_telegram
 
-def main():
-    kst = datetime.now(timezone.utc) + timedelta(hours=9)
-    date_str = kst.strftime("%Y-%m-%d")
-    hm = kst.hour * 60 + kst.minute
-    in_buy = (14 * 60 + 35) <= hm <= (14 * 60 + 58)   # 14:40 틱(3시 전) 스윙 매수 스캔 창
-    sent = False
 
-    # ── 1) 모멘텀 보유 매도/손절 점검 (실시간) ──
+def now_kst():
+    return datetime.now(timezone.utc) + timedelta(hours=9)
+
+
+def do_momentum_sells(date_str, kst):
+    """모멘텀 보유 매도/손절 점검 → 알림. 이벤트 발생 여부 반환."""
     try:
-        mom_sells = mom_check_sells(date_str, intraday=True)
+        sells = mom_check_sells(date_str, intraday=True)
     except Exception as e:
-        print(f"[MOM] check error: {e}"); mom_sells = []
-    if mom_sells:
-        L = [f"⚡ <b>모멘텀 청산 신호!</b> ({kst.strftime('%m/%d %H:%M')} 장중)", ""]
-        for s in mom_sells:
-            L.append(f"  • <b>{s['name']}</b>({s['code']}) {s['close']:,}원 "
-                     f"<b>{s['profit']:+.1f}%</b> — {s['reason']}")
-        ok, info = send_telegram("\n".join(L)); sent = True
-        print(f"[MOM-SELL] {len(mom_sells)} alerts send={ok} {info}")
+        print(f"[MOM] check error: {e}")
+        return False
+    if not sells:
+        return False
+    L = [f"⚡ <b>모멘텀 청산 신호!</b> ({kst.strftime('%m/%d %H:%M')} 장중)", ""]
+    for s in sells:
+        L.append(f"  • <b>{s['name']}</b>({s['code']}) {s['close']:,}원 "
+                 f"<b>{s['profit']:+.1f}%</b> — {s['reason']}")
+    ok, info = send_telegram("\n".join(L))
+    print(f"[MOM-SELL] {len(sells)} alerts send={ok} {info}")
+    return True
 
-    # ── 2) 스윙 보유 매도 점검 + 14:40 매수 스캔 ──
-    pl = run_swing(intraday=True, do_buys=in_buy, date_str=date_str)
-    sw_sells = pl.get("sells", []); buys = pl.get("buys", [])
-    if sw_sells:
+
+def do_swing(date_str, kst, do_buys):
+    """스윙 매도 점검(+ do_buys면 매수 스캔) → 알림. (이벤트여부, 매수실행여부) 반환."""
+    try:
+        pl = run_swing(intraday=True, do_buys=do_buys, date_str=date_str)
+    except Exception as e:
+        print(f"[SWING] run error: {e}")
+        return False, False
+    event = False
+    sells = pl.get("sells", [])
+    if sells:
         L = [f"🔴 <b>스윙 매도 신호!</b> ({kst.strftime('%m/%d %H:%M')} 장중)", ""]
-        for s in sw_sells:
+        for s in sells:
             L.append(f"  • <b>{s['name']}</b>({s['code']}) {s['close']:,}원 "
                      f"<b>{s['profit']:+.1f}%</b> — {s['reason']}")
         L.append("\n⚡ 지금(장중) 매도 권장")
-        ok, info = send_telegram("\n".join(L)); sent = True
-        print(f"[SWING-SELL] {len(sw_sells)} alerts send={ok} {info}")
-
-    if in_buy and buys:
+        ok, info = send_telegram("\n".join(L))
+        print(f"[SWING-SELL] {len(sells)} alerts send={ok} {info}")
+        event = True
+    buys = pl.get("buys", [])
+    if do_buys and buys:
         payload = {"date": date_str, "sells": [], "buys": buys, "holdings": pl.get("holdings", [])}
-        ok, info = send_telegram(format_swing_telegram(payload)); sent = True
+        ok, info = send_telegram(format_swing_telegram(payload))
         print(f"[SWING-BUY] {len(buys)} signals send={ok} {info}")
+        event = True
+    return event, do_buys
 
-    if not sent:
-        print(f"[MONITOR] no event @ KST {kst.strftime('%H:%M')}")
+
+def one_pass(allow_buy):
+    kst = now_kst()
+    date_str = kst.strftime("%Y-%m-%d")
+    hm = kst.hour * 60 + kst.minute
+    in_buy = allow_buy and (14 * 60 + 40) <= hm <= (14 * 60 + 44)   # 14:40 단일 틱 매수창
+    e1 = do_momentum_sells(date_str, kst)
+    e2, bought = do_swing(date_str, kst, in_buy)
+    return (e1 or e2), (in_buy and bought)
+
+
+def main():
+    iters = int(os.environ.get("MONITOR_ITERS", "1"))
+    sleep_s = int(os.environ.get("MONITOR_SLEEP", "60"))
+    buy_done = False
+    any_event = False
+    for k in range(max(1, iters)):
+        ev, did_buy = one_pass(allow_buy=not buy_done)
+        any_event = any_event or ev
+        if did_buy:
+            buy_done = True
+        if k < iters - 1:
+            time.sleep(sleep_s)
+    if not any_event:
+        print(f"[MONITOR] no event @ KST {now_kst().strftime('%H:%M')}")
+
 
 if __name__ == "__main__":
     main()

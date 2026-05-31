@@ -2,8 +2,9 @@ name: Swing Intraday Monitor
 
 on:
   schedule:
-    # 매 20분(UTC 0~6시 = KST 09:00~15:40), 월~금. 장중 매도 즉시 점검 + 14:40 매수신호.
-    - cron: '*/20 0-6 * * 1-5'
+    # 매 5분(GitHub 크론 최소, UTC 0~6시 = KST 09:00~15:40), 월~금.
+    # 잡 내부에서 1분 간격 미니루프로 점검 → 실질 ~1분 해상도.
+    - cron: '*/5 0-6 * * 1-5'
   workflow_dispatch:
 
 permissions:
@@ -29,10 +30,12 @@ jobs:
       - name: Install dependencies
         run: pip install numpy pandas requests flask
 
-      - name: Run intraday monitor
+      - name: Run intraday monitor (1-min loop within the 5-min slot)
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          MONITOR_ITERS: '4'     # 4회 점검
+          MONITOR_SLEEP: '60'    # 60초 간격 → ~3분 커버, 다음 5분 틱이 이어받음
         run: python swing_intraday.py
 
       - name: Persist positions
