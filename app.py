@@ -1710,29 +1710,34 @@ def api_scan():
     # 1) 캐시된 결과가 있으면 우선 사용 (시장 선택이 ALL일 때만 — 캐시는 전체 기준)
     cached = _load_cached_results(date_str) if market == "ALL" else None
     if cached:
-        # 캐시에 스윙 결과 없으면 보충 스캔(가벼움)
-        if "swingPicks" not in cached:
-            try:
-                from swing_tracker import scan_buys as swing_scan
-                cached["swingPicks"] = swing_scan(date_str, intraday=True)
-            except Exception as e:
-                print(f"  [SWING] cached fill error: {e}")
-                cached["swingPicks"] = []
+        cached.setdefault("swingPicks", [])   # 스윙은 /api/swing에서 별도 로드
         return jsonify(cached)
 
-    # 2) 없으면 라이브 스캔 (모멘텀 + 스윙 BB조합)
+    # 2) 모멘텀만 빠르게 스캔 (스윙은 /api/swing 별도 호출 — 타임아웃 방지)
     results = run_scan(date_str, market=market)
-    try:
-        from swing_tracker import scan_buys as swing_scan
-        swing_picks = swing_scan(date_str, intraday=True, market=market)
-    except Exception as e:
-        print(f"  [SWING] scan error: {e}")
-        swing_picks = []
-
-    # 3) 결과 저장 + GitHub 동기화 (ALL일 때만 캐시 저장)
-    payload = _save_and_sync_results(results, date_str, swing_picks=swing_picks)
+    payload = _save_and_sync_results(results, date_str, swing_picks=None)
     payload["market"] = market
     return jsonify(payload)
+
+@app.route("/api/swing")
+def api_swing():
+    """스윙 BB조합 매수신호만 별도 반환 (대시보드가 모멘텀 로드 후 따로 호출)."""
+    date_str = flask_request.args.get("date", "") or datetime.now().strftime("%Y-%m-%d")
+    market = (flask_request.args.get("market", "ALL") or "ALL").upper()
+    if market not in ("ALL", "KOSPI", "KOSDAQ"):
+        market = "ALL"
+    try:
+        if datetime.strptime(date_str, "%Y-%m-%d") > datetime.now():
+            date_str = datetime.now().strftime("%Y-%m-%d")
+    except ValueError:
+        return jsonify({"error": "Date format error"}), 400
+    try:
+        from swing_tracker import scan_buys as swing_scan
+        picks = swing_scan(date_str, intraday=True, market=market)
+    except Exception as e:
+        print(f"  [SWING] scan error: {e}")
+        picks = []
+    return jsonify({"swingPicks": picks, "date": date_str, "market": market})
 
 @app.route("/api/status")
 def api_status():

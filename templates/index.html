@@ -956,7 +956,7 @@ async function doScan() {
     const mk = (document.getElementById("marketSelect")||{}).value || "ALL";
     const url = `/api/scan?date=${dateVal}&market=${mk}`;
     const controller = new AbortController();
-    const fetchTimeout = setTimeout(() => controller.abort(), 110000); // 110초 타임아웃
+    const fetchTimeout = setTimeout(() => controller.abort(), 170000); // 170초 타임아웃(여유)
     const res = await fetch(url, { signal: controller.signal });
     clearTimeout(fetchTimeout);
     const data = await res.json();
@@ -970,6 +970,12 @@ async function doScan() {
 
     DATA = data.results;
     SWING = data.swingPicks || [];
+
+    // 스윙 BB조합은 별도 호출(모멘텀 먼저 빠르게 표시, 스윙은 뒤따라 로드)
+    fetch(`/api/swing?date=${dateVal}&market=${mk}`)
+      .then(r => r.json())
+      .then(sw => { SWING = sw.swingPicks || []; if (typeof renderCards === "function") renderCards(); })
+      .catch(() => {});
 
     // 화요일 경고 배너
     if (data.isTuesday) {
