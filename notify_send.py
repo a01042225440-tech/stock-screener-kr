@@ -40,6 +40,19 @@ def main():
     msg = format_telegram_message(payload)
     ok, info = send_telegram(msg)
     print(f"[NOTIFY] 발송 결과: ok={ok} info={info} count={len(results)}")
+
+    # 모멘텀 매수 포지션 기록 (장중 매도/손절 실시간 추적용) — 약세장이면 기록 안 함
+    try:
+        from momentum_tracker import record_buys
+        bear = regime.get("ok") and not regime.get("above_ma60", True)
+        if not bear:
+            added = record_buys(results, actual, max_n=3)
+            print(f"[NOTIFY] 모멘텀 포지션 기록: {added}")
+        else:
+            print("[NOTIFY] 약세장 → 모멘텀 매수 보류(포지션 미기록)")
+    except Exception as e:
+        print(f"[NOTIFY] 포지션 기록 오류: {e}")
+
     if not ok:
         sys.exit(1)
 
