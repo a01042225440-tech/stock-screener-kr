@@ -112,13 +112,22 @@ def _save_positions(positions):
     with open(POS_FILE, "w", encoding="utf-8") as f:
         json.dump({"positions": positions}, f, ensure_ascii=False, indent=2)
 
-def scan_buys(date_str, max_picks=10, intraday=False):
-    """전 종목에서 저점매수 신호 스캔 (우량주 사전필터 + 거래대금순 상위 max_picks)"""
+def _halted(st):
+    tst = st.get("tradeStopType", {})
+    nm = (tst.get("name", "") if isinstance(tst, dict) else str(tst)).upper()
+    return nm == "HALTED"
+
+def scan_buys(date_str, max_picks=10, intraday=False, market="ALL"):
+    """전 종목에서 저점매수 신호 스캔 (우량주 사전필터 + 거래대금순 상위 max_picks).
+    market: 'ALL'/'KOSPI'/'KOSDAQ' (대상변경). 거래정지(HALTED) 자동 제외."""
+    mkt_sel = (market or "ALL").upper()
     stocks = naver_all_rising_parallel()
     cands = []
     for st in stocks:
         code = st.get("itemCode", ""); name = st.get("stockName", "")
+        if mkt_sel in ("KOSPI", "KOSDAQ") and st.get("_market", "") != mkt_sel: continue
         if st.get("stockEndType", "") not in ("stock", ""): continue
+        if _halted(st): continue
         if is_excluded_by_name(name, code): continue
         cl = parse_num(st.get("closePrice", "0")); trd = parse_num(st.get("accumulatedTradingValue", "0"))
         mc = parse_num(st.get("marketValue", "0")); vol = parse_num(st.get("accumulatedTradingVolume", "0"))

@@ -1090,10 +1090,16 @@ def naver_today_ohlc(code, date_str):
 # =============================================
 scan_status = {"running": False, "progress": 0, "total": 0, "found": 0, "message": "", "phase": ""}
 
-def run_scan(date_str, demo=False, intraday=True):
+def is_halted(s):
+    """거래정지/정리매매 여부 (리스트 API tradeStopType=HALTED, 추가 호출 없음)."""
+    tst = s.get("tradeStopType", {})
+    name = (tst.get("name", "") if isinstance(tst, dict) else str(tst)).upper()
+    return name == "HALTED"
+
+def run_scan(date_str, demo=False, intraday=True, market="ALL"):
     """intraday=True: 요청일이 오늘인데 확정 일봉이 아직 없으면(장중~16:30 전)
     네이버 분봉으로 '당일 종가근사' 캔들을 만들어 오늘 신호를 계산한다.
-    (과거일/확정후엔 자동으로 비활성 — 안전)"""
+    market: 'ALL'(전체) / 'KOSPI' / 'KOSDAQ' — 대상 시장 선택(대상변경)."""
     global scan_status
     results = []
 
@@ -1123,15 +1129,21 @@ def run_scan(date_str, demo=False, intraday=True):
     candidates = []
     excluded_count = 0
 
+    mkt_sel = (market or "ALL").upper()
     for s in all_stocks:
         code = s.get("itemCode", "")
         name = s.get("stockName", "")
-        market = s.get("_market", "")
+        stock_market = s.get("_market", "")
         end_type = s.get("stockEndType", "")
 
-        if end_type not in ("stock", ""):
+        # 대상변경: 시장 선택 (전체/코스피/코스닥)
+        if mkt_sel in ("KOSPI", "KOSDAQ") and stock_market != mkt_sel:
             excluded_count += 1; continue
-        if is_excluded_by_name(name, code):
+        if end_type not in ("stock", ""):     # ETF/ETN 제외
+            excluded_count += 1; continue
+        if is_halted(s):                       # 거래정지/정리매매 제외 (대상변경)
+            excluded_count += 1; continue
+        if is_excluded_by_name(name, code):    # 스팩/우선주/리츠/레버리지 제외
             excluded_count += 1; continue
 
         cl = parse_num(s.get("closePrice", "0"))
@@ -1147,7 +1159,7 @@ def run_scan(date_str, demo=False, intraday=True):
         if mcap_eok < 1000: continue        # 시가총액 1,000억 이상 (중소형주 이상)
 
         candidates.append({
-            "code": code, "name": name, "market": market,
+            "code": code, "name": name, "market": stock_market,
             "close": cl, "volume": vol, "trdval": trdval,
             "mcap_eok": mcap_eok, "chg_rate": chg_rate
         })
@@ -1683,6 +1695,9 @@ def _load_cached_results(date_str):
 @app.route("/api/scan")
 def api_scan():
     date_str = flask_request.args.get("date", "")
+    market = (flask_request.args.get("market", "ALL") or "ALL").upper()
+    if market not in ("ALL", "KOSPI", "KOSDAQ"):
+        market = "ALL"
     if not date_str:
         date_str = datetime.now().strftime("%Y-%m-%d")
     try:
@@ -1692,8 +1707,8 @@ def api_scan():
     except ValueError:
         return jsonify({"error": "Date format error"}), 400
 
-    # 1) 캐시된 결과가 있으면 우선 사용
-    cached = _load_cached_results(date_str)
+    # 1) 캐시된 결과가 있으면 우선 사용 (시장 선택이 ALL일 때만 — 캐시는 전체 기준)
+    cached = _load_cached_results(date_str) if market == "ALL" else None
     if cached:
         # 캐시에 스윙 결과 없으면 보충 스캔(가벼움)
         if "swingPicks" not in cached:
@@ -1706,16 +1721,17 @@ def api_scan():
         return jsonify(cached)
 
     # 2) 없으면 라이브 스캔 (모멘텀 + 스윙 BB조합)
-    results = run_scan(date_str)
+    results = run_scan(date_str, market=market)
     try:
         from swing_tracker import scan_buys as swing_scan
-        swing_picks = swing_scan(date_str, intraday=True)
+        swing_picks = swing_scan(date_str, intraday=True, market=market)
     except Exception as e:
         print(f"  [SWING] scan error: {e}")
         swing_picks = []
 
-    # 3) 결과 저장 + GitHub 동기화
+    # 3) 결과 저장 + GitHub 동기화 (ALL일 때만 캐시 저장)
     payload = _save_and_sync_results(results, date_str, swing_picks=swing_picks)
+    payload["market"] = market
     return jsonify(payload)
 
 @app.route("/api/status")

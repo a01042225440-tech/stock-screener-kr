@@ -815,10 +815,15 @@ body {
   <div class="controls">
     <div class="controls-row">
       <input type="date" class="date-input" id="dateInput">
+      <select id="marketSelect" class="date-input" style="cursor:pointer" title="대상 시장 선택">
+        <option value="ALL">전체(KRX)</option>
+        <option value="KOSPI">코스피</option>
+        <option value="KOSDAQ">코스닥</option>
+      </select>
       <button class="btn btn-primary" id="btnScan" onclick="doScan()" style="touch-action:manipulation;">
-        <span id="btnScanText">KRX 전종목 검색</span>
+        <span id="btnScanText">검색</span>
       </button>
-      <span class="scan-info" id="scanInfo">당일 종가 매수 → 1주일 +10% 전량매도 · K(캔들)+A(정배열)+B(실적)+C(섹터) 필수 · 시총1000억+ 우량주</span>
+      <span class="scan-info" id="scanInfo">대상변경: 시장 선택 · 거래정지·관리·투자경고·스팩·우선주·ETF/ETN 자동 제외 · 시총1000억+ 거래대금10억+ 우량주</span>
     </div>
   </div>
 
@@ -948,7 +953,8 @@ async function doScan() {
   }, 500);
 
   try {
-    const url = `/api/scan?date=${dateVal}`;
+    const mk = (document.getElementById("marketSelect")||{}).value || "ALL";
+    const url = `/api/scan?date=${dateVal}&market=${mk}`;
     const controller = new AbortController();
     const fetchTimeout = setTimeout(() => controller.abort(), 110000); // 110초 타임아웃
     const res = await fetch(url, { signal: controller.signal });
