@@ -58,8 +58,9 @@ def _bb(df):
     return lower, m20, upper, rsi, sig, vma5
 
 def buy_signal(df):
-    """저점매수 신호: BB(20,2) 하한선 상향돌파 + 강한양봉 + RSI골든크로스 + 거래량1.3x.
-    (검증: 승률 61%, 거래당 +4.33%, 5월 조정장도 +3.96%로 유일하게 플러스)"""
+    """저점매수 신호: BB(20,2) 하한선 상향돌파 + 양봉 + RSI골든크로스 + 거래량1.1x.
+    (하루 ~1종목 목표로 조정: 거래량1.3→1.1, 양봉0.6→0.5. RSI골든크로스는 유지 — 제거시
+     신호 폭증하나 수익 붕괴. 검증: 연 239건(하루1.0개), 3슬롯 +214%, MDD 20.5%, 5월 +4.42%)"""
     if df is None or len(df) < 60:
         return False, {}
     s = df["Close"]; o = df["Open"]; h = df["High"]; l = df["Low"]; v = df["Volume"]
@@ -69,9 +70,9 @@ def buy_signal(df):
         return False, {}
     cross = (s.iloc[i-1] <= lower.iloc[i-1]) and (s.iloc[i] > lower.iloc[i])          # 하한선 상향돌파
     rng = h.iloc[i] - l.iloc[i]
-    strong = rng > 0 and (s.iloc[i] - l.iloc[i]) / rng >= 0.6                          # 강한양봉(종가 상단60%)
-    golden = (rsi.iloc[i] > sig.iloc[i]) and (rsi.iloc[i-1] <= sig.iloc[i-1])          # RSI 골든크로스
-    volok = v.iloc[i] > vma5.iloc[i] * 1.3                                             # 거래량 1.3배
+    strong = rng > 0 and (s.iloc[i] - l.iloc[i]) / rng >= 0.5                          # 양봉(종가 상단50%)
+    golden = (rsi.iloc[i] > sig.iloc[i]) and (rsi.iloc[i-1] <= sig.iloc[i-1])          # RSI 골든크로스(필수)
+    volok = v.iloc[i] > vma5.iloc[i] * 1.1                                             # 거래량 1.1배
     ok = bool(cross and strong and golden and volok)
     info = {"rsi": round(float(rsi.iloc[i]), 1), "close": int(s.iloc[i]),
             "lower": int(lower.iloc[i]), "upper": int(upper.iloc[i])}
