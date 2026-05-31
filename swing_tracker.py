@@ -72,9 +72,9 @@ def buy_signal(df):
     strong = rng > 0 and (s.iloc[i] - l.iloc[i]) / rng >= 0.6                          # 강한양봉(종가 상단60%)
     golden = (rsi.iloc[i] > sig.iloc[i]) and (rsi.iloc[i-1] <= sig.iloc[i-1])          # RSI 골든크로스(필수)
     volok = v.iloc[i] > vma5.iloc[i] * 1.3                                             # 거래량 1.3배
-    m200 = s.rolling(200).mean()                                                       # 종가>200MA 필수(사용자 지정)
-    above200 = (len(s) >= 200) and (not pd.isna(m200.iloc[i])) and (s.iloc[i] > m200.iloc[i])
-    ok = bool(cross and strong and golden and volok and above200)
+    # ※ 200MA 필터는 스윙에서 제거(돈 최대): 적용시 +240%→+68%로 수익 급감.
+    #   스윙은 200MA 아래 깊은 저점 반등이 핵심 수익원이라 제외하지 않음.
+    ok = bool(cross and strong and golden and volok)
     info = {"rsi": round(float(rsi.iloc[i]), 1), "close": int(s.iloc[i]),
             "lower": int(lower.iloc[i]), "upper": int(upper.iloc[i])}
     return ok, info
