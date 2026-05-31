@@ -985,8 +985,8 @@ async function doScan() {
     }
 
     // ── 오늘의 추천 1순위 계산 (정렬과 무관하게 고정) ──
-    // 우선순위: HUNT > BREAKOUT > TREND > WATCH > BB_BREAK, 같은 등급 내 finalScore 최고
-    const GO = {"HUNT":0,"BREAKOUT":1,"TREND":2,"WATCH":3,"BB_BREAK":4};
+    // 우선순위: BREAKOUT > HUNT > TREND > WATCH (검증: BREAKOUT 청산률 38%>HUNT 28%), 같은 등급 내 점수순
+    const GO = {"BREAKOUT":0,"HUNT":1,"TREND":2,"WATCH":3,"BB_BREAK":4};
     const sorted = [...DATA].sort((a,b) =>
       (GO[a.grade]??5) - (GO[b.grade]??5) || (b.finalScore||0) - (a.finalScore||0));
     PICK = sorted[0] || null;
@@ -1031,7 +1031,7 @@ function updateStats(data) {
 }
 
 // ── Filter & Sort ──
-const GRADE_ORDER = {"HUNT": 0, "BREAKOUT": 1, "TREND": 2, "WATCH": 3, "BB_BREAK": 4};
+const GRADE_ORDER = {"BREAKOUT": 0, "HUNT": 1, "TREND": 2, "WATCH": 3, "BB_BREAK": 4};
 
 function getFiltered() {
   let d = [...DATA];
