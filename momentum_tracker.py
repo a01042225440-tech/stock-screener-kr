@@ -40,7 +40,7 @@ def record_buys(results, date_str, max_n=3):
             "code": code, "name": r.get("name", code), "grade": r.get("grade", ""),
             "buyDate": date_str, "buyPrice": int(buy),
             "target": tick(int(buy * (1 + tp / 100)), buy),
-            "stop": r.get("stoploss") or tick(int(buy * 0.95), buy),
+            "stop": r.get("stoploss") or tick(int(buy * 0.90), buy),   # 10일저점, fallback -10%
             "targetPct": tp, "maxHold": 6,
         })
         held.add(code); added.append(code)
@@ -65,7 +65,7 @@ def sell_check(df, p):
         sell, reason, px = True, f"🎯 익절(+{p.get('targetPct',10)}% 도달)", target
         profit = (target - buy) / buy * 100
     elif lo <= stop:
-        sell, reason, px = True, "🛑 손절(-5%)", stop
+        sell, reason, px = True, f"🛑 손절(10일저점 이탈, {(stop-buy)/buy*100:.0f}%)", stop
         profit = (stop - buy) / buy * 100
     elif held_days >= p.get("maxHold", 6):
         sell, reason = True, f"⏱ 6일만기({profit:+.1f}%)"

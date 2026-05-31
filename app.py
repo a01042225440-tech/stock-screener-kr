@@ -26,7 +26,7 @@ app = Flask(__name__, template_folder=".", static_folder=".", static_url_path="/
 
 # ─── 전략 버전 (조건 변경 시 올리면 캐시 자동 무효화) ───
 # 손절-5% / 청산+10% / D1 20MA>0% / D4 거래량1.5x / D5 RSI50-70 / C섹터보너스 / F1첫풀백
-STRATEGY_VERSION = "2026.05.29-stop5-tp10-hold6-brkfirst-brk15tp-kospima60gate-ma20pos-vol15-rsi5070-Cbonus-F1-min3picks-altK1-pxcap20"
+STRATEGY_VERSION = "2026.05.31-stop10dlow-tp10-hold6-brkfirst-brk15tp-kospima60gate-ma20pos-vol15-rsi5070-Cbonus-F1-min3picks-altK1-pxcap20"
 
 # ─── 주가 상한 (소액 분산매수용) ───
 # 100만원 시드 → 3종목 33만원씩 → 20만원 이하면 1주+ 보유 가능
@@ -973,15 +973,15 @@ def tick(p, ref):
             return (p // t) * t
     return (p // 1000) * 1000
 
-def calc_price_pro(cl, lo, atr, bb_info=None):
+def calc_price_pro(cl, lo, atr, bb_info=None, support_low=None):
     """
     당일 종가 매수 + 6영업일 내 +10% 청산 전략.
     - buy: 당일 종가 그대로
     - target1 = target2 = 매수가 × 1.10 (사용자 명시: 10% 도달시 전량매도)
-    - 손절: 1.5 ATR 또는 -5% 또는 저가-1% 중 가장 높은 것
+    - 손절: 직전 10일 최저가(support_low) + 최대손실 -10% 상한
+      (백테스트: 현행-5%는 손절률46%로 반등종목까지 털림 → 10일최저+(-10%)가
+       +160.6%/MDD13.4%로 +142.9%/MDD28.3%보다 돈↑·낙폭↓)
     - 최대 보유: 6영업일 → 미달성 시 종가 청산
-      (10명 연구원 교차검증: 보유 5→6일이 비용·과최적화 스트레스 모두 통과한
-       강건한 개선. 현실비용0.3% 반영 복리 +275%→+466%. MDD 동일수준)
     """
     if cl <= 0 or atr <= 0:
         return None
@@ -989,13 +989,17 @@ def calc_price_pro(cl, lo, atr, bb_info=None):
     buy = tick(int(cl), cl)                       # 당일 종가 그대로 매수
     target_10pct = tick(int(buy * 1.10), cl)      # +10% 청산가 (T1 = T2)
 
-    # 손절: ATR×1.5 또는 -5% 또는 저가-1% 중 높은 값
-    # 4/1~5/27 매트릭스 분석: -5% + 3종목 분산 = +64.97% (최적)
-    # -10%는 1순위 -19.42%, 3종목 +35.53%로 -5%보다 열등
-    sl_atr = int(buy - 1.5 * atr)
-    sl_low = int(lo * 0.99)
-    sl_max = int(buy * 0.95)                       # 최대 -5% (이전 -10%)
-    sl = tick(max(sl_atr, sl_low, sl_max), cl)
+    # 손절: 직전 10일 최저가(base 저점) + 최대손실 -10% 상한
+    # 백테스트(276종목 1년): 현행-5%는 손절률 46%로 반등종목까지 털림 → +142.9%/MDD28.3%.
+    # 10일최저+(-10%상한)은 손절률 21%/승률53% → +160.6%/MDD13.4% (돈↑·낙폭↓·반등보존).
+    cap = int(buy * 0.90)                          # 최대손실 -10% (이 아래로는 안 잃음)
+    if support_low and support_low < buy:
+        sl_raw = max(int(support_low), cap)        # 10일저점, 단 -10%보다 깊으면 -10%로 캡
+    else:
+        sl_raw = cap
+    sl = tick(min(sl_raw, buy - 1), cl)            # 매수가보다는 무조건 아래
+    if sl >= buy:
+        sl = tick(cap, cl)
 
     risk = buy - sl
     if risk <= 0:
@@ -1212,8 +1216,10 @@ def run_scan(date_str, demo=False, intraday=True, market="ALL"):
         last_open = int(df["Open"].iloc[-1])
         last_high = int(df["High"].iloc[-1])
         last_low = int(df["Low"].iloc[-1])
+        # 직전 10일 최저가(매수일 봉 제외) = base 저점 손절선
+        support_low = int(df["Low"].iloc[-11:-1].min()) if len(df) >= 11 else int(df["Low"].iloc[:-1].min())
         bb_info = {"bb_lower": r.get("bb_lower", 0), "bb_mid": r.get("bb_mid", 0), "bb_upper": r.get("bb_upper", 0)}
-        p = calc_price_pro(last_close, last_low, r["atr"], bb_info)
+        p = calc_price_pro(last_close, last_low, r["atr"], bb_info, support_low=support_low)
         if p is None:
             return None
         # ★ BREAKOUT은 모멘텀 돌파 → +15% 청산 (검증: 평균 +1.15%→+1.43%,
@@ -1819,7 +1825,7 @@ def format_telegram_message(payload):
             lines.append(f"   섹터 {s.get('sector','-')} · RSI {s.get('rsi','-')} · 거래량 {s.get('volMult5','-')}x")
             lines.append("")
     lines.append("⏱ 매수: 당일 종가 | 청산: +목표% 도달 또는 6영업일째 종가 (BREAKOUT +15%, 그외 +10%)")
-    lines.append("🛑 손절 -5% 반드시 지키기")
+    lines.append("🛑 손절: 직전 10일 최저가 이탈 시 (최대손실 -10%) 반드시 지키기")
     return "\n".join(lines)
 
 @app.route("/api/notify")
