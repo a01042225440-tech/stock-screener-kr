@@ -1,3 +1,37 @@
 {
-  "positions": []
+  "positions": [
+    {
+      "code": "058610",
+      "name": "에스피지",
+      "grade": "TREND",
+      "buyDate": "2026-06-01",
+      "buyPrice": 127900,
+      "target": 140600,
+      "stop": 115100,
+      "targetPct": 10,
+      "maxHold": 6
+    },
+    {
+      "code": "001440",
+      "name": "대한전선",
+      "grade": "TREND",
+      "buyDate": "2026-06-01",
+      "buyPrice": 47500,
+      "target": 52250,
+      "stop": 44000,
+      "targetPct": 10,
+      "maxHold": 6
+    },
+    {
+      "code": "078930",
+      "name": "GS",
+      "grade": "TREND",
+      "buyDate": "2026-06-01",
+      "buyPrice": 73000,
+      "target": 80300,
+      "stop": 70400,
+      "targetPct": 10,
+      "maxHold": 6
+    }
+  ]
 }
