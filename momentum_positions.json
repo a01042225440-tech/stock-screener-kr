@@ -9,7 +9,9 @@
       "target": 140600,
       "stop": 115100,
       "targetPct": 10,
-      "maxHold": 6
+      "maxHold": 6,
+      "last": 127900,
+      "profit": 0.0
     },
     {
       "code": "001440",
@@ -20,7 +22,9 @@
       "target": 52250,
       "stop": 44000,
       "targetPct": 10,
-      "maxHold": 6
+      "maxHold": 6,
+      "last": 47500,
+      "profit": 0.0
     },
     {
       "code": "078930",
@@ -31,7 +35,9 @@
       "target": 80300,
       "stop": 70400,
       "targetPct": 10,
-      "maxHold": 6
+      "maxHold": 6,
+      "last": 73000,
+      "profit": 0.0
     }
   ]
 }
