@@ -50,7 +50,8 @@ def build_message(date, dow, momentum, swing_buys, regime):
     return "\n".join(L)
 
 
-def main():
+def run_buy_alert():
+    """15:20 통합 매수 알림 (모멘텀+스윙). 발송 성공여부 반환. (intraday 모니터/단독 둘 다 호출)"""
     date = datetime.now().strftime("%Y-%m-%d")
     dow = ["월","화","수","목","금","토","일"][datetime.strptime(date, "%Y-%m-%d").weekday()]
     print(f"[NOTIFY] 통합 스캔 시작: {date}")
@@ -85,6 +86,11 @@ def main():
     except Exception as e:
         print(f"[NOTIFY] 포지션 기록 오류: {e}")
 
+    return ok
+
+
+def main():
+    ok = run_buy_alert()
     if not ok:
         sys.exit(1)
 

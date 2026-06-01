@@ -1,12 +1,9 @@
 name: Daily Stock Notify
 
 on:
-  schedule:
-    # 01:47 UTC = 한국시간 10:47 에 '일찍' 시작(비정각 분으로 스케줄 지연 최소화).
-    # 작업 안에서 15:20 KST(06:20 UTC)까지 대기 후 발송 → 장마감(15:30) 10분 전,
-    # 동시호가(15:20~15:30) 매수 직전에 도착. GitHub 스케줄 지연 ~4.5h 흡수.
-    - cron: '47 1 * * 1-5'
-  workflow_dispatch:   # 수동 실행
+  # ※ 스케줄 비활성화: 15:20 통합 매수알림은 swing_intraday(매 5분, 정시 신뢰성↑)가 처리.
+  #   이 워크플로는 수동 백업용으로만 유지(GitHub 1일1회 스케줄은 지연이 커서 제외).
+  workflow_dispatch:   # 수동 실행(백업)
     inputs:
       send_now:
         description: '즉시 발송(대기 안함)'

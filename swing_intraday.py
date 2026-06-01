@@ -69,10 +69,20 @@ def one_pass(allow_buy):
     kst = now_kst()
     date_str = kst.strftime("%Y-%m-%d")
     hm = kst.hour * 60 + kst.minute
-    in_buy = False   # 매수 스캔은 15:20 통합 알림(notify_send)으로 이동. 여기선 매도/손절만.
+    # 1) 매도/손절 점검 (매 틱)
     e1 = do_momentum_sells(date_str, kst)
-    e2, bought = do_swing(date_str, kst, in_buy)
-    return (e1 or e2), (in_buy and bought)
+    e2, _ = do_swing(date_str, kst, False)   # 스윙 매도만(매수는 통합알림이 처리)
+    # 2) 15:20 단일 틱: 통합 매수 알림 (모멘텀+스윙) — 신뢰성 높은 */5 크론이 정시 보장
+    bought = False
+    in_buy = allow_buy and (15 * 60 + 20) <= hm <= (15 * 60 + 24)
+    if in_buy:
+        try:
+            from notify_send import run_buy_alert
+            run_buy_alert()
+            bought = True
+        except Exception as e:
+            print(f"[BUY-ALERT] error: {e}")
+    return (e1 or e2 or bought), bought
 
 
 def main():
