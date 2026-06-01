@@ -1,7 +1,7 @@
 """장중 모니터 (GitHub Actions) — 모멘텀 + 스윙 통합, ~1분 해상도.
 - 크론 */5(5분, GitHub 최소) + 잡 내부 미니루프(MONITOR_ITERS회 × MONITOR_SLEEP초)
   → 실질 1분 간격으로 매도/손절 점검(스팸 방지: 팔린 포지션은 파일에서 제거돼 재알림 없음)
-- 매수 스캔: 스윙 14:40~14:44 단일 틱에서 1회만(중복 방지). 모멘텀 매수는 15:13 daily_notify.
+- 매수 스캔: 스윙 15:20~15:24 단일 틱에서 1회만(중복 방지). 모멘텀 매수도 15:20 daily_notify.
 - 이벤트(매도/손절/매수신호) 있을 때만 텔레그램 발송.
 """
 import os, sys, time
@@ -69,7 +69,7 @@ def one_pass(allow_buy):
     kst = now_kst()
     date_str = kst.strftime("%Y-%m-%d")
     hm = kst.hour * 60 + kst.minute
-    in_buy = allow_buy and (14 * 60 + 40) <= hm <= (14 * 60 + 44)   # 14:40 단일 틱 매수창
+    in_buy = allow_buy and (15 * 60 + 20) <= hm <= (15 * 60 + 24)   # 15:20 단일 틱 매수창(장마감 10분전)
     e1 = do_momentum_sells(date_str, kst)
     e2, bought = do_swing(date_str, kst, in_buy)
     return (e1 or e2), (in_buy and bought)
