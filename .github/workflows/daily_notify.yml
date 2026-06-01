@@ -6,7 +6,12 @@ on:
     # 작업 안에서 15:20 KST(06:20 UTC)까지 대기 후 발송 → 장마감(15:30) 10분 전,
     # 동시호가(15:20~15:30) 매수 직전에 도착. GitHub 스케줄 지연 ~4.5h 흡수.
     - cron: '47 1 * * 1-5'
-  workflow_dispatch:   # 수동 즉시 실행 (대기 없이 바로 발송)
+  workflow_dispatch:   # 수동 실행
+    inputs:
+      send_now:
+        description: '즉시 발송(대기 안함)'
+        required: false
+        default: 'false'
 
 permissions:
   contents: write   # momentum_positions.json 영속화
@@ -27,8 +32,8 @@ jobs:
       - name: Install dependencies
         run: pip install numpy pandas requests flask
 
-      - name: Wait until 15:20 KST (scheduled runs only)
-        if: github.event_name == 'schedule'
+      - name: Wait until 15:20 KST (schedule, or manual unless send_now)
+        if: github.event_name == 'schedule' || github.event.inputs.send_now != 'true'
         run: |
           TARGET=$(date -u -d "$(date -u +%Y-%m-%d) 06:20:00" +%s)
           NOW=$(date -u +%s)
