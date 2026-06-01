@@ -1,0 +1,45 @@
+name: Daily Report & Health Check
+
+on:
+  schedule:
+    # 07:40 UTC = 16:40 KST (장마감·종가확정 후), 월~금. 자동점검 + 엑셀 보고.
+    - cron: '40 7 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install numpy pandas requests flask openpyxl
+
+      - name: Run daily report & health check
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python report_daily.py
+
+      - name: Persist trade log
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash origin master || true
+          git add trades_log.json
+          if git diff --staged --quiet; then
+            echo "no trade log change"
+          else
+            git commit -m "chore: trade log ($(date -u +%Y-%m-%d))"
+            git push || true
+          fi

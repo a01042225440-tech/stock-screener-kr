@@ -57,7 +57,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git pull --rebase --autostash origin master || true
-          git add momentum_positions.json swing_positions.json
+          git add momentum_positions.json swing_positions.json trades_log.json
           if git diff --staged --quiet; then
             echo "no position change"
           else

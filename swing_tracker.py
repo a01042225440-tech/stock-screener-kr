@@ -161,6 +161,12 @@ def run_swing(date_str=None, auto_open=True, intraday=False, do_buys=True):
         s, reason, info = sell_check(df, p["buyPrice"], p["buyDate"])
         if s:
             sells.append({**p, "reason": reason, **info})
+            try:
+                from trade_log import log_closed
+                log_closed("스윙", p["code"], p.get("name", p["code"]), p["buyDate"],
+                           p["buyPrice"], info.get("close", p["buyPrice"]), info.get("profit", 0), reason)
+            except Exception as e:
+                print(f"[SWING] log error: {e}")
         else:
             p["last"] = info.get("close", p.get("buyPrice"))
             p["profit"] = info.get("profit", 0)

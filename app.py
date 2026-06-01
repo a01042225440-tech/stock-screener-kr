@@ -1807,6 +1807,23 @@ def send_telegram(message):
     except Exception as e:
         return False, f"발송 실패: {e}"
 
+def send_telegram_document(filepath, caption=""):
+    """텔레그램으로 파일(엑셀 등) 전송."""
+    cfg = _load_telegram_config()
+    if not cfg or not cfg.get("bot_token") or not cfg.get("chat_id"):
+        return False, "telegram 설정 없음"
+    try:
+        url = f"https://api.telegram.org/bot{cfg['bot_token']}/sendDocument"
+        with open(filepath, "rb") as f:
+            r = _session.post(url,
+                data={"chat_id": cfg["chat_id"], "caption": caption[:1000], "parse_mode": "HTML"},
+                files={"document": f}, timeout=30)
+        if r.status_code == 200:
+            return True, "파일 발송 성공"
+        return False, f"파일 오류 {r.status_code}: {r.text[:100]}"
+    except Exception as e:
+        return False, f"파일 발송 실패: {e}"
+
 def format_telegram_message(payload):
     """스캔 결과를 텔레그램 메시지로 포맷"""
     date = payload.get("date", "")

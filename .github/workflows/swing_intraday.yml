@@ -43,10 +43,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git pull --rebase --autostash origin master || true
-          git add swing_positions.json momentum_positions.json
+          git add swing_positions.json momentum_positions.json trades_log.json
           if git diff --staged --quiet; then
-            echo "no position change"
+            echo "no change"
           else
-            git commit -m "chore: positions update ($(date -u +%Y-%m-%dT%H:%MZ))"
+            git commit -m "chore: positions/log ($(date -u +%Y-%m-%dT%H:%MZ))"
             git push || true
           fi
