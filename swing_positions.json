@@ -1,3 +1,11 @@
 {
-  "positions": []
+  "positions": [
+    {
+      "code": "388720",
+      "name": "유일로보틱스",
+      "buyDate": "2026-06-01",
+      "buyPrice": 96400,
+      "shares": 2
+    }
+  ]
 }
