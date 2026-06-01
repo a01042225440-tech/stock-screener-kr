@@ -10,6 +10,7 @@
       "stop": 115100,
       "targetPct": 10,
       "maxHold": 6,
+      "shares": 2,
       "last": 127900,
       "profit": 0.0
     },
@@ -18,25 +19,13 @@
       "name": "대한전선",
       "grade": "TREND",
       "buyDate": "2026-06-01",
-      "buyPrice": 47500,
-      "target": 52250,
+      "buyPrice": 47600,
+      "target": 52350,
       "stop": 44000,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 47500,
-      "profit": 0.0
-    },
-    {
-      "code": "078930",
-      "name": "GS",
-      "grade": "TREND",
-      "buyDate": "2026-06-01",
-      "buyPrice": 73000,
-      "target": 80300,
-      "stop": 70400,
-      "targetPct": 10,
-      "maxHold": 6,
-      "last": 73000,
+      "shares": 7,
+      "last": 47600,
       "profit": 0.0
     }
   ]
