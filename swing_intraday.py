@@ -69,7 +69,7 @@ def one_pass(allow_buy):
     kst = now_kst()
     date_str = kst.strftime("%Y-%m-%d")
     hm = kst.hour * 60 + kst.minute
-    in_buy = allow_buy and (15 * 60 + 20) <= hm <= (15 * 60 + 24)   # 15:20 단일 틱 매수창(장마감 10분전)
+    in_buy = False   # 매수 스캔은 15:20 통합 알림(notify_send)으로 이동. 여기선 매도/손절만.
     e1 = do_momentum_sells(date_str, kst)
     e2, bought = do_swing(date_str, kst, in_buy)
     return (e1 or e2), (in_buy and bought)

@@ -52,15 +52,15 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python notify_send.py
 
-      - name: Persist momentum positions
+      - name: Persist positions
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git pull --rebase --autostash origin master || true
-          git add momentum_positions.json
+          git add momentum_positions.json swing_positions.json
           if git diff --staged --quiet; then
             echo "no position change"
           else
-            git commit -m "chore: momentum positions ($(date -u +%Y-%m-%d))"
+            git commit -m "chore: positions ($(date -u +%Y-%m-%d))"
             git push || true
           fi
