@@ -117,7 +117,7 @@ def main():
               "📎 상세 엑셀 첨부"]
     summary = "\n".join(lines)
 
-    ok, info = send_telegram_document(path, caption=summary)
+    ok, info = send_telegram_document(path, caption=summary, filename=f"매매보고_{today}.xlsx")
     if not ok:
         send_telegram(summary)  # 파일 실패시 텍스트라도
     print(f"[REPORT] 청산{n} 누적{comp:+.1f}% 엑셀발송={ok} {info}")
