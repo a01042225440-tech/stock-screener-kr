@@ -2,9 +2,9 @@ name: Swing Intraday Monitor
 
 on:
   schedule:
-    # 매 5분(GitHub 크론 최소, UTC 0~6시 = KST 09:00~15:40), 월~금.
-    # 잡 내부에서 1분 간격 미니루프로 점검 → 실질 ~1분 해상도.
-    - cron: '*/5 0-6 * * 1-5'
+    # 매 5분(GitHub 크론 최소, UTC 0~7시 = KST 09:00~16:55), 월~금.
+    # 09:00~15:30 매도/손절·15:20 매수알림 / 16:40 일일보고. 잡 내부 1분 미니루프.
+    - cron: '*/5 0-7 * * 1-5'
   workflow_dispatch:
 
 permissions:
@@ -27,8 +27,8 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
-        run: pip install numpy pandas requests flask
+      - name: Install dependencies (openpyxl for 16:40 report)
+        run: pip install numpy pandas requests flask openpyxl
 
       - name: Run intraday monitor (1-min loop within the 5-min slot)
         env:

@@ -65,36 +65,43 @@ def do_swing(date_str, kst, do_buys):
     return event, do_buys
 
 
-def one_pass(allow_buy):
+def one_pass(buy_done, report_done):
+    """반환 (이벤트?, did_buy, did_report)."""
     kst = now_kst()
     date_str = kst.strftime("%Y-%m-%d")
     hm = kst.hour * 60 + kst.minute
     # 1) 매도/손절 점검 (매 틱)
     e1 = do_momentum_sells(date_str, kst)
     e2, _ = do_swing(date_str, kst, False)   # 스윙 매도만(매수는 통합알림이 처리)
-    # 2) 15:20 단일 틱: 통합 매수 알림 (모멘텀+스윙) — 신뢰성 높은 */5 크론이 정시 보장
+    # 2) 15:20 단일 틱: 통합 매수 알림 (모멘텀+스윙)
     bought = False
-    in_buy = allow_buy and (15 * 60 + 20) <= hm <= (15 * 60 + 24)
-    if in_buy:
+    if (not buy_done) and (15 * 60 + 20) <= hm <= (15 * 60 + 24):
         try:
             from notify_send import run_buy_alert
-            run_buy_alert()
-            bought = True
+            run_buy_alert(); bought = True
         except Exception as e:
             print(f"[BUY-ALERT] error: {e}")
-    return (e1 or e2 or bought), bought
+    # 3) 16:40 단일 틱: 일일 엑셀 보고 + 자동점검
+    reported = False
+    if (not report_done) and (16 * 60 + 40) <= hm <= (16 * 60 + 44):
+        try:
+            from report_daily import main as report_main
+            report_main(); reported = True
+        except Exception as e:
+            print(f"[REPORT] error: {e}")
+    return (e1 or e2 or bought or reported), bought, reported
 
 
 def main():
     iters = int(os.environ.get("MONITOR_ITERS", "1"))
     sleep_s = int(os.environ.get("MONITOR_SLEEP", "60"))
-    buy_done = False
+    buy_done = report_done = False
     any_event = False
     for k in range(max(1, iters)):
-        ev, did_buy = one_pass(allow_buy=not buy_done)
+        ev, did_buy, did_report = one_pass(buy_done, report_done)
         any_event = any_event or ev
-        if did_buy:
-            buy_done = True
+        if did_buy: buy_done = True
+        if did_report: report_done = True
         if k < iters - 1:
             time.sleep(sleep_s)
     if not any_event:

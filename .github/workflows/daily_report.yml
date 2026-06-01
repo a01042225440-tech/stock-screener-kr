@@ -1,9 +1,8 @@
 name: Daily Report & Health Check
 
 on:
-  schedule:
-    # 07:40 UTC = 16:40 KST (장마감·종가확정 후), 월~금. 자동점검 + 엑셀 보고.
-    - cron: '40 7 * * 1-5'
+  # ※ 스케줄 비활성화: 16:40 일일보고는 swing_intraday(매 5분, 정시 신뢰성)가 처리.
+  #   이 워크플로는 수동 백업용으로만 유지.
   workflow_dispatch:
 
 permissions:
