@@ -11,22 +11,8 @@
       "targetPct": 10,
       "maxHold": 6,
       "shares": 2,
-      "last": 127900,
-      "profit": 0.0
-    },
-    {
-      "code": "001440",
-      "name": "대한전선",
-      "grade": "TREND",
-      "buyDate": "2026-06-01",
-      "buyPrice": 47600,
-      "target": 52350,
-      "stop": 44000,
-      "targetPct": 10,
-      "maxHold": 6,
-      "shares": 7,
-      "last": 47600,
-      "profit": 0.0
+      "last": 121600,
+      "profit": -4.9
     }
   ]
 }
