@@ -1035,7 +1035,7 @@ async function doScan() {
     renderCards();
     startLivePolling();   // 실시간 현재가 갱신 시작(25초마다)
     // 자동 펼친 PICK 카드의 차트 로드
-    if (PICK) setTimeout(() => drawChart(PICK.code), 100);
+    // (PICK 단일카드 폐지 — 상위 TOP-3 섹션 사용. 차트는 비교후보 카드 클릭 시 로드)
 
   } catch (err) {
     clearInterval(pollTimer);
@@ -1272,29 +1272,52 @@ function renderCards() {
   // PICK은 정렬/필터와 무관하게 항상 최상단 고정 배너로 표시
   // 일반 목록(getFiltered)에서는 PICK 종목을 제외 (중복 방지)
   const filteredAll = getFiltered();
-  const list = PICK ? filteredAll.filter(s => s.code !== PICK.code) : filteredAll;
+  // 💰 오늘 살 3종목 (돈 순서): 🌊스윙 우선 → 💰모멘텀(BREAKOUT>HUNT>TREND, 점수순)
+  const _GO = {"BREAKOUT":0,"HUNT":1,"TREND":2,"WATCH":3,"BB_BREAK":4};
+  const buyAll = [];
+  (SWING||[]).forEach(s=>buyAll.push({strat:'swing',name:s.name,code:s.code,buy:s.close,target:s.upper,stop:s.lower,rsi:s.rsi}));
+  [...DATA].sort((a,b)=>(_GO[a.grade]??9)-(_GO[b.grade]??9)||(b.finalScore||0)-(a.finalScore||0))
+    .forEach(s=>buyAll.push({strat:'mom',name:s.name,code:s.code,buy:s.buyPrice,target:s.target1,stop:s.stoploss,grade:s.grade,targetPct:s.targetPct||10}));
+  const top3 = buyAll.slice(0,3);
+  const top3codes = new Set(top3.map(x=>x.code));
+  const list = filteredAll.filter(s => !top3codes.has(s.code));
 
   let h = '';
 
-  // 🌊 1순위 — 스윙 (맨 위, 없으면 '없음' 표시)
-  h += `<div style="margin:0 0 14px;background:linear-gradient(135deg,#EEF2FF,#F3E8FF);border:2px solid #6366F1;border-radius:12px;padding:14px">
-    <div style="font-weight:800;color:#4338CA;margin-bottom:4px;font-size:0.98rem">🌊 1순위 — 스윙 (저점반등, 수익률 최고) ${SWING&&SWING.length?`<span style="background:#6366F1;color:#fff;padding:1px 7px;border-radius:10px;font-size:0.72rem">${SWING.length}종목</span>`:''}</div>
-    <div style="font-size:0.7rem;color:#6B7280;margin-bottom:10px">BB(20,2) 하한 상향돌파 + 강한양봉 + RSI 골든크로스 + 거래량 1.3배</div>
-    ${(SWING&&SWING.length)?SWING.map(s=>`
-      <div style="background:#fff;border:1px solid #C7D2FE;border-radius:8px;padding:10px 12px;margin-bottom:6px">
-        <div style="font-weight:700;color:#1E293B;margin-bottom:6px">${s.name} <span style="color:#6B7280;font-size:0.78rem;font-weight:500">${s.code}</span></div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center">
-          <div style="background:#F1F5F9;border-top:3px solid #475569;border-radius:6px;padding:6px 4px"><div style="font-size:0.65rem;color:#475569;font-weight:700">현재가 ${LIVE[s.code]?'🔴':''}</div><div style="font-size:1.15rem;font-weight:900;color:#0F172A">${fmt(livePx(s))}</div></div>
-          <div style="background:#F0FDF4;border-top:3px solid #16A34A;border-radius:6px;padding:6px 4px"><div style="font-size:0.65rem;color:#16A34A;font-weight:700">🎯 BB상한</div><div style="font-size:1.15rem;font-weight:900;color:#15803D">${fmt(s.upper)}</div></div>
-          <div style="background:#FEF2F2;border-top:3px solid #DC2626;border-radius:6px;padding:6px 4px"><div style="font-size:0.65rem;color:#DC2626;font-weight:700">🛑 BB하한</div><div style="font-size:1.15rem;font-weight:900;color:#B91C1C">${fmt(s.lower)}</div></div>
-          <div style="background:#EEF2FF;border-top:3px solid #6366F1;border-radius:6px;padding:6px 4px"><div style="font-size:0.65rem;color:#4338CA;font-weight:700">RSI</div><div style="font-size:1.15rem;font-weight:900;color:#312E81">${s.rsi}</div></div>
-        </div>
-      </div>`).join('')
-    :`<div style="background:#fff;border:1px dashed #C7D2FE;border-radius:8px;padding:14px;text-align:center;color:#6B7280;font-weight:700">오늘 스윙 신호 <span style="color:#DC2626">없음</span> → 아래 모멘텀 3종목으로 진행</div>`}
+  // ── 💰 오늘 살 3종목 (돈 많이 버는 순서) ──
+  h += `<div style="background:linear-gradient(135deg,#16A34A,#15803D);color:#fff;padding:12px 16px;border-radius:12px;margin-bottom:8px;box-shadow:0 4px 14px rgba(22,163,74,0.25)">
+    <div style="font-weight:800;font-size:1.05rem">💰 오늘 살 3종목 <span style="font-size:0.8rem;opacity:0.9">(돈 순서 · 자본 33%씩)</span></div>
+    <div style="font-size:0.74rem;opacity:0.95;margin-top:3px">🌊 스윙(검증 최강) 우선 → 💰 모멘텀 · 한 종목 몰빵 금지 · 손절 반드시</div>
   </div>`;
+  if (top3.length === 0) {
+    h += `<div style="background:#fff;border:2px dashed #CBD5E1;border-radius:12px;padding:22px;text-align:center;color:#64748B;font-weight:700;margin-bottom:14px">오늘 매수 신호 <span style="color:#DC2626">없음</span> — 쉬는 것도 전략입니다 (현금 보유)</div>`;
+  } else {
+    top3.forEach((s, idx) => {
+      const isSwing = s.strat === 'swing';
+      const tag = isSwing ? '🌊 스윙' : ('💰 ' + (s.grade || '모멘텀'));
+      const tagc = isSwing ? '#6366F1' : '#DC2626';
+      const tgtLabel = isSwing ? '🎯 목표(BB상한)' : ('🎯 +' + (s.targetPct) + '%');
+      const cur = LIVE[s.code] ? LIVE[s.code].price : s.buy;
+      h += `<div style="background:#fff;border:2px solid ${idx===0?'#16A34A':'#E2E8F0'};border-radius:12px;padding:12px 14px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+          <span style="background:${idx===0?'#16A34A':'#64748B'};color:#fff;width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0">${idx+1}</span>
+          <span style="background:${tagc};color:#fff;padding:2px 8px;border-radius:5px;font-size:0.72rem;font-weight:800">${tag}</span>
+          <span style="font-weight:800;font-size:1.05rem;color:#0F172A">${s.name}</span>
+          <span style="color:#94A3B8;font-size:0.78rem">${s.code}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center">
+          <div style="background:#F1F5F9;border-top:4px solid #475569;border-radius:8px;padding:8px 4px"><div style="font-size:0.66rem;color:#475569;font-weight:700">현재가 ${LIVE[s.code]?'🔴':''}</div><div style="font-size:1.35rem;font-weight:900;color:#0F172A">${fmt(cur)}</div></div>
+          <div style="background:#EFF6FF;border-top:4px solid #2563EB;border-radius:8px;padding:8px 4px"><div style="font-size:0.66rem;color:#2563EB;font-weight:700">💰 매수가</div><div style="font-size:1.35rem;font-weight:900;color:#1E3A8A">${fmt(s.buy)}</div></div>
+          <div style="background:#F0FDF4;border-top:4px solid #16A34A;border-radius:8px;padding:8px 4px"><div style="font-size:0.66rem;color:#16A34A;font-weight:700">${tgtLabel}</div><div style="font-size:1.35rem;font-weight:900;color:#15803D">${fmt(s.target)}</div></div>
+          <div style="background:#FEF2F2;border-top:4px solid #DC2626;border-radius:8px;padding:8px 4px"><div style="font-size:0.66rem;color:#DC2626;font-weight:700">🛑 손절가</div><div style="font-size:1.35rem;font-weight:900;color:#B91C1C">${fmt(s.stop)}</div></div>
+        </div>
+      </div>`;
+    });
+    h += `<div style="font-size:0.72rem;color:#475569;margin:2px 2px 14px;line-height:1.5">📌 위 <b>3종목을 자본 33%씩</b> 매수 · 🎯목표 도달 시 익절 · 🛑손절선 이탈 시 무조건 매도</div>`;
+  }
 
-  // 💡 분산 매수 권고 배너 (백테스트 검증 - 손절 -5% + 3종목 분산 = +64.97%)
-  if (DATA.length >= 1) {
+  // 💡 분산 매수 권고 배너 (상위 TOP-3 섹션으로 대체 — 비활성)
+  if (false) {
     const buyCandidates = filteredAll.slice(0, 3);
     h += `<div style="background:linear-gradient(135deg,#16A34A,#15803D);color:#fff;padding:12px 16px;border-radius:10px;margin-bottom:12px;box-shadow:0 4px 12px rgba(22,163,74,0.25)">
       <div style="font-weight:800;font-size:0.95rem;margin-bottom:4px">💡 매트릭스 검증 최적 전략 → <span style="background:#fff;color:#16A34A;padding:2px 8px;border-radius:4px">손절 -5% · 매일 상위 3종목 균등매수</span></div>
@@ -1305,8 +1328,8 @@ function renderCards() {
     </div>`;
   }
 
-  // ⭐ 추천 1순위 고정 배너 카드
-  if (PICK) {
+  // ⭐ (옛 PICK 단일카드 — 상위 TOP-3 섹션으로 대체, 비활성)
+  if (false) {
     const g = {
       "HUNT":     {bg:"#16A34A", emoji:"🟢", label:"HUNT",     txt:"저점매수 (남석관 눌림목) - 정배열+실적+주도섹터+20일선 ±5%+양봉반등"},
       "BREAKOUT": {bg:"#DC2626", emoji:"🔴", label:"BREAKOUT", txt:"추격매수 (Minervini/O'Neil) - 정배열+실적+섹터+52주신고가+거래량2배"},
