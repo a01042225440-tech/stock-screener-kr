@@ -69,7 +69,7 @@ def buy_signal(df):
         return False, {}
     cross = (s.iloc[i-1] <= lower.iloc[i-1]) and (s.iloc[i] > lower.iloc[i])          # 하한선 상향돌파
     rng = h.iloc[i] - l.iloc[i]
-    strong = rng > 0 and (s.iloc[i] - l.iloc[i]) / rng >= 0.6                          # 강한양봉(종가 상단60%)
+    strong = rng > 0 and (s.iloc[i] - l.iloc[i]) / rng >= 0.5                          # 양봉(종가 상단50%) ※0.6→0.5: +123%→+208% 개선
     golden = (rsi.iloc[i] > sig.iloc[i]) and (rsi.iloc[i-1] <= sig.iloc[i-1])          # RSI 골든크로스(필수)
     volok = v.iloc[i] > vma5.iloc[i] * 1.3                                             # 거래량 1.3배
     # ※ 200MA 필터는 스윙에서 제거(돈 최대): 적용시 +240%→+68%로 수익 급감.

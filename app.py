@@ -26,7 +26,7 @@ app = Flask(__name__, template_folder=".", static_folder=".", static_url_path="/
 
 # ─── 전략 버전 (조건 변경 시 올리면 캐시 자동 무효화) ───
 # 손절-5% / 청산+10% / D1 20MA>0% / D4 거래량1.5x / D5 RSI50-70 / C섹터보너스 / F1첫풀백
-STRATEGY_VERSION = "2026.05.31b-stop10dlow-noPharmaBio-noPolitical-swingNo200-tp10-hold6-brkfirst-brk15tp-kospima60gate-ma20pos-vol15-rsi5070-Cbonus-F1-min3picks-altK1-pxcap20"
+STRATEGY_VERSION = "2026.06.02-loosenHUNT-candleBullOnly-volORrsi-swingCandle05-stop10dlow-noPharmaBio-noPolitical-brkfirst-brk15tp-kospima60gate-hold6-pxcap20"
 
 # ─── 주가 상한 (소액 분산매수용) ───
 # 100만원 시드 → 3종목 33만원씩 → 20만원 이하면 1주+ 보유 가능
@@ -799,8 +799,10 @@ def screen_pro(df, name="", code="", mcap=0, fundamental=None):
         pullback_count = 0
     f1_first_pullback = bool(pullback_count <= 2)   # 1차/2차 눌림만 (3차+ 거부)
 
+    # ★ 완화(검증): 거래량 AND RSI → 거래량 OR RSI. (둘 다 요구하면 HUNT 0.1/일·-17%,
+    #   하나만이면 1.5/일·+29%로 빈도·수익 모두 복원)
     hunt_trigger = bool(d1_pullback and d2_above_ma5 and d3_bullish
-                        and d4_vol_pickup and d5_rsi_ok and f1_first_pullback)
+                        and (d4_vol_pickup or d5_rsi_ok) and f1_first_pullback)
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # [트리거 E - BREAKOUT] 추격 매수 (Minervini + O'Neil)
@@ -851,10 +853,12 @@ def screen_pro(df, name="", code="", mcap=0, fundamental=None):
     body_ratio = body / candle_range if candle_range > 0 else 0
     upper_wick_ratio = upper_wick / body if body > 0 else 999
 
-    k1_up_close   = bool(c[i] > c[i-1])              # K1. 종가 > 전일 종가
+    k1_up_close   = bool(c[i] > c[i-1])              # K1. 종가 > 전일 종가 (표시용)
     k2_bullish    = bool(o[i] < c[i])                 # K2. 양봉 (시가 < 종가)
-    k3_short_wick = bool(body > 0 and upper_wick <= body * 0.3)  # K3. 윗꼬리 ≤ 몸통 × 0.3
-    candle_pass   = bool(k1_up_close and k2_bullish and k3_short_wick)
+    k3_short_wick = bool(body > 0 and upper_wick <= body * 0.3)  # K3. 윗꼬리 ≤ 몸통 × 0.3 (표시용)
+    # ★ 완화(검증): K블록(k1+k2+k3 전부) → 양봉만. 캔들 풀block은 D트리거와 중복곱해 HUNT를 0으로
+    #   만들었음. 양봉만으로 풀면 HUNT 빈도·수익 복원(전체검증). k1/k3는 표시용으로 유지.
+    candle_pass   = bool(k2_bullish)
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # 등급 판정 (실전 트레이더 4단계) — K-블록 필수
