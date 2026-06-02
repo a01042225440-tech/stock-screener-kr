@@ -2,9 +2,9 @@ name: Swing Intraday Monitor
 
 on:
   schedule:
-    # 매 5분(GitHub 크론 최소, UTC 0~7시 = KST 09:00~16:55), 월~금.
-    # 09:00~15:30 매도/손절·15:20 매수알림 / 16:40 일일보고. 잡 내부 1분 미니루프.
-    - cron: '*/5 0-7 * * 1-5'
+    # ※ '*/5'는 GitHub 무료에서 자주 멈춤(고빈도 throttle). 명시적 10분 간격 크론으로 분산.
+    #   UTC 0~7시 = KST 09:00~16:55, 월~금. 잡 내부 4×60초 미니루프로 ~1분 해상도 보완.
+    - cron: '0,10,20,30,40,50 0-7 * * 1-5'
   workflow_dispatch:
 
 permissions:
