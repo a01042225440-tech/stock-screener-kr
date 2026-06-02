@@ -58,8 +58,8 @@ def _bb(df):
     return lower, m20, upper, rsi, sig, vma5
 
 def buy_signal(df):
-    """저점매수 신호: BB(20,2) 하한선 상향돌파 + 강한양봉 + RSI골든크로스 + 거래량1.3x.
-    (타이트 설정 — 돈 최대: 검증 연 148건(0.6/일), 3슬롯 +327%, MDD 8.8%, 5월 +6.43%)"""
+    """저점매수 신호: 오늘 BB(20,2) 하한선 상향돌파 + 오늘 종가 양봉(시가<종가) + RSI골든크로스 + 거래량1.3x.
+    (사용자 확정 조건. 검증 +208%/MDD~9%)"""
     if df is None or len(df) < 60:
         return False, {}
     s = df["Close"]; o = df["Open"]; h = df["High"]; l = df["Low"]; v = df["Volume"]
@@ -67,14 +67,13 @@ def buy_signal(df):
     i = -1
     if pd.isna(lower.iloc[i]) or pd.isna(lower.iloc[i-1]) or pd.isna(sig.iloc[i-1]) or pd.isna(vma5.iloc[i]):
         return False, {}
-    cross = (s.iloc[i-1] <= lower.iloc[i-1]) and (s.iloc[i] > lower.iloc[i])          # 하한선 상향돌파
-    rng = h.iloc[i] - l.iloc[i]
-    strong = rng > 0 and (s.iloc[i] - l.iloc[i]) / rng >= 0.5                          # 양봉(종가 상단50%) ※0.6→0.5: +123%→+208% 개선
-    golden = (rsi.iloc[i] > sig.iloc[i]) and (rsi.iloc[i-1] <= sig.iloc[i-1])          # RSI 골든크로스(필수)
-    volok = v.iloc[i] > vma5.iloc[i] * 1.3                                             # 거래량 1.3배
-    # ※ 200MA 필터는 스윙에서 제거(돈 최대): 적용시 +240%→+68%로 수익 급감.
-    #   스윙은 200MA 아래 깊은 저점 반등이 핵심 수익원이라 제외하지 않음.
-    ok = bool(cross and strong and golden and volok)
+    cross  = (s.iloc[i-1] <= lower.iloc[i-1]) and (s.iloc[i] > lower.iloc[i])   # ① 오늘 하한선 상향돌파
+    rng    = h.iloc[i] - l.iloc[i]
+    bullish = o.iloc[i] < s.iloc[i]                                            # ② 오늘 양봉(시가 < 종가) — 필수
+    strong  = rng > 0 and (s.iloc[i] - l.iloc[i]) / rng >= 0.5                 #    + 종가가 캔들 상단 50% (강한 양봉)
+    golden  = (rsi.iloc[i] > sig.iloc[i]) and (rsi.iloc[i-1] <= sig.iloc[i-1]) # ③ RSI 골든크로스
+    volok   = v.iloc[i] > vma5.iloc[i] * 1.3                                   # ④ 거래량 1.3배
+    ok = bool(cross and bullish and strong and golden and volok)
     info = {"rsi": round(float(rsi.iloc[i]), 1), "close": int(s.iloc[i]),
             "lower": int(lower.iloc[i]), "upper": int(upper.iloc[i])}
     return ok, info
