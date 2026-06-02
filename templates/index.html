@@ -873,6 +873,31 @@ body {
 // ── State ──
 let DATA = [];
 let SWING = [];
+let LIVE = {};        // code -> {price, chgRate}  실시간 현재가
+let LIVE_TS = '';
+let liveTimer = null;
+function livePx(s){ return (LIVE[s.code] && LIVE[s.code].price) ? LIVE[s.code].price : s.close; }
+
+async function refreshQuotes(){
+  const codes = new Set();
+  (DATA||[]).forEach(s=>codes.add(s.code));
+  (SWING||[]).forEach(s=>codes.add(s.code));
+  if (PICK) codes.add(PICK.code);
+  if (!codes.size) return;
+  try{
+    const res = await fetch('/api/quote?codes=' + [...codes].join(','));
+    const j = await res.json();
+    LIVE = j.quotes || {}; LIVE_TS = j.ts || '';
+    renderCards();
+    const ind = document.getElementById('liveInd');
+    if (ind) ind.innerHTML = `🔴 실시간 ${LIVE_TS}`;
+  }catch(e){}
+}
+function startLivePolling(){
+  if (liveTimer) clearInterval(liveTimer);
+  refreshQuotes();
+  liveTimer = setInterval(refreshQuotes, 25000);  // 25초마다 현재가 갱신
+}
 let PICK = null;          // 오늘의 추천 1순위 (정렬과 무관하게 고정)
 let sortBy = "rank";
 let filterBy = "all";
@@ -1013,6 +1038,7 @@ async function doScan() {
     document.getElementById("toolbar").style.display = "flex";
     renderToolbar();
     renderCards();
+    startLivePolling();   // 실시간 현재가 갱신 시작(25초마다)
     // 자동 펼친 PICK 카드의 차트 로드
     if (PICK) setTimeout(() => drawChart(PICK.code), 100);
 
@@ -1263,7 +1289,7 @@ function renderCards() {
       <div style="background:#fff;border:1px solid #C7D2FE;border-radius:8px;padding:10px 12px;margin-bottom:6px">
         <div style="font-weight:700;color:#1E293B;margin-bottom:6px">${s.name} <span style="color:#6B7280;font-size:0.78rem;font-weight:500">${s.code}</span></div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center">
-          <div style="background:#F1F5F9;border-top:3px solid #475569;border-radius:6px;padding:6px 4px"><div style="font-size:0.65rem;color:#475569;font-weight:700">현재/매수</div><div style="font-size:1.15rem;font-weight:900;color:#0F172A">${fmt(s.close)}</div></div>
+          <div style="background:#F1F5F9;border-top:3px solid #475569;border-radius:6px;padding:6px 4px"><div style="font-size:0.65rem;color:#475569;font-weight:700">현재가 ${LIVE[s.code]?'🔴':''}</div><div style="font-size:1.15rem;font-weight:900;color:#0F172A">${fmt(livePx(s))}</div></div>
           <div style="background:#F0FDF4;border-top:3px solid #16A34A;border-radius:6px;padding:6px 4px"><div style="font-size:0.65rem;color:#16A34A;font-weight:700">🎯 BB상한</div><div style="font-size:1.15rem;font-weight:900;color:#15803D">${fmt(s.upper)}</div></div>
           <div style="background:#FEF2F2;border-top:3px solid #DC2626;border-radius:6px;padding:6px 4px"><div style="font-size:0.65rem;color:#DC2626;font-weight:700">🛑 BB하한</div><div style="font-size:1.15rem;font-weight:900;color:#B91C1C">${fmt(s.lower)}</div></div>
           <div style="background:#EEF2FF;border-top:3px solid #6366F1;border-radius:6px;padding:6px 4px"><div style="font-size:0.65rem;color:#4338CA;font-weight:700">RSI</div><div style="font-size:1.15rem;font-weight:900;color:#312E81">${s.rsi}</div></div>
@@ -1309,7 +1335,7 @@ function renderCards() {
             <div style="font-size:0.78rem;color:#64748B;margin-top:2px">${PICK.market||''} · 시총 ${mktCap(PICK.marketCap)} · 거래량 ${(PICK.volume/10000).toFixed(0)}만주</div>
           </div>
           <div style="text-align:right">
-            <div style="font-size:1.7rem;font-weight:800;color:#0F172A">${fmt(PICK.close)}<span style="font-size:0.85rem;color:#64748B;font-weight:500">원</span></div>
+            <div style="font-size:1.7rem;font-weight:800;color:#0F172A">${fmt(livePx(PICK))}<span style="font-size:0.85rem;color:#64748B;font-weight:500">원</span></div>
             <div style="font-size:0.95rem;font-weight:700;color:${isUp2?'#DC2626':'#2563EB'}">${isUp2?'▲':'▼'} ${Math.abs(cr2)}%</div>
           </div>
         </div>
@@ -1339,8 +1365,8 @@ function renderCards() {
           <div style="font-weight:700;color:${g.bg};margin-bottom:8px;font-size:0.86rem">💡 ${g.txt}</div>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center">
             <div style="background:#F8FAFC;border-top:4px solid #475569;border-radius:8px;padding:10px 4px">
-              <div style="font-size:0.72rem;color:#64748B;font-weight:700">현재가</div>
-              <div style="font-size:1.5rem;font-weight:900;color:#0F172A;letter-spacing:-0.5px">${fmt(PICK.close)}</div>
+              <div style="font-size:0.72rem;color:#64748B;font-weight:700">현재가 ${LIVE[PICK.code]?'<span style="color:#DC2626">🔴LIVE</span>':''}</div>
+              <div style="font-size:1.5rem;font-weight:900;color:#0F172A;letter-spacing:-0.5px">${fmt(livePx(PICK))}</div>
             </div>
             <div style="background:#EFF6FF;border-top:4px solid #2563EB;border-radius:8px;padding:10px 4px">
               <div style="font-size:0.72rem;color:#2563EB;font-weight:700">💰 매수가</div>
@@ -1414,8 +1440,8 @@ function renderCards() {
         </div>
         <div class="card-right" style="gap:6px">
           <div style="background:#F1F5F9;border:1px solid #CBD5E1;border-radius:6px;padding:5px 9px;text-align:center;min-width:80px">
-            <div style="font-size:0.62rem;color:#475569;font-weight:700">현재가</div>
-            <div style="font-size:1.1rem;font-weight:900;color:#0F172A">${fmt(s.close)}</div>
+            <div style="font-size:0.62rem;color:#475569;font-weight:700">현재가 ${LIVE[s.code]?'🔴':''}</div>
+            <div style="font-size:1.1rem;font-weight:900;color:#0F172A">${fmt(livePx(s))}</div>
           </div>
           <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:6px;padding:5px 9px;text-align:center;min-width:80px">
             <div style="font-size:0.62rem;color:#2563EB;font-weight:700">💰 매수</div>

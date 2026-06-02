@@ -1767,6 +1767,32 @@ def api_swing():
         picks = []
     return jsonify({"swingPicks": picks, "date": date_str, "market": market})
 
+def _live_quote(code):
+    """종목 실시간 현재가 조회 (네이버 price 엔드포인트)."""
+    try:
+        r = _session.get(f"https://m.stock.naver.com/api/stock/{code}/price",
+                         params={"pageSize": 1, "page": 1}, timeout=6)
+        rows = json.loads(r.text)
+        if rows:
+            cur = parse_num(rows[0].get("closePrice", "0"))
+            chg = parse_float(rows[0].get("fluctuationsRatio", "0"))
+            return code, {"price": cur, "chgRate": chg, "date": rows[0].get("localTradedAt", "")}
+    except Exception:
+        pass
+    return code, None
+
+@app.route("/api/quote")
+def api_quote():
+    """여러 종목의 실시간 현재가 조회. ?codes=388720,058610,... → {code:{price,chgRate}}"""
+    codes = [c.strip() for c in flask_request.args.get("codes", "").split(",") if c.strip()][:30]
+    out = {}
+    if codes:
+        with ThreadPoolExecutor(max_workers=15) as ex:
+            for code, q in ex.map(_live_quote, codes):
+                if q:
+                    out[code] = q
+    return jsonify({"quotes": out, "ts": datetime.now().strftime("%H:%M:%S")})
+
 @app.route("/api/status")
 def api_status():
     return jsonify(scan_status)
