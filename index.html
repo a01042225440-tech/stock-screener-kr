@@ -1002,12 +1002,7 @@ async function doScan() {
       .then(sw => { SWING = sw.swingPicks || []; if (typeof renderCards === "function") renderCards(); })
       .catch(() => {});
 
-    // 화요일 경고 배너
-    if (data.isTuesday) {
-      document.getElementById("scanInfo").innerHTML =
-        `<span style="background:#DC2626;color:#fff;padding:4px 12px;border-radius:6px;font-weight:700">
-        ⚠️ 화요일 매수 금지 (백테스트 승률 30%)</span>`;
-    }
+    // (화요일 매수금지 경고 제거 — 요일 효과는 검증 결과 노이즈로 미사용)
 
     // ── 오늘의 추천 1순위 계산 (정렬과 무관하게 고정) ──
     // 우선순위: BREAKOUT > HUNT > TREND > WATCH (검증: BREAKOUT 청산률 38%>HUNT 28%), 같은 등급 내 점수순
@@ -1021,7 +1016,7 @@ async function doScan() {
 
     // Update header stats
     updateStats(data);
-    const tuesdayWarn = data.isTuesday ? ' <span style="color:#DC2626;font-weight:700">⚠️ 화요일=매수금지</span>' : '';
+    const tuesdayWarn = '';
     // 데이터 시점 경고 (당일 미반영 vs 휴장일 구분)
     let holidayWarn = '';
     if (data.dataStatus === 'intraday_proxy') {
