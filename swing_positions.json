@@ -1,18 +1,3 @@
 {
-<<<<<<< Updated upstream
-  "positions": [
-    {
-      "code": "388720",
-      "name": "유일로보틱스",
-      "buyDate": "2026-06-01",
-      "buyPrice": 96400,
-      "shares": 2,
-      "last": 101500,
-      "profit": 5.3,
-      "regime": "BB"
-    }
-  ]
-=======
   "positions": []
->>>>>>> Stashed changes
 }
