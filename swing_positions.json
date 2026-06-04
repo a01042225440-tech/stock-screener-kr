@@ -1,4 +1,5 @@
 {
+<<<<<<< Updated upstream
   "positions": [
     {
       "code": "388720",
@@ -11,4 +12,7 @@
       "regime": "BB"
     }
   ]
+=======
+  "positions": []
+>>>>>>> Stashed changes
 }
