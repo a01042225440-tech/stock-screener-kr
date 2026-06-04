@@ -139,6 +139,8 @@ def scan_buys(date_str, max_picks=10, intraday=False, market="ALL"):
         df = _fetch(c["code"], date_str, intraday=intraday, today_vol=c.get("vol", 0))
         ok, info = buy_signal(df)
         if ok:
+            from app import get_industry_code
+            info["industryCode"] = get_industry_code(c["code"])
             hits.append({**c, **info})
     with ThreadPoolExecutor(max_workers=20) as ex:
         list(ex.map(chk, cands))

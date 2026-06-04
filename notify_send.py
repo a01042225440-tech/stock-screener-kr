@@ -10,43 +10,45 @@ try:
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 except Exception:
     pass
-from app import run_scan, send_telegram, get_kospi_regime
+from app import run_scan, send_telegram, get_kospi_regime, pick_with_sector_limit
 from swing_tracker import run_swing
 from momentum_tracker import record_buys
 
+_GO = {"BREAKOUT": 0, "HUNT": 1, "TREND": 2, "WATCH": 3}
 
 def build_message(date, dow, momentum, swing_buys, regime):
     bear = regime.get("ok") and not regime.get("above_ma60", True)
-    L = [f"📊 <b>오늘의 매수 ({date} {dow})</b>"]
+    # 통합 매수 후보(돈 순서): 🌊스윙 우선 → 💰모멘텀(BREAKOUT>HUNT>TREND·점수순)
+    buy_all = []
+    for b in (swing_buys or []):
+        buy_all.append({"strat": "swing", "name": b["name"], "code": b["code"],
+                        "buy": b["close"], "target": b.get("upper"), "stop": b.get("lower"),
+                        "industryCode": str(b.get("industryCode", "0"))})
+    for s in sorted(momentum or [], key=lambda x: (_GO.get(x.get("grade"), 9), -(x.get("finalScore") or 0))):
+        buy_all.append({"strat": "mom", "name": s.get("name"), "code": s.get("code"),
+                        "buy": s.get("buyPrice"), "target": s.get("target1"), "stop": s.get("stoploss"),
+                        "grade": s.get("grade"), "targetPct": s.get("targetPct", 10),
+                        "industryCode": str(s.get("industryCode", "0"))})
+    # 한 업종 최대 2개 제한 적용 → 상위 3
+    top3 = pick_with_sector_limit(buy_all, n=3, max_per_sector=2)
+
+    L = [f"📊 <b>오늘 살 3종목 ({date} {dow}) · 자본 33%씩</b>"]
     if bear:
-        L.append(f"🔴 <b>약세장(코스피&lt;60일선) — 신규매수 보류 권고</b>")
-    L.append("⏱ 15:20~15:30 동시호가 매수 · 상위 3종목 균등")
+        L.append("🔴 <b>약세장(코스피&lt;60일선) — 신규매수 보류 권고</b>")
+    L.append("⏱ 15:20~15:30 동시호가 · 🌊스윙 우선 · 한 업종 최대 2개")
     L.append("")
-
-    # 🌊 1순위 스윙
-    L.append("🌊 <b>1순위 — 스윙 (저점반등, 수익률 최고)</b>")
-    if swing_buys:
-        for b in swing_buys[:3]:
-            L.append(f"  • <b>{b['name']}</b>({b['code']}) {b['close']:,}원")
-            L.append(f"     🎯목표 BB상한 {b.get('upper','-'):,} · 🛑손절 BB하한 {b.get('lower','-'):,}")
+    if not top3:
+        L.append("오늘 매수 신호 <b>없음</b> — 쉬는 것도 전략 (현금 보유)")
     else:
-        L.append("  └ 오늘 스윙 신호 <b>없음</b>")
+        for i, s in enumerate(top3, 1):
+            if s["strat"] == "swing":
+                tag = "🌊스윙"; tgt = f"🎯목표 {s['target']:,}(BB상한)"
+            else:
+                tag = f"💰{s.get('grade','')}"; tgt = f"🎯+{s.get('targetPct',10)}% {s['target']:,}"
+            L.append(f"<b>{i}. {tag} {s['name']}</b>({s['code']})")
+            L.append(f"   💰매수 {s['buy']:,} · {tgt} · 🛑손절 {s['stop']:,}")
     L.append("")
-
-    # 💰 2순위 모멘텀
-    L.append("💰 <b>2순위 — 모멘텀 3종목 (BREAKOUT 우선)</b>")
-    if momentum:
-        emoji = {"HUNT": "🟢", "BREAKOUT": "🔴", "TREND": "🟡"}
-        for i, s in enumerate(momentum[:3], 1):
-            g = s.get("grade", "")
-            tp = s.get("targetPct", 10)
-            L.append(f"  <b>{i}. {emoji.get(g,'⚪')}{g} {s.get('name')}</b>({s.get('code')})")
-            L.append(f"     💰매수 {s.get('buyPrice'):,} · 🎯+{tp}% {s.get('target1'):,} · 🛑손절 {s.get('stoploss'):,}")
-    else:
-        L.append("  └ 오늘 모멘텀 신호 없음")
-    L.append("")
-    L.append("📌 <b>스윙 먼저 채우고, 남는 슬롯을 모멘텀으로</b> (합쳐 3종목)")
-    L.append("🛑 손절 반드시 지키기")
+    L.append("📌 위 3종목 33%씩 · 🎯목표 익절 · 🛑손절 반드시")
     return "\n".join(L)
 
 

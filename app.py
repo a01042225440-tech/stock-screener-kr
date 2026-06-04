@@ -270,6 +270,37 @@ def check_warning_batch(codes):
         executor.map(check_one, codes)
     return excluded
 
+_industry_cache = {}
+def get_industry_code(code):
+    """종목 업종코드 조회 (캐시). 섹터 분산용. 실패시 '0'."""
+    if code in _industry_cache:
+        return _industry_cache[code]
+    ind = "0"
+    try:
+        r = _session.get(f"https://m.stock.naver.com/api/stock/{code}/integration", timeout=6)
+        if r.status_code == 200:
+            ind = str(r.json().get("industryCode", "0"))
+    except Exception:
+        pass
+    _industry_cache[code] = ind
+    return ind
+
+def pick_with_sector_limit(candidates, n=3, max_per_sector=2, code_key="code", sector_key="industryCode"):
+    """우선순위 정렬된 후보에서 상위 n개 선택하되, 한 업종 최대 max_per_sector개.
+    (검증: 업종당 최대2 = 제한없음과 동일 수익 +402%, 한 업종 3+ 몰빵만 차단)"""
+    from collections import Counter
+    picked = []; sec_count = Counter(); used = set()
+    for c in candidates:
+        if len(picked) >= n:
+            break
+        code = c.get(code_key); sec = str(c.get(sector_key, "0") or "0")
+        if code in used:
+            continue
+        if sec != "0" and sec_count[sec] >= max_per_sector:
+            continue
+        picked.append(c); used.add(code); sec_count[sec] += 1
+    return picked
+
 def fetch_investor_data(code):
     """네이버 integration API에서 수급 + 재무 + 업종 + 컨센서스 일괄 조회"""
     try:
@@ -343,6 +374,7 @@ def fetch_investor_data(code):
             "high_52w": high_52w, "low_52w": low_52w,
             "target_price": target_price, "recomm_mean": recomm_mean,
             "sector_ratio": sector_ratio,
+            "industry_code": str(data.get("industryCode", "0")),   # 업종코드(섹터 분산용)
         }
     except:
         return None
@@ -1483,6 +1515,7 @@ def run_scan(date_str, demo=False, intraday=True, market="ALL"):
             # ── 매매 룰 (6영업일 내 청산; BREAKOUT +15% / 그외 +10%) ──
             "maxHold": p.get("max_hold", 6),
             "targetPct": p.get("target_pct", 10),
+            "industryCode": (inv.get("industry_code", "0") if inv else "0"),   # 업종(섹터 분산)
             # 장중 분봉 임시캔들로 만든 '당일 종가근사' 신호 여부
             "isIntradayProxy": is_proxy,
         }
