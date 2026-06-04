@@ -73,17 +73,17 @@ def one_pass(buy_done, report_done):
     # 1) 매도/손절 점검 (매 틱)
     e1 = do_momentum_sells(date_str, kst)
     e2, _ = do_swing(date_str, kst, False)   # 스윙 매도만(매수는 통합알림이 처리)
-    # 2) 15:20 단일 틱: 통합 매수 알림 (모멘텀+스윙)
+    # 2) 매수 알림: 15:18 이후 하루 1회 (늦게 시작해도 즉시 발송 보장)
     bought = False
-    if (not buy_done) and (15 * 60 + 20) <= hm <= (15 * 60 + 24):
+    if (not buy_done) and hm >= (15 * 60 + 18) and hm < (16 * 60 + 30):
         try:
             from notify_send import run_buy_alert
             run_buy_alert(); bought = True
         except Exception as e:
             print(f"[BUY-ALERT] error: {e}")
-    # 3) 16:40 단일 틱: 일일 엑셀 보고 + 자동점검
+    # 3) 일일 보고: 16:38 이후 하루 1회
     reported = False
-    if (not report_done) and (16 * 60 + 40) <= hm <= (16 * 60 + 44):
+    if (not report_done) and hm >= (16 * 60 + 38):
         try:
             from report_daily import main as report_main
             report_main(); reported = True
@@ -93,19 +93,32 @@ def one_pass(buy_done, report_done):
 
 
 def main():
-    iters = int(os.environ.get("MONITOR_ITERS", "1"))
-    sleep_s = int(os.environ.get("MONITOR_SLEEP", "60"))
+    # 장시작~16:50 KST까지 종일 상주(LONG_RUN=1) — 하루1회 크론으로 시작, 내부 루프로 정시 보장.
+    # GitHub */10 스케줄이 throttle로 거의 안 떠서, 하루1회 시작 + 종일 상주로 전환.
+    long_run = os.environ.get("LONG_RUN", "1") == "1"
+    sleep_s = int(os.environ.get("MONITOR_SLEEP", "150"))
+    end_hm = 16 * 60 + 50          # 16:50 KST에 종료
     buy_done = report_done = False
-    any_event = False
-    for k in range(max(1, iters)):
-        ev, did_buy, did_report = one_pass(buy_done, report_done)
-        any_event = any_event or ev
-        if did_buy: buy_done = True
-        if did_report: report_done = True
-        if k < iters - 1:
-            time.sleep(sleep_s)
-    if not any_event:
-        print(f"[MONITOR] no event @ KST {now_kst().strftime('%H:%M')}")
+    if not long_run:
+        # (수동 단발 테스트용)
+        ev, db, dr = one_pass(buy_done, report_done)
+        print(f"[MONITOR] single pass @ {now_kst().strftime('%H:%M')} buy={db} report={dr}")
+        return
+    print(f"[MONITOR] 상주 시작 @ KST {now_kst().strftime('%H:%M')} (16:50까지)")
+    while True:
+        kst = now_kst(); hm = kst.hour * 60 + kst.minute
+        if hm >= end_hm and (buy_done or hm >= 16*60+30):
+            break
+        try:
+            ev, db, dr = one_pass(buy_done, report_done)
+            if db: buy_done = True; print(f"[MONITOR] 매수알림 발송 @ {kst.strftime('%H:%M')}")
+            if dr: report_done = True; print(f"[MONITOR] 일일보고 발송 @ {kst.strftime('%H:%M')}")
+        except Exception as e:
+            print(f"[MONITOR] pass error: {e}")
+        if report_done and buy_done and hm >= 16*60+45:
+            break
+        time.sleep(sleep_s)
+    print(f"[MONITOR] 종료 @ KST {now_kst().strftime('%H:%M')} (buy={buy_done} report={report_done})")
 
 
 if __name__ == "__main__":

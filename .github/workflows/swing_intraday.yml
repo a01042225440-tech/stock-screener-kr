@@ -2,9 +2,11 @@ name: Swing Intraday Monitor
 
 on:
   schedule:
-    # ※ '*/5'는 GitHub 무료에서 자주 멈춤(고빈도 throttle). 명시적 10분 간격 크론으로 분산.
-    #   UTC 0~7시 = KST 09:00~16:55, 월~금. 잡 내부 4×60초 미니루프로 ~1분 해상도 보완.
-    - cron: '0,10,20,30,40,50 0-7 * * 1-5'
+    # ※ GitHub */10 고빈도 스케줄은 throttle로 거의 안 뜸. → '하루 2회 시작' 방식으로 전환.
+    #   02:00 UTC(11:00 KST) 1차 + 03:30 UTC(12:30 KST) 백업 — 시작되면 종일(16:50까지) 상주.
+    #   하루 단발 크론은 비교적 잘 떠서, 둘 중 하나만 떠도 15:20 매수·16:40 보고 보장.
+    - cron: '0 2 * * 1-5'
+    - cron: '30 3 * * 1-5'
   workflow_dispatch:
 
 permissions:
@@ -12,12 +14,12 @@ permissions:
 
 concurrency:
   group: swing-intraday
-  cancel-in-progress: false
+  cancel-in-progress: false   # 1차가 돌고 있으면 백업은 큐잉(중복 발송은 buy_done/report_done로 차단)
 
 jobs:
   monitor:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 360       # 종일 상주(최대 6시간)
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,15 +29,15 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies (openpyxl for 16:40 report)
+      - name: Install dependencies
         run: pip install numpy pandas requests flask openpyxl
 
-      - name: Run intraday monitor (1-min loop within the 5-min slot)
+      - name: Run all-day monitor (상주: 매도점검 + 15:20 매수 + 16:40 보고)
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          MONITOR_ITERS: '4'     # 4회 점검
-          MONITOR_SLEEP: '60'    # 60초 간격 → ~3분 커버, 다음 5분 틱이 이어받음
+          LONG_RUN: '1'
+          MONITOR_SLEEP: '150'   # 2.5분 간격 점검
         run: python swing_intraday.py
 
       - name: Persist positions
