@@ -1,18 +1,3 @@
 {
-  "positions": [
-    {
-      "code": "058610",
-      "name": "에스피지",
-      "grade": "TREND",
-      "buyDate": "2026-06-01",
-      "buyPrice": 127900,
-      "target": 140600,
-      "stop": 115100,
-      "targetPct": 10,
-      "maxHold": 6,
-      "shares": 2,
-      "last": 123700,
-      "profit": -3.3
-    }
-  ]
+  "positions": []
 }
