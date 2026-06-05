@@ -74,8 +74,9 @@ def buy_signal(df):
     golden  = (rsi.iloc[i] > sig.iloc[i]) and (rsi.iloc[i-1] <= sig.iloc[i-1]) # ③ RSI 골든크로스
     volok   = v.iloc[i] > vma5.iloc[i] * 1.3                                   # ④ 거래량 1.3배
     ok = bool(cross and bullish and strong and golden and volok)
+    chg = round((s.iloc[i] / s.iloc[i-1] - 1) * 100, 2) if s.iloc[i-1] else 0.0   # 어제 종가 대비 등락률
     info = {"rsi": round(float(rsi.iloc[i]), 1), "close": int(s.iloc[i]),
-            "lower": int(lower.iloc[i]), "upper": int(upper.iloc[i])}
+            "lower": int(lower.iloc[i]), "upper": int(upper.iloc[i]), "chgToday": chg}
     return ok, info
 
 def sell_check(df, buy_price, buy_date):
