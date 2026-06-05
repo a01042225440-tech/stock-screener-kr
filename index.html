@@ -996,11 +996,8 @@ async function doScan() {
     DATA = data.results;
     SWING = data.swingPicks || [];
 
-    // 스윙 BB조합은 별도 호출(모멘텀 먼저 빠르게 표시, 스윙은 뒤따라 로드)
-    fetch(`/api/swing?date=${dateVal}&market=${mk}`)
-      .then(r => r.json())
-      .then(sw => { SWING = sw.swingPicks || []; if (typeof renderCards === "function") renderCards(); })
-      .catch(() => {});
+    // 스윙도 /api/scan 응답에 함께 포함됨 → 별도 호출 제거.
+    // (예전엔 /api/swing을 따로 불러 한참 뒤 로드되며 상위3 순서가 뒤바뀌었음 — 해결)
 
     // (화요일 매수금지 경고 제거 — 요일 효과는 검증 결과 노이즈로 미사용)
 

@@ -1715,9 +1715,11 @@ def _save_and_sync_results(results, date_str, swing_picks=None):
         print(f"  [SYNC] Save error: {e}")
         return payload
 
-    # Git push (로컬에서만, Render에서는 스킵)
+    # Git push (로컬에서만). Render·GitHub Actions에선 스킵
+    #   (GitHub Actions는 워크플로 'Persist' 스텝이 latest_results.json까지 한 번에 push)
     is_render = os.environ.get("RENDER", "") == "true"
-    if not is_render:
+    in_actions = os.environ.get("GITHUB_ACTIONS", "") == "true"
+    if not is_render and not in_actions:
         try:
             app_dir = os.path.dirname(__file__)
             subprocess.Popen(
@@ -1772,15 +1774,26 @@ def api_scan():
     except ValueError:
         return jsonify({"error": "Date format error"}), 400
 
-    # 1) 캐시된 결과가 있으면 우선 사용 (시장 선택이 ALL일 때만 — 캐시는 전체 기준)
-    cached = _load_cached_results(date_str) if market == "ALL" else None
+    # 1) 캐시 사용은 '과거 거래일'만 (과거 데이터는 불변 → 캐시 OK + 즉시).
+    #    오늘 날짜는 항상 새로 스캔 = 실시간 조회 보장 (시장 ALL일 때만 캐시 대상)
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    use_cache = (market == "ALL") and (date_str < today_str)
+    cached = _load_cached_results(date_str) if use_cache else None
     if cached:
-        cached.setdefault("swingPicks", [])   # 스윙은 /api/swing에서 별도 로드
+        cached.setdefault("swingPicks", [])
         return jsonify(cached)
 
-    # 2) 모멘텀만 빠르게 스캔 (스윙은 /api/swing 별도 호출 — 타임아웃 방지)
+    # 2) 라이브 스캔: 모멘텀 + 스윙을 '한 번에' 반환
+    #    (OHLCV는 in-proc 캐시 공유 → 스윙은 모멘텀이 받아둔 데이터 재사용해 거의 즉시.
+    #     별도 /api/swing 2차 전수스캔을 없애 속도↑ + 대시보드 순서 안 바뀜)
     results = run_scan(date_str, market=market)
-    payload = _save_and_sync_results(results, date_str, swing_picks=None)
+    try:
+        from swing_tracker import scan_buys as swing_scan
+        swing_picks = swing_scan(date_str, intraday=True, market=market)
+    except Exception as e:
+        print(f"  [SWING] scan error: {e}")
+        swing_picks = []
+    payload = _save_and_sync_results(results, date_str, swing_picks=swing_picks)
     payload["market"] = market
     return jsonify(payload)
 
