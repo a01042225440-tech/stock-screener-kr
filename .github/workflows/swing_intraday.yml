@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: pip install numpy pandas requests flask openpyxl
 
-      - name: Run all-day monitor (상주: 매도점검 + 15:20 매수 + 16:40 보고)
+      - name: "Run all-day monitor (resident: sells + 15:20 buy + 16:40 report)"
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
