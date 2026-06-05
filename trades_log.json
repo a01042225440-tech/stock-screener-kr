@@ -12,7 +12,6 @@
       "reason": "🛑 손절(10일저점 이탈, -8%)"
     },
     {
-<<<<<<< Updated upstream
       "strategy": "모멘텀",
       "code": "058610",
       "name": "에스피지",
@@ -22,7 +21,8 @@
       "sell": 115100,
       "profitPct": -10.0,
       "reason": "🛑 손절(10일저점 이탈, -10%)"
-=======
+    },
+    {
       "strategy": "스윙",
       "code": "388720",
       "name": "유일로보틱스",
@@ -32,7 +32,6 @@
       "sell": 110860,
       "profitPct": 15.0,
       "reason": "🎯 익절(+15%)"
->>>>>>> Stashed changes
     }
   ]
 }
