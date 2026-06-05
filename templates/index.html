@@ -996,11 +996,8 @@ async function doScan() {
     DATA = data.results;
     SWING = data.swingPicks || [];
 
-    // 스윙 BB조합은 별도 호출(모멘텀 먼저 빠르게 표시, 스윙은 뒤따라 로드)
-    fetch(`/api/swing?date=${dateVal}&market=${mk}`)
-      .then(r => r.json())
-      .then(sw => { SWING = sw.swingPicks || []; if (typeof renderCards === "function") renderCards(); })
-      .catch(() => {});
+    // 스윙도 /api/scan 응답에 함께 포함됨 → 별도 호출 제거.
+    // (예전엔 /api/swing을 따로 불러 한참 뒤 로드되며 상위3 순서가 뒤바뀌었음 — 해결)
 
     // (화요일 매수금지 경고 제거 — 요일 효과는 검증 결과 노이즈로 미사용)
 
@@ -1106,9 +1103,9 @@ function renderCardDetail(s, gradeInfo) {
     ["B3", "목표가+5%", s.b3_target]
   ];
   const huntItems = [
-    ["D1", "20MA>0%", s.d1_pullback], ["D2", ">5MA", s.d2_above_ma5],
-    ["D3", "양봉", s.d3_bullish], ["D4", "거래1.5x", s.d4_vol_pickup],
-    ["D5", "RSI50-70", s.d5_rsi_ok],
+    ["D1", "되돌림3-18%", s.d1_pullback], ["D2", "20MA지지근접", s.d2_above_ma5],
+    ["D3", "양봉반등", s.d3_bullish], ["D4", "아래꼬리/지지터치", s.d4_vol_pickup],
+    ["D5", "거래량회복", s.d5_rsi_ok],
     ["F1", `${s.pullbackCount||1}차눌림`, s.f1_first_pullback]
   ];
   const brkItems = [
@@ -1275,9 +1272,9 @@ function renderCards() {
   // 💰 오늘 살 3종목 (돈 순서): 🌊스윙 우선 → 💰모멘텀(BREAKOUT>HUNT>TREND, 점수순) · 한 업종 최대 2개
   const _GO = {"BREAKOUT":0,"HUNT":1,"TREND":2,"WATCH":3,"BB_BREAK":4};
   const buyAll = [];
-  (SWING||[]).forEach(s=>buyAll.push({strat:'swing',name:s.name,code:s.code,buy:s.close,target:s.upper,stop:s.lower,rsi:s.rsi,ind:String(s.industryCode||'0')}));
+  (SWING||[]).forEach(s=>buyAll.push({strat:'swing',name:s.name,code:s.code,buy:s.close,target:s.upper,stop:s.lower,rsi:s.rsi,ind:String(s.industryCode||'0'),sector:s.sectorName||'',chg:(s.chgToday!==undefined?s.chgToday:null)}));
   [...DATA].sort((a,b)=>(_GO[a.grade]??9)-(_GO[b.grade]??9)||(b.finalScore||0)-(a.finalScore||0))
-    .forEach(s=>buyAll.push({strat:'mom',name:s.name,code:s.code,buy:s.buyPrice,target:s.target1,stop:s.stoploss,grade:s.grade,targetPct:s.targetPct||10,ind:String(s.industryCode||'0')}));
+    .forEach(s=>buyAll.push({strat:'mom',name:s.name,code:s.code,buy:s.buyPrice,target:s.target1,stop:s.stoploss,grade:s.grade,targetPct:s.targetPct||10,ind:String(s.industryCode||'0'),sector:s.sectorName||'',chg:(s.chgToday!==undefined?s.chgToday:null)}));
   // 한 업종 최대 2개 제한으로 상위 3 선택 (검증: 수익 동일하면서 섹터 몰빵 차단)
   const top3 = []; const _secCnt = {}; const _used = new Set();
   for (const c of buyAll) {
@@ -1310,6 +1307,8 @@ function renderCards() {
           <span style="background:${idx===0?'#16A34A':'#64748B'};color:#fff;width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0">${idx+1}</span>
           <span style="background:${tagc};color:#fff;padding:2px 8px;border-radius:5px;font-size:0.72rem;font-weight:800">${tag}</span>
           <span style="font-weight:800;font-size:1.05rem;color:#0F172A">${s.name}</span>
+          ${s.sector?`<span style="background:#EEF2FF;color:#4338CA;padding:2px 7px;border-radius:5px;font-size:0.7rem;font-weight:700">${s.sector}</span>`:''}
+          ${s.chg!==null&&s.chg!==undefined?`<span style="background:${s.chg>=0?'#FEF2F2':'#EFF6FF'};color:${s.chg>=0?'#DC2626':'#2563EB'};padding:2px 7px;border-radius:5px;font-size:0.72rem;font-weight:800">어제대비 ${s.chg>=0?'▲':'▼'}${Math.abs(s.chg).toFixed(2)}%</span>`:''}
           <span style="color:#94A3B8;font-size:0.78rem">${s.code}</span>
         </div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center">
@@ -1457,6 +1456,7 @@ function renderCards() {
             <div>
               <span style="background:${gradeInfo.bg};color:#fff;padding:3px 7px;border-radius:5px;font-size:0.7rem;font-weight:800;margin-right:6px">${gradeInfo.emoji}${gradeInfo.label}</span>
               <span class="stock-name">${s.name}</span>
+              ${s.sectorName?`<span style="background:#EEF2FF;color:#4338CA;padding:2px 7px;border-radius:5px;font-size:0.68rem;font-weight:700;margin-left:4px">${s.sectorName}</span>`:''}
               <span class="stock-code">${s.code}</span>
               ${secMark}
             </div>

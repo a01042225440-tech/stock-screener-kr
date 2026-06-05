@@ -26,7 +26,7 @@ app = Flask(__name__, template_folder=".", static_folder=".", static_url_path="/
 
 # ─── 전략 버전 (조건 변경 시 올리면 캐시 자동 무효화) ───
 # 손절-5% / 청산+10% / D1 20MA>0% / D4 거래량1.5x / D5 RSI50-70 / C섹터보너스 / F1첫풀백
-STRATEGY_VERSION = "2026.06.03-swingBullStrict-loosenHUNT-candleBullOnly-volORrsi-swingCandle05-stop10dlow-noPharmaBio-noPolitical-brkfirst-brk15tp-kospima60gate-hold6-pxcap20"
+STRATEGY_VERSION = "2026.06.05-HUNTtruePullback(retrace3-18+ma20support+lowtail+volup)-sectorName-chgToday-scanUnified-realtimeToday"
 
 # ─── 주가 상한 (소액 분산매수용) ───
 # 100만원 시드 → 3종목 33만원씩 → 20만원 이하면 1주+ 보유 가능
@@ -815,15 +815,22 @@ def screen_pro(df, name="", code="", mcap=0, fundamental=None):
     rv = calc_rsi(pd.Series(c), 14).iloc[-1]
     rv = float(rv) if not np.isnan(rv) else 50.0
 
-    # 660 trades 정밀 분석 (청산 vs 손절):
-    #   - 20MA 거리 >0%: 청산률 32-47% / 0% 미만: 청산률 11-25%
-    #   - 거래량 1.5x+: 청산률 40-45% / 1.5x 미만: 21-29%
-    #   - RSI 55-70: 청산률 40% / 30-50: 12-24%
-    d1_pullback   = bool(0 <= ma20_dist <= 15)      # 20MA >0% (음수 종목은 청산률 11-25%로 위험)
-    d2_above_ma5  = bool(c[i] > sma5)               # 5일선 위
-    d3_bullish    = bool(o[i] < c[i])                # 양봉
-    d4_vol_pickup = bool(vol_mult_5 >= 1.5)          # 거래량 1.5x+ (1.2 → 1.5, 청산률 29 → 40%)
-    d5_rsi_ok     = bool(50 <= rv <= 70)             # RSI 50-70 (30-70 → 50-70, sweet spot)
+    # ★★ 진짜 눌림목으로 교체 (검증: 1년 백테스트 '추세추종형' +18%/MDD28% → '진짜 눌림목' +106%/MDD18%)
+    #   핵심: '되돌림(조정)' 발생 + 지지선 근접 + 아래꼬리/지지터치 반등 + 거래량 회복.
+    #   (기존은 '20MA 위 0~15% + 양봉'이라 눌림이 아니라 추세추종이었음)
+    align      = bool(sma5 > sma20 > sma60)                          # 정배열(상승추세)
+    hi10       = float(np.max(h[i-10:i])) if i >= 10 else float(h[i])  # 직전 10일 고점
+    retrace    = (hi10 - l[i]) / hi10 * 100 if hi10 > 0 else 0       # 고점→오늘 저가 되돌림 %
+    rng_d      = h[i] - l[i]
+    lower_tail = bool(rng_d > 0 and (min(o[i], c[i]) - l[i]) / rng_d >= 0.25)  # 아래꼬리 25%+
+    touched_ma = bool(l[i] <= max(sma5, sma20) * 1.005)             # 당일 저가가 지지선(5/20MA) 터치
+    vol_up     = bool(v[i] > v[i-1])                                # 거래량 전일比 증가
+
+    d1_pullback   = bool(3 <= retrace <= 18)        # ① 되돌림(눌림) 3~18% — 핵심
+    d2_above_ma5  = bool(-2 <= ma20_dist <= 6)      # ② 20일선 지지 근접 (-2~+6%)
+    d3_bullish    = bool(o[i] < c[i])                # ③ 양봉(반등 확인)
+    d4_vol_pickup = bool(lower_tail or touched_ma)   # ④ 아래꼬리/지지선 터치(지지 확인)
+    d5_rsi_ok     = bool(vol_up)                      # ⑤ 거래량 회복(전일比↑)
 
     # F1. 첫 번째 눌림목만 허용 (영상 기반 - "3번째 눌림 진입 안 함")
     # 풀백 정의: "20MA 위 +2% 이상으로 올라간 구간"의 수를 카운트
@@ -849,10 +856,10 @@ def screen_pro(df, name="", code="", mcap=0, fundamental=None):
         pullback_count = 0
     f1_first_pullback = bool(pullback_count <= 2)   # 1차/2차 눌림만 (3차+ 거부)
 
-    # ★ 완화(검증): 거래량 AND RSI → 거래량 OR RSI. (둘 다 요구하면 HUNT 0.1/일·-17%,
-    #   하나만이면 1.5/일·+29%로 빈도·수익 모두 복원)
-    hunt_trigger = bool(d1_pullback and d2_above_ma5 and d3_bullish
-                        and (d4_vol_pickup or d5_rsi_ok) and f1_first_pullback)
+    # 진짜 눌림목 = 정배열 + 되돌림 + 지지근접 + 양봉 + 지지확인(꼬리/터치) + 거래량회복
+    #   (검증 winner B: f1 '몇차 눌림' 게이트 없이 +106%. f1은 표시용으로만 유지)
+    hunt_trigger = bool(align and d1_pullback and d2_above_ma5 and d3_bullish
+                        and d4_vol_pickup and d5_rsi_ok)
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # [트리거 E - BREAKOUT] 추격 매수 (Minervini + O'Neil)
@@ -968,7 +975,7 @@ def screen_pro(df, name="", code="", mcap=0, fundamental=None):
     if b3: P.append(f"B3.목표+{target_upside:.0f}%")
     if c1: P.append(f"C1.업종강세{sector_ratio:.0f}%")
     if c2: P.append(f"C2.주도섹터[{sector}+{sector_bonus}]")
-    if hunt_trigger:     P.append(f"🟢HUNT 20MA{ma20_dist:+.1f}%/{rv:.0f}RSI/거래{vol_mult_5:.1f}x")
+    if hunt_trigger:     P.append(f"🟢HUNT 눌림목 되돌림{retrace:.0f}%/20MA{ma20_dist:+.1f}%/양봉반등")
     if breakout_trigger: P.append(f"🔴BREAKOUT 52주{proximity_52w*100:.0f}%/거래{vol_mult_20:.1f}x")
     if bb_lower_break:   P.append(f"🟣BB하단돌파({'종가' if bb_break_close else '인트라'})")
 
