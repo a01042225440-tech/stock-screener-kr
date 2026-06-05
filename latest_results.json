@@ -209,7 +209,7 @@
       "sectorRatio": 33.33333333333333,
       "high52w": 31150.0,
       "low52w": 18360.0,
-      "pos52w": 69.6,
+      "pos52w": 69.5,
       "distFromHigh": 12.2,
       "atrRatio": 1.53,
       "squeeze": false,
@@ -368,7 +368,7 @@
       "sectorRatio": 83.33333333333334,
       "high52w": 109800.0,
       "low52w": 57800.0,
-      "pos52w": 79.7,
+      "pos52w": 79.3,
       "distFromHigh": 10.1,
       "atrRatio": 1.05,
       "squeeze": false,
@@ -514,10 +514,10 @@
       "industryCode": "309"
     }
   ],
-  "date": "2026-06-02",
+  "date": "2026-06-03",
   "actualDataDate": "2026-06-02",
-  "isHoliday": false,
-  "dataStatus": "confirmed",
+  "isHoliday": true,
+  "dataStatus": "holiday",
   "marketRegime": {
     "above_ma60": true,
     "close": 8801.49,
@@ -525,11 +525,11 @@
     "ok": true
   },
   "strategyVersion": "2026.06.05-HUNTtruePullback(retrace3-18+ma20support+lowtail+volup)-sectorName-chgToday-scanUnified-realtimeToday",
-  "timestamp": "2026-06-05 20:13:34",
+  "timestamp": "2026-06-05 20:14:50",
   "mode": "KRX+Naver",
   "count": 3,
-  "dayOfWeek": "화",
-  "isTuesday": true,
+  "dayOfWeek": "수",
+  "isTuesday": false,
   "tradeRules": {
     "slip": "0.3%",
     "t1SellRatio": "1/2",
