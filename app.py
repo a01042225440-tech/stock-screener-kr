@@ -55,19 +55,22 @@ _session = create_fast_session()
 #  메모리 캐시 (같은 날 재검색시 즉시)
 # =============================================
 _ohlcv_cache = {}
+_ohlcv_cache_ts = {}          # key → fetch한 시각(epoch). '오늘 캔들' 신선도 판정용
 _cache_date = ""
 _cache_lock = threading.Lock()
+OHLCV_TODAY_TTL = 180         # 오늘 캔들 포함 캐시는 3분 지나면 재조회(장중 잠정→확정 종가 반영)
 
 CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.cache')
 
 def get_cached_ohlcv(key):
     """메모리 캐시에서 OHLCV 조회 (key = "code_YYYY-MM-DD" 또는 "code")"""
-    global _ohlcv_cache, _cache_date
+    global _ohlcv_cache, _ohlcv_cache_ts, _cache_date
     today = datetime.now().strftime("%Y%m%d")
     if _cache_date != today:
         # 날짜 변경시 캐시 리셋 + 디스크에서 로드 시도
         with _cache_lock:
             _ohlcv_cache = {}
+            _ohlcv_cache_ts = {}
             _cache_date = today
             cache_file = os.path.join(CACHE_DIR, f"{today}.pkl")
             if os.path.exists(cache_file):
@@ -75,14 +78,16 @@ def get_cached_ohlcv(key):
                     with open(cache_file, 'rb') as f:
                         _ohlcv_cache = pickle.load(f)
                     print(f"  [CACHE] Loaded {len(_ohlcv_cache)} stocks from disk")
+                    # 디스크 캐시는 fetch시각 미상 → ts=0으로 둬서 '오늘 캔들'은 재조회 유도
                 except:
                     pass
     return _ohlcv_cache.get(key)
 
 def set_cached_ohlcv(key, df):
-    """메모리 캐시에 OHLCV 저장"""
+    """메모리 캐시에 OHLCV 저장 (+fetch 시각 기록)"""
     with _cache_lock:
         _ohlcv_cache[key] = df
+        _ohlcv_cache_ts[key] = time.time()
 
 def save_cache_to_disk():
     """캐시를 디스크에 저장 (스캔 완료 후)"""
@@ -155,8 +160,13 @@ def naver_ohlcv_fast(code, days=250, target_date=None):
         if target_date and cached is not False and hasattr(cached, "index") and len(cached) > 0:
             last_cached = cached.index[-1].strftime("%Y%m%d")
             tgt_compact = target_date.replace("-", "")
-            # 캐시 마지막 < 요청일 → 당일 데이터 누락 가능 → 재fetch
+            today_compact = datetime.now().strftime("%Y%m%d")
+            # ① 캐시 마지막 < 요청일 → 당일 데이터 누락 → 재fetch
             if last_cached < tgt_compact:
+                stale = True
+            # ② 캐시가 '오늘 캔들'을 포함 → 장중엔 잠정가, 마감 후엔 확정 종가로 바뀜.
+            #    날짜만 같다고 재사용하면 잠정값이 고정되는 버그 → TTL 지나면 재fetch.
+            elif last_cached == today_compact and (time.time() - _ohlcv_cache_ts.get(cache_key, 0)) > OHLCV_TODAY_TTL:
                 stale = True
         if not stale:
             return cached
