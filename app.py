@@ -285,6 +285,24 @@ def get_industry_code(code):
     _industry_cache[code] = ind
     return ind
 
+# 업종코드(네이버 업종번호) → 섹터 이름 매핑 (industry_map.json, 79개)
+try:
+    with open(os.path.join(os.path.dirname(__file__), "industry_map.json"), encoding="utf-8") as _f:
+        INDUSTRY_NAMES = json.load(_f)
+except Exception:
+    INDUSTRY_NAMES = {}
+
+def industry_name(code):
+    """업종코드 → 섹터 이름(예: '278'→'반도체'). 미상이면 ''."""
+    return INDUSTRY_NAMES.get(str(code or "0"), "")
+
+def _enrich_sector(items):
+    """결과 리스트 각 항목에 sectorName(섹터 이름) 추가 (in-place, 리스트 반환)."""
+    for it in (items or []):
+        if isinstance(it, dict):
+            it["sectorName"] = industry_name(it.get("industryCode", "0"))
+    return items
+
 def pick_with_sector_limit(candidates, n=3, max_per_sector=2, code_key="code", sector_key="industryCode"):
     """우선순위 정렬된 후보에서 상위 n개 선택하되, 한 업종 최대 max_per_sector개.
     (검증: 업종당 최대2 = 제한없음과 동일 수익 +402%, 한 업종 3+ 몰빵만 차단)"""
@@ -1781,6 +1799,8 @@ def api_scan():
     cached = _load_cached_results(date_str) if use_cache else None
     if cached:
         cached.setdefault("swingPicks", [])
+        _enrich_sector(cached.get("results"))      # 섹터 이름 부착(구 캐시 호환)
+        _enrich_sector(cached.get("swingPicks"))
         return jsonify(cached)
 
     # 2) 라이브 스캔: 모멘텀 + 스윙을 '한 번에' 반환
@@ -1794,6 +1814,8 @@ def api_scan():
         print(f"  [SWING] scan error: {e}")
         swing_picks = []
     payload = _save_and_sync_results(results, date_str, swing_picks=swing_picks)
+    _enrich_sector(payload.get("results"))         # 종목별 섹터 이름 부착
+    _enrich_sector(payload.get("swingPicks"))
     payload["market"] = market
     return jsonify(payload)
 

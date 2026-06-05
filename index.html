@@ -1272,9 +1272,9 @@ function renderCards() {
   // 💰 오늘 살 3종목 (돈 순서): 🌊스윙 우선 → 💰모멘텀(BREAKOUT>HUNT>TREND, 점수순) · 한 업종 최대 2개
   const _GO = {"BREAKOUT":0,"HUNT":1,"TREND":2,"WATCH":3,"BB_BREAK":4};
   const buyAll = [];
-  (SWING||[]).forEach(s=>buyAll.push({strat:'swing',name:s.name,code:s.code,buy:s.close,target:s.upper,stop:s.lower,rsi:s.rsi,ind:String(s.industryCode||'0')}));
+  (SWING||[]).forEach(s=>buyAll.push({strat:'swing',name:s.name,code:s.code,buy:s.close,target:s.upper,stop:s.lower,rsi:s.rsi,ind:String(s.industryCode||'0'),sector:s.sectorName||''}));
   [...DATA].sort((a,b)=>(_GO[a.grade]??9)-(_GO[b.grade]??9)||(b.finalScore||0)-(a.finalScore||0))
-    .forEach(s=>buyAll.push({strat:'mom',name:s.name,code:s.code,buy:s.buyPrice,target:s.target1,stop:s.stoploss,grade:s.grade,targetPct:s.targetPct||10,ind:String(s.industryCode||'0')}));
+    .forEach(s=>buyAll.push({strat:'mom',name:s.name,code:s.code,buy:s.buyPrice,target:s.target1,stop:s.stoploss,grade:s.grade,targetPct:s.targetPct||10,ind:String(s.industryCode||'0'),sector:s.sectorName||''}));
   // 한 업종 최대 2개 제한으로 상위 3 선택 (검증: 수익 동일하면서 섹터 몰빵 차단)
   const top3 = []; const _secCnt = {}; const _used = new Set();
   for (const c of buyAll) {
@@ -1307,6 +1307,7 @@ function renderCards() {
           <span style="background:${idx===0?'#16A34A':'#64748B'};color:#fff;width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0">${idx+1}</span>
           <span style="background:${tagc};color:#fff;padding:2px 8px;border-radius:5px;font-size:0.72rem;font-weight:800">${tag}</span>
           <span style="font-weight:800;font-size:1.05rem;color:#0F172A">${s.name}</span>
+          ${s.sector?`<span style="background:#EEF2FF;color:#4338CA;padding:2px 7px;border-radius:5px;font-size:0.7rem;font-weight:700">${s.sector}</span>`:''}
           <span style="color:#94A3B8;font-size:0.78rem">${s.code}</span>
         </div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center">
@@ -1454,6 +1455,7 @@ function renderCards() {
             <div>
               <span style="background:${gradeInfo.bg};color:#fff;padding:3px 7px;border-radius:5px;font-size:0.7rem;font-weight:800;margin-right:6px">${gradeInfo.emoji}${gradeInfo.label}</span>
               <span class="stock-name">${s.name}</span>
+              ${s.sectorName?`<span style="background:#EEF2FF;color:#4338CA;padding:2px 7px;border-radius:5px;font-size:0.68rem;font-weight:700;margin-left:4px">${s.sectorName}</span>`:''}
               <span class="stock-code">${s.code}</span>
               ${secMark}
             </div>
