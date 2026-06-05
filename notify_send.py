@@ -23,13 +23,14 @@ def build_message(date, dow, momentum, swing_buys, regime):
     for b in (swing_buys or []):
         buy_all.append({"strat": "swing", "name": b["name"], "code": b["code"],
                         "buy": b["close"], "target": b.get("upper"), "stop": b.get("lower"),
-                        "industryCode": str(b.get("industryCode", "0"))})
+                        "chg": b.get("chgToday"), "industryCode": str(b.get("industryCode", "0"))})
     for s in sorted(momentum or [], key=lambda x: (_GO.get(x.get("grade"), 9), -(x.get("finalScore") or 0))):
         buy_all.append({"strat": "mom", "name": s.get("name"), "code": s.get("code"),
                         "buy": s.get("buyPrice"), "target": s.get("target1"), "stop": s.get("stoploss"),
                         "grade": s.get("grade"), "targetPct": s.get("targetPct", 10),
-                        "industryCode": str(s.get("industryCode", "0"))})
-    # 한 업종 최대 2개 제한 적용 → 상위 3
+                        "chg": s.get("chgToday"), "industryCode": str(s.get("industryCode", "0"))})
+    # 파랑(어제대비 하락) 제외(검증: 손해없음) → 한 업종 최대 2개 → 상위 3
+    buy_all = [c for c in buy_all if not (c.get("chg") is not None and c["chg"] < 0)]
     top3 = pick_with_sector_limit(buy_all, n=3, max_per_sector=2)
 
     L = [f"📊 <b>오늘 살 3종목 ({date} {dow}) · 자본 33%씩</b>"]

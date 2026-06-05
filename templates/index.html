@@ -1280,6 +1280,7 @@ function renderCards() {
   for (const c of buyAll) {
     if (top3.length >= 3) break;
     if (_used.has(c.code)) continue;
+    if (c.chg !== null && c.chg < 0) continue;   // 파랑(어제대비 하락) 종목은 추천 제외(검증: 손해없음)
     if (c.ind !== '0' && (_secCnt[c.ind]||0) >= 2) continue;
     top3.push(c); _used.add(c.code); _secCnt[c.ind] = (_secCnt[c.ind]||0)+1;
   }
