@@ -1750,11 +1750,14 @@ def _save_and_sync_results(results, date_str, swing_picks=None):
         print(f"  [SYNC] Save error: {e}")
         return payload
 
-    # Git push (로컬에서만). Render·GitHub Actions에선 스킵
-    #   (GitHub Actions는 워크플로 'Persist' 스텝이 latest_results.json까지 한 번에 push)
+    # Git push: 기본 비활성(SYNC_PUSH=1일 때만).
+    #   로컬 스캔이 latest_results.json을 push하면 push마다 Render가 재배포(2~3분 다운)되어
+    #   '컴퓨터에서 검색 돌리는 동안 폰에서 접속 불가' 문제가 발생.
+    #   Render는 자체적으로 스캔(stale-while-revalidate+상주모니터)하므로 로컬 push 불필요.
     is_render = os.environ.get("RENDER", "") == "true"
     in_actions = os.environ.get("GITHUB_ACTIONS", "") == "true"
-    if not is_render and not in_actions:
+    want_push = os.environ.get("SYNC_PUSH", "") == "1"
+    if want_push and not is_render and not in_actions:
         try:
             app_dir = os.path.dirname(__file__)
             subprocess.Popen(
