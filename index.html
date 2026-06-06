@@ -875,6 +875,7 @@ let DATA = [];
 let SWING = [];
 let REGIME = {};      // 시장상황 {above_ma60, close, ma60, ok}  경광등/방어전환용
 let scanningRetry = false;   // 서버가 백그라운드 스캔중이면 자동 재조회 유지용
+let scanRetryCount = 0;      // 일시적 오류(재배포/콜드스타트) 자동 재시도 횟수
 let LIVE = {};        // code -> {price, chgRate}  실시간 현재가
 let LIVE_TS = '';
 let liveTimer = null;
@@ -947,11 +948,12 @@ function rrColor(r) {
 // ── Scan ──
 let pollTimer = null;
 
-async function doScan() {
+async function doScan(isRetry = false) {
   const dateVal = document.getElementById("dateInput").value;
   const btn = document.getElementById("btnScan");
   const btnText = document.getElementById("btnScanText");
 
+  if (!isRetry) scanRetryCount = 0;   // 수동 검색이면 재시도 카운터 리셋
   scanningRetry = false;
   btn.disabled = true;
   btnText.textContent = "스캔 중...";
@@ -1004,9 +1006,11 @@ async function doScan() {
       if (lt) lt.textContent = data.message || "처음 스캔 중입니다 (약 1~2분)... 자동으로 새로고침됩니다";
       const tt = document.getElementById("loadingTitle");
       if (tt) tt.textContent = "처음 스캔 중 (다음부터는 즉시)";
-      setTimeout(doScan, 9000);   // 9초 후 자동 재조회
+      setTimeout(() => doScan(true), 9000);   // 9초 후 자동 재조회
       return;
     }
+
+    scanRetryCount = 0;   // 정상 응답 → 재시도 카운터 리셋
 
     DATA = data.results;
     SWING = data.swingPicks || [];
@@ -1052,11 +1056,20 @@ async function doScan() {
 
   } catch (err) {
     clearInterval(pollTimer);
-    // 백그라운드 스캔 대기중 일시적 오류(웨이크업 등)면 조용히 재시도
-    if (scanningRetry) { setTimeout(doScan, 9000); return; }
+    // 일시적 오류(서버 재배포/콜드스타트 → HTML 에러페이지/타임아웃)면 에러창 없이 자동 재시도.
+    if (scanRetryCount < 8) {
+      scanRetryCount++;
+      scanningRetry = true;   // 오버레이 유지
+      const lt = document.getElementById("loadingText");
+      if (lt) lt.textContent = `서버 응답 대기 중... 자동 재시도 (${scanRetryCount}/8)`;
+      const tt = document.getElementById("loadingTitle");
+      if (tt) tt.textContent = "서버 깨우는 중 (재배포·콜드스타트)";
+      setTimeout(() => doScan(true), 10000);
+      return;
+    }
     alert("서버 연결 실패: " + err.message + "\n\n잠시 후 다시 시도해주세요.");
   } finally {
-    if (!scanningRetry) {            // 스캔중 자동재조회 상태면 오버레이 유지
+    if (!scanningRetry) {            // 스캔중/재시도중이면 오버레이 유지
       document.getElementById("loadingOverlay").classList.remove("show");
       btn.disabled = false;
       btnText.textContent = "KRX 전종목 검색";
