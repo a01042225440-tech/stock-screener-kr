@@ -1794,6 +1794,38 @@ def _load_cached_results(date_str):
         pass
     return None
 
+SCAN_TTL = 180                 # 오늘 캐시 신선도(초). 이보다 오래되면 장중에 한해 백그라운드 재스캔
+_bg_scan_busy = {"on": False}
+_bg_scan_lock = threading.Lock()
+
+def _cache_age_seconds(cached):
+    """캐시 생성 후 경과초. 파싱 실패시 None."""
+    try:
+        ts = datetime.strptime(cached.get("timestamp", ""), "%Y-%m-%d %H:%M:%S")
+        return (datetime.now() - ts).total_seconds()
+    except Exception:
+        return None
+
+def _background_rescan(date_str, market):
+    """백그라운드 재스캔(모멘텀+스윙) → latest_results.json 갱신. 동시실행 1개로 제한."""
+    with _bg_scan_lock:
+        if _bg_scan_busy["on"]:
+            return
+        _bg_scan_busy["on"] = True
+    try:
+        results = run_scan(date_str, market=market)
+        try:
+            from swing_tracker import scan_buys as swing_scan
+            sp = swing_scan(date_str, intraday=True, market=market)
+        except Exception as e:
+            print(f"  [BG] swing err: {e}"); sp = []
+        _save_and_sync_results(results, date_str, swing_picks=sp)
+        print(f"  [BG] rescan saved {date_str} ({len(results)} stocks)")
+    except Exception as e:
+        print(f"  [BG] rescan error: {e}")
+    finally:
+        _bg_scan_busy["on"] = False
+
 @app.route("/api/scan")
 def api_scan():
     date_str = flask_request.args.get("date", "")
@@ -1809,18 +1841,27 @@ def api_scan():
     except ValueError:
         return jsonify({"error": "Date format error"}), 400
 
-    # 1) 캐시 사용은 '과거 거래일'만 (과거 데이터는 불변 → 캐시 OK + 즉시).
-    #    오늘 날짜는 항상 새로 스캔 = 실시간 조회 보장 (시장 ALL일 때만 캐시 대상)
+    # 1) 캐시 우선 반환(즉시) + stale-while-revalidate.
+    #    풀스캔이 ~100초라 모바일에서 동기 대기 시 게이트웨이 타임아웃(HTML 에러) 발생.
+    #    → 마지막 스캔 결과를 즉시 주고, 오늘이면서 오래된 캐시는 '장중에만' 백그라운드 갱신.
+    #    과거일은 불변이라 그대로 캐시. (캐시는 시장 ALL 기준)
     today_str = datetime.now().strftime("%Y-%m-%d")
-    use_cache = (market == "ALL") and (date_str < today_str)
-    cached = _load_cached_results(date_str) if use_cache else None
+    cached = _load_cached_results(date_str) if market == "ALL" else None
     if cached:
         cached.setdefault("swingPicks", [])
         _enrich_sector(cached.get("results"))      # 섹터 이름 부착(구 캐시 호환)
         _enrich_sector(cached.get("swingPicks"))
+        if date_str == today_str:
+            age = _cache_age_seconds(cached)
+            kst = datetime.utcnow() + timedelta(hours=9)   # 서버 UTC→KST 변환
+            in_market = kst.weekday() < 5 and (9 * 60) <= (kst.hour * 60 + kst.minute) <= (16 * 60)
+            if in_market and (age is None or age > SCAN_TTL):
+                threading.Thread(target=_background_rescan, args=(date_str, market), daemon=True).start()
+                cached["refreshing"] = True
+            cached["cacheAgeSec"] = int(age) if age is not None else None
         return jsonify(cached)
 
-    # 2) 라이브 스캔: 모멘텀 + 스윙을 '한 번에' 반환
+    # 2) 캐시 없음(오늘 첫 스캔/버전변경/시장필터) → 동기 라이브 스캔: 모멘텀 + 스윙 '한 번에'
     #    (OHLCV는 in-proc 캐시 공유 → 스윙은 모멘텀이 받아둔 데이터 재사용해 거의 즉시.
     #     별도 /api/swing 2차 전수스캔을 없애 속도↑ + 대시보드 순서 안 바뀜)
     results = run_scan(date_str, market=market)
