@@ -803,7 +803,7 @@ body {
         </div>
         <div class="stat-item">
           <div class="stat-label">청산/손절</div>
-          <div class="stat-value" style="color:var(--red);font-size:1rem">+10%/-5%</div>
+          <div class="stat-value" style="color:var(--red);font-size:1rem">+10~15%/-10%</div>
         </div>
       </div>
     </div>
@@ -836,7 +836,7 @@ body {
       <div class="initial-icon">실</div>
       <div class="initial-title">실전 트레이더 스크리너 (HUNT·BREAKOUT)</div>
       <div class="initial-desc">
-        <b>전략</b>: 당일 종가 매수 → <b style="color:#DC2626">6영업일 안 +10% 전량매도</b> · <b style="color:#DC2626">약세장(코스피&lt;60일선) 매수보류</b><br>
+        <b>전략</b>: 당일 종가 매수 → <b style="color:#DC2626">6영업일 안 +10%(BREAKOUT +15%) 전량매도</b> · <b style="color:#6366F1">약세장(코스피&lt;60일선)엔 🌊스윙만</b><br>
         <b>캔들 필수(K1~K3)</b>: 종가&gt;전일 + 양봉 + 윗꼬리 짧은 상승추세 캔들<br>
         <b>등급</b>: 🟢HUNT(저점매수) · 🔴BREAKOUT(추격) · 🟡TREND · 🔵WATCH · 🟣BB돌파
       </div>
@@ -852,7 +852,7 @@ body {
       &nbsp;&nbsp;• <b style="color:#DC2626">🛑 손절: 직전 10일 최저가 이탈</b> 시 전량 매도 (최대손실 -10%) ← 가장 중요<br>
       &nbsp;&nbsp;• <b>최대 보유 6영업일</b> — 미달성 시 6일째 종가에 전량 청산<br>
       &nbsp;&nbsp;• <b>분산</b>: 상위 <b style="color:#16A34A">3종목 균등(33%씩)</b> — 한 종목 몰빵 금지<br>
-      &nbsp;&nbsp;• <b>시장</b>: 코스피가 60일선 아래(약세장)면 <b style="color:#DC2626">신규매수 보류</b>
+      &nbsp;&nbsp;• <b>시장</b>: 코스피가 60일선 아래(🔴약세장)면 추세추종 OFF → <b style="color:#6366F1">🌊스윙만 매수(방어전환)</b> · 비중 축소
     </div>
   </div>
 </div>
@@ -1230,7 +1230,7 @@ function renderCardDetail(s, gradeInfo) {
       <div><b>매수:</b> <b style="color:#2563EB">당일 종가 매수</b> = ${fmt(s.buyPrice)}원</div>
       <div><b>🎯 청산:</b> ${fmt(s.target1)}원 (<b style="color:#DC2626">+${s.targetPct||10}%</b>${(s.targetPct||10)!==10?', BREAKOUT 돌파':''}) 도달시 <b style="color:#16A34A">전량 매도</b></div>
       <div><b>최대 보유:</b> <b style="color:#DC2626">6영업일</b> — 청산가 미달 시 6일째 종가에 전량 매도</div>
-      <div><b>손절:</b> ${fmt(s.stoploss)}원 이하 도달시 <b style="color:#DC2626">전량 매도</b> (최대 -${s.riskPct || '5'}%, 1.5×ATR)</div>
+      <div><b>손절:</b> ${fmt(s.stoploss)}원 이하 도달시 <b style="color:#DC2626">전량 매도</b> (직전 10일 최저가, 최대손실 -${s.riskPct || '10'}%)</div>
       <div><b>캔들 조건:</b> 종가&gt;전일종가(K1) + 양봉(K2) + 윗꼬리≤몸통×0.3(K3) — HUNT/BREAKOUT은 모두 충족</div>
     </div>
     <div class="ohlc-row">
@@ -1364,7 +1364,7 @@ function renderCards() {
   if (false) {
     const buyCandidates = filteredAll.slice(0, 3);
     h += `<div style="background:linear-gradient(135deg,#16A34A,#15803D);color:#fff;padding:12px 16px;border-radius:10px;margin-bottom:12px;box-shadow:0 4px 12px rgba(22,163,74,0.25)">
-      <div style="font-weight:800;font-size:0.95rem;margin-bottom:4px">💡 매트릭스 검증 최적 전략 → <span style="background:#fff;color:#16A34A;padding:2px 8px;border-radius:4px">손절 -5% · 매일 상위 3종목 균등매수</span></div>
+      <div style="font-weight:800;font-size:0.95rem;margin-bottom:4px">💡 매트릭스 검증 최적 전략 → <span style="background:#fff;color:#16A34A;padding:2px 8px;border-radius:4px">손절 -10% · 매일 상위 3종목 균등매수</span></div>
       <div style="font-size:0.78rem;opacity:0.95;line-height:1.5">
         • 4/1~5/27 백테스트: 1종목 단일매수 -14.93% vs <b>3종목 균등 +64.97%</b><br>
         • <b>자본 33%씩 ${buyCandidates.length}종목 분산 매수</b> (1종목 몰빵은 변동성 폭발 위험)
@@ -1375,7 +1375,7 @@ function renderCards() {
   // ⭐ (옛 PICK 단일카드 — 상위 TOP-3 섹션으로 대체, 비활성)
   if (false) {
     const g = {
-      "HUNT":     {bg:"#16A34A", emoji:"🟢", label:"HUNT",     txt:"저점매수 (남석관 눌림목) - 정배열+실적+주도섹터+20일선 ±5%+양봉반등"},
+      "HUNT":     {bg:"#16A34A", emoji:"🟢", label:"HUNT",     txt:"눌림목 저점매수 - 정배열+실적+직전고점 되돌림3~18%+20일선 지지(-2~+6%)+아래꼬리 양봉반등"},
       "BREAKOUT": {bg:"#DC2626", emoji:"🔴", label:"BREAKOUT", txt:"추격매수 (Minervini/O'Neil) - 정배열+실적+섹터+52주신고가+거래량2배"},
       "TREND":    {bg:"#D97706", emoji:"🟡", label:"TREND",    txt:"추세진입 (Weinstein Stage 2) - 정배열+실적 충족, 섹터/트리거 대기"},
       "WATCH":    {bg:"#2563EB", emoji:"🔵", label:"WATCH",    txt:"예비 - 정배열만 충족, 펀더멘털 보강 필요"},
@@ -1443,7 +1443,7 @@ function renderCards() {
               <div style="font-size:1.5rem;font-weight:900;color:#B91C1C;letter-spacing:-0.5px">${fmt(PICK.stoploss)}</div>
             </div>
           </div>
-          <div style="color:#475569;font-size:0.76rem;margin-top:8px;line-height:1.5">📌 <b>+${PICK.targetPct||10}% 도달 시 전량매도</b> · <b style="color:#DC2626">-5% 이탈 시 무조건 손절</b> · 최대 6영업일 보유 · 3종목 33%씩 분산 · <b>카드 클릭 시 차트 ▼</b></div>
+          <div style="color:#475569;font-size:0.76rem;margin-top:8px;line-height:1.5">📌 <b>+${PICK.targetPct||10}% 도달 시 전량매도</b> · <b style="color:#DC2626">🛑손절선 이탈 시 손절(최대 -10%)</b> · 최대 6영업일 보유 · 3종목 33%씩 분산 · <b>카드 클릭 시 차트 ▼</b></div>
         </div>
       </div>
       <div class="card-detail${openCards.has(PICK.code) ? ' show' : ''}" style="padding:0 16px 16px;background:#fff;border-top:1px solid ${g.bg}33">
