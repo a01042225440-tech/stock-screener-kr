@@ -476,10 +476,10 @@
     }
   ],
   "swingPicks": [],
-  "date": "2026-06-06",
+  "date": "2026-06-05",
   "actualDataDate": "2026-06-05",
-  "isHoliday": true,
-  "dataStatus": "intraday",
+  "isHoliday": false,
+  "dataStatus": "confirmed",
   "marketRegime": {
     "above_ma60": true,
     "close": 8160.59,
@@ -487,10 +487,10 @@
     "ok": true
   },
   "strategyVersion": "2026.06.05-HUNTtruePullback(retrace3-18+ma20support+lowtail+volup)-sectorName-chgToday-scanUnified-realtimeToday",
-  "timestamp": "2026-06-06 19:58:32",
+  "timestamp": "2026-06-06 20:08:12",
   "mode": "KRX+Naver",
   "count": 3,
-  "dayOfWeek": "토",
+  "dayOfWeek": "금",
   "isTuesday": false,
   "tradeRules": {
     "slip": "0.3%",
