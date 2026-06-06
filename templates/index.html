@@ -874,6 +874,7 @@ body {
 let DATA = [];
 let SWING = [];
 let REGIME = {};      // 시장상황 {above_ma60, close, ma60, ok}  경광등/방어전환용
+let scanningRetry = false;   // 서버가 백그라운드 스캔중이면 자동 재조회 유지용
 let LIVE = {};        // code -> {price, chgRate}  실시간 현재가
 let LIVE_TS = '';
 let liveTimer = null;
@@ -951,6 +952,7 @@ async function doScan() {
   const btn = document.getElementById("btnScan");
   const btnText = document.getElementById("btnScanText");
 
+  scanningRetry = false;
   btn.disabled = true;
   btnText.textContent = "스캔 중...";
 
@@ -991,6 +993,18 @@ async function doScan() {
 
     if (data.error) {
       alert(data.error);
+      return;
+    }
+
+    // 캐시 없음 → 서버가 백그라운드 스캔 시작(비차단). 오버레이 유지 + 자동 재조회.
+    if (data.scanning) {
+      clearInterval(pollTimer);
+      scanningRetry = true;
+      const lt = document.getElementById("loadingText");
+      if (lt) lt.textContent = data.message || "처음 스캔 중입니다 (약 1~2분)... 자동으로 새로고침됩니다";
+      const tt = document.getElementById("loadingTitle");
+      if (tt) tt.textContent = "처음 스캔 중 (다음부터는 즉시)";
+      setTimeout(doScan, 9000);   // 9초 후 자동 재조회
       return;
     }
 
@@ -1038,11 +1052,15 @@ async function doScan() {
 
   } catch (err) {
     clearInterval(pollTimer);
-    alert("서버 연결 실패: " + err.message + "\n\npython app.py 가 실행 중인지 확인하세요.");
+    // 백그라운드 스캔 대기중 일시적 오류(웨이크업 등)면 조용히 재시도
+    if (scanningRetry) { setTimeout(doScan, 9000); return; }
+    alert("서버 연결 실패: " + err.message + "\n\n잠시 후 다시 시도해주세요.");
   } finally {
-    document.getElementById("loadingOverlay").classList.remove("show");
-    btn.disabled = false;
-    btnText.textContent = "KRX 전종목 검색";
+    if (!scanningRetry) {            // 스캔중 자동재조회 상태면 오버레이 유지
+      document.getElementById("loadingOverlay").classList.remove("show");
+      btn.disabled = false;
+      btnText.textContent = "KRX 전종목 검색";
+    }
   }
 }
 

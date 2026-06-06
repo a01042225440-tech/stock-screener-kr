@@ -1861,9 +1861,25 @@ def api_scan():
             cached["cacheAgeSec"] = int(age) if age is not None else None
         return jsonify(cached)
 
-    # 2) 캐시 없음(오늘 첫 스캔/버전변경/시장필터) → 동기 라이브 스캔: 모멘텀 + 스윙 '한 번에'
-    #    (OHLCV는 in-proc 캐시 공유 → 스윙은 모멘텀이 받아둔 데이터 재사용해 거의 즉시.
-    #     별도 /api/swing 2차 전수스캔을 없애 속도↑ + 대시보드 순서 안 바뀜)
+    # 2) 캐시 없음 + 오늘(ALL) → '비차단': 백그라운드 스캔 시작하고 즉시 '스캔중' 응답.
+    #    (~100초 동기대기 시 모바일/게이트웨이 타임아웃 → HTML 에러. 프론트가 9초 후 자동 재조회)
+    if market == "ALL" and date_str == today_str:
+        if not _bg_scan_busy["on"]:
+            threading.Thread(target=_background_rescan, args=(date_str, market), daemon=True).start()
+        try:
+            regime = get_kospi_regime()
+        except Exception:
+            regime = {}
+        return jsonify({
+            "scanning": True, "results": [], "swingPicks": [], "count": 0,
+            "date": date_str, "actualDataDate": date_str, "market": market,
+            "dataStatus": "scanning", "dayOfWeek": "", "isHoliday": False,
+            "marketRegime": regime, "strategyVersion": STRATEGY_VERSION,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "message": "처음 스캔 중입니다 (약 1~2분). 잠시 후 자동으로 결과가 표시됩니다.",
+        })
+
+    # 3) 과거일/시장필터 등 → 동기 라이브 스캔: 모멘텀 + 스윙 '한 번에'
     results = run_scan(date_str, market=market)
     try:
         from swing_tracker import scan_buys as swing_scan
