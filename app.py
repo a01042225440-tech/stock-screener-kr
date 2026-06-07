@@ -1865,9 +1865,10 @@ def api_scan():
             cached["cacheAgeSec"] = int(age) if age is not None else None
         return jsonify(cached)
 
-    # 2) 캐시 없음 + 오늘(ALL) → '비차단': 백그라운드 스캔 시작하고 즉시 '스캔중' 응답.
-    #    (~100초 동기대기 시 모바일/게이트웨이 타임아웃 → HTML 에러. 프론트가 9초 후 자동 재조회)
-    if market == "ALL" and date_str == today_str:
+    # 2) 캐시 없음 + 시장ALL → '비차단': 백그라운드 스캔 시작하고 즉시 '스캔중' 응답.
+    #    (오늘/과거 모두 풀스캔이 ~150초라 동기대기 시 게이트웨이 타임아웃 → HTML 에러.
+    #     프론트는 scanning:true를 받으면 9초 간격 무제한 자동 재조회 → 완료 시 자동 표시)
+    if market == "ALL":
         if not _bg_scan_busy["on"]:
             threading.Thread(target=_background_rescan, args=(date_str, market), daemon=True).start()
         try:
