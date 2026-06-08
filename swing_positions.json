@@ -1,3 +1,13 @@
 {
-  "positions": []
+  "positions": [
+    {
+      "code": "004100",
+      "name": "태양금속",
+      "buyDate": "2026-06-08",
+      "buyPrice": 2835,
+      "last": 2835,
+      "profit": 0.0,
+      "regime": "BB"
+    }
+  ]
 }

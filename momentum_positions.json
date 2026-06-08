@@ -1,3 +1,30 @@
 {
-  "positions": []
+  "positions": [
+    {
+      "code": "161390",
+      "name": "한국타이어앤테크놀로지",
+      "grade": "HUNT",
+      "buyDate": "2026-06-08",
+      "buyPrice": 67000,
+      "target": 73700,
+      "stop": 60300,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 67000,
+      "profit": 0.0
+    },
+    {
+      "code": "052710",
+      "name": "아모텍",
+      "grade": "TREND",
+      "buyDate": "2026-06-08",
+      "buyPrice": 24400,
+      "target": 26800,
+      "stop": 21950,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 24400,
+      "profit": 0.0
+    }
+  ]
 }
