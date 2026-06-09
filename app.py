@@ -26,7 +26,7 @@ app = Flask(__name__, template_folder=".", static_folder=".", static_url_path="/
 
 # ─── 전략 버전 (조건 변경 시 올리면 캐시 자동 무효화) ───
 # 손절-5% / 청산+10% / D1 20MA>0% / D4 거래량1.5x / D5 RSI50-70 / C섹터보너스 / F1첫풀백
-STRATEGY_VERSION = "2026.06.05-HUNTtruePullback(retrace3-18+ma20support+lowtail+volup)-sectorName-chgToday-scanUnified-realtimeToday"
+STRATEGY_VERSION = "2026.06.09-HUNTtruePullback-sectorName-chgToday-excludeSectors(medical/bio261-286-262-281-288-316)"
 
 # ─── 주가 상한 (소액 분산매수용) ───
 # 100만원 시드 → 3종목 33만원씩 → 20만원 이하면 1주+ 보유 가능
@@ -234,6 +234,10 @@ POLITICAL_THEME_CODES = {
     "065170", "024060", "036090", "012620", "016380",
     "093920", "032300", "025560", "066620", "035080",
 }
+
+# ★ 섹터(업종) 기반 제외: 이름에 '바이오/제약'이 없어도(알테오젠·루닛·클래시스 등) 업종으로 확실히 제외
+#   네이버 업종코드: 261제약 286바이오(생물공학) 262생명과학 281의료기기 288의료기술 316의료서비스
+EXCLUDED_SECTORS = {"261", "286", "262", "281", "288", "316"}
 
 def is_excluded_by_name(name, code):
     name_upper = name.upper()
@@ -1293,6 +1297,9 @@ def run_scan(date_str, demo=False, intraday=True, market="ALL"):
             return None
         # 펀더멘털을 screen_pro에 넘기기 위해 먼저 fetch
         inv = fetch_investor_data(code)
+        # ★ 섹터(업종) 기반 제외 — 의료/바이오 업종이면 이름 무관 제외 (추가 API콜 없음, inv에 이미 있음)
+        if inv and str(inv.get("industry_code", "0")) in EXCLUDED_SECTORS:
+            return None
         fundamental = None
         if inv:
             fundamental = {
