@@ -1,19 +1,6 @@
 {
   "positions": [
     {
-      "code": "161390",
-      "name": "한국타이어앤테크놀로지",
-      "grade": "HUNT",
-      "buyDate": "2026-06-08",
-      "buyPrice": 67000,
-      "target": 73700,
-      "stop": 60300,
-      "targetPct": 10,
-      "maxHold": 6,
-      "last": 67000,
-      "profit": 0.0
-    },
-    {
       "code": "052710",
       "name": "아모텍",
       "grade": "TREND",
@@ -23,7 +10,46 @@
       "stop": 21950,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 24400,
+      "last": 26550,
+      "profit": 8.8
+    },
+    {
+      "code": "016360",
+      "name": "삼성증권",
+      "grade": "TREND",
+      "buyDate": "2026-06-09",
+      "buyPrice": 118000,
+      "target": 129800,
+      "stop": 109000,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 118000,
+      "profit": 0.0
+    },
+    {
+      "code": "078930",
+      "name": "GS",
+      "grade": "TREND",
+      "buyDate": "2026-06-09",
+      "buyPrice": 73800,
+      "target": 81100,
+      "stop": 68700,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 73800,
+      "profit": 0.0
+    },
+    {
+      "code": "319660",
+      "name": "피에스케이",
+      "grade": "TREND",
+      "buyDate": "2026-06-09",
+      "buyPrice": 137900,
+      "target": 151600,
+      "stop": 124100,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 137900,
       "profit": 0.0
     }
   ]

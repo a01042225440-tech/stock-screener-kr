@@ -5,8 +5,98 @@
       "name": "태양금속",
       "buyDate": "2026-06-08",
       "buyPrice": 2835,
-      "last": 2835,
-      "profit": 0.0,
+      "last": 3065,
+      "profit": 8.1,
+      "regime": "BB"
+    },
+    {
+      "code": "098460",
+      "name": "고영",
+      "buyDate": "2026-06-09",
+      "buyPrice": 33500,
+      "last": 33450,
+      "profit": -0.1,
+      "regime": "BB"
+    },
+    {
+      "code": "058470",
+      "name": "리노공업",
+      "buyDate": "2026-06-09",
+      "buyPrice": 98300,
+      "last": 99000,
+      "profit": 0.7,
+      "regime": "BB"
+    },
+    {
+      "code": "468530",
+      "name": "프로티나",
+      "buyDate": "2026-06-09",
+      "buyPrice": 34700,
+      "last": 34850,
+      "profit": 0.4,
+      "regime": "BB"
+    },
+    {
+      "code": "190510",
+      "name": "나무가",
+      "buyDate": "2026-06-09",
+      "buyPrice": 16680,
+      "last": 16750,
+      "profit": 0.4,
+      "regime": "BB"
+    },
+    {
+      "code": "018290",
+      "name": "브이티",
+      "buyDate": "2026-06-09",
+      "buyPrice": 12410,
+      "last": 12420,
+      "profit": 0.1,
+      "regime": "BB"
+    },
+    {
+      "code": "394800",
+      "name": "쓰리빌리언",
+      "buyDate": "2026-06-09",
+      "buyPrice": 7320,
+      "last": 7300,
+      "profit": -0.3,
+      "regime": "BB"
+    },
+    {
+      "code": "053030",
+      "name": "바이넥스",
+      "buyDate": "2026-06-09",
+      "buyPrice": 8110,
+      "last": 8100,
+      "profit": -0.1,
+      "regime": "BB"
+    },
+    {
+      "code": "287840",
+      "name": "인투셀",
+      "buyDate": "2026-06-09",
+      "buyPrice": 24350,
+      "last": 24200,
+      "profit": -0.6,
+      "regime": "BB"
+    },
+    {
+      "code": "151860",
+      "name": "KG에코솔루션",
+      "buyDate": "2026-06-09",
+      "buyPrice": 5300,
+      "last": 5270,
+      "profit": -0.6,
+      "regime": "BB"
+    },
+    {
+      "code": "095500",
+      "name": "미래나노텍",
+      "buyDate": "2026-06-09",
+      "buyPrice": 7000,
+      "last": 7030,
+      "profit": 0.4,
       "regime": "BB"
     }
   ]
