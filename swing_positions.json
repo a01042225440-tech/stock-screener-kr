@@ -7,6 +7,7 @@
       "buyPrice": 2835,
       "last": 3065,
       "profit": 8.1,
+<<<<<<< Updated upstream
       "regime": "BB"
     },
     {
@@ -97,6 +98,8 @@
       "buyPrice": 7000,
       "last": 7030,
       "profit": 0.4,
+=======
+>>>>>>> Stashed changes
       "regime": "BB"
     }
   ]
