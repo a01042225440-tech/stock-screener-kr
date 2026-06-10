@@ -1,59 +1,43 @@
 {
   "positions": [
     {
-      "code": "052710",
-      "name": "아모텍",
-      "grade": "TREND",
-      "buyDate": "2026-06-08",
-      "buyPrice": 24400,
-      "target": 26800,
-      "stop": 21950,
-      "targetPct": 10,
+      "code": "031980",
+      "name": "피에스케이홀딩스",
+      "grade": "BREAKOUT",
+      "buyDate": "2026-06-10",
+      "buyPrice": 138700,
+      "target": 159500,
+      "stop": 124800,
+      "targetPct": 15,
       "maxHold": 6,
-      "last": 26550,
-      "profit": 8.8
-<<<<<<< Updated upstream
-    },
-    {
-      "code": "016360",
-      "name": "삼성증권",
-      "grade": "TREND",
-      "buyDate": "2026-06-09",
-      "buyPrice": 118000,
-      "target": 129800,
-      "stop": 109000,
-      "targetPct": 10,
-      "maxHold": 6,
-      "last": 118000,
+      "last": 138700,
       "profit": 0.0
     },
     {
-      "code": "078930",
-      "name": "GS",
+      "code": "003490",
+      "name": "대한항공",
       "grade": "TREND",
-      "buyDate": "2026-06-09",
-      "buyPrice": 73800,
-      "target": 81100,
-      "stop": 68700,
+      "buyDate": "2026-06-10",
+      "buyPrice": 25400,
+      "target": 27900,
+      "stop": 23650,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 73800,
+      "last": 25400,
       "profit": 0.0
     },
     {
-      "code": "319660",
-      "name": "피에스케이",
+      "code": "028050",
+      "name": "삼성E&A",
       "grade": "TREND",
-      "buyDate": "2026-06-09",
-      "buyPrice": 137900,
-      "target": 151600,
-      "stop": 124100,
+      "buyDate": "2026-06-10",
+      "buyPrice": 47200,
+      "target": 51900,
+      "stop": 42900,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 137900,
+      "last": 47200,
       "profit": 0.0
-=======
->>>>>>> Stashed changes
     }
   ]
 }
