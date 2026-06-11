@@ -140,8 +140,11 @@ def scan_buys(date_str, max_picks=10, intraday=False, market="ALL"):
         df = _fetch(c["code"], date_str, intraday=intraday, today_vol=c.get("vol", 0))
         ok, info = buy_signal(df)
         if ok:
-            from app import get_industry_code
-            info["industryCode"] = get_industry_code(c["code"])
+            from app import get_industry_code, EXCLUDED_SECTORS
+            ind = str(get_industry_code(c["code"]))
+            if ind in EXCLUDED_SECTORS:   # 바이오/의료 등 제외 (모멘텀과 동일 기준)
+                return
+            info["industryCode"] = ind
             hits.append({**c, **info})
     with ThreadPoolExecutor(max_workers=20) as ex:
         list(ex.map(chk, cands))

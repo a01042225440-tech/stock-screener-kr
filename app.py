@@ -26,7 +26,7 @@ app = Flask(__name__, template_folder=".", static_folder=".", static_url_path="/
 
 # ─── 전략 버전 (조건 변경 시 올리면 캐시 자동 무효화) ───
 # 손절-5% / 청산+10% / D1 20MA>0% / D4 거래량1.5x / D5 RSI50-70 / C섹터보너스 / F1첫풀백
-STRATEGY_VERSION = "2026.06.09-HUNTtruePullback-sectorName-chgToday-excludeSectors(medical/bio261-286-262-281-288-316)"
+STRATEGY_VERSION = "2026.06.09-HUNTtruePullback-sectorName-chgToday-excludeSectors-swing+momentum"
 
 # ─── 주가 상한 (소액 분산매수용) ───
 # 100만원 시드 → 3종목 33만원씩 → 20만원 이하면 1주+ 보유 가능
