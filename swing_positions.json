@@ -1,3 +1,13 @@
 {
-  "positions": []
+  "positions": [
+    {
+      "code": "415640",
+      "name": "KB발해인프라",
+      "buyDate": "2026-06-11",
+      "buyPrice": 9900,
+      "last": 9900,
+      "profit": 0.0,
+      "regime": "BB"
+    }
+  ]
 }

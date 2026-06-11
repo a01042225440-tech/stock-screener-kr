@@ -10,8 +10,8 @@
       "stop": 124800,
       "targetPct": 15,
       "maxHold": 6,
-      "last": 138700,
-      "profit": 0.0
+      "last": 133900,
+      "profit": -3.5
     },
     {
       "code": "003490",
@@ -23,8 +23,8 @@
       "stop": 23650,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 25400,
-      "profit": 0.0
+      "last": 24800,
+      "profit": -2.4
     },
     {
       "code": "028050",
@@ -36,7 +36,46 @@
       "stop": 42900,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 47200,
+      "last": 45550,
+      "profit": -3.5
+    },
+    {
+      "code": "240810",
+      "name": "원익IPS",
+      "grade": "BREAKOUT",
+      "buyDate": "2026-06-11",
+      "buyPrice": 141000,
+      "target": 162100,
+      "stop": 126900,
+      "targetPct": 15,
+      "maxHold": 6,
+      "last": 141000,
+      "profit": 0.0
+    },
+    {
+      "code": "383220",
+      "name": "F&F",
+      "grade": "BREAKOUT",
+      "buyDate": "2026-06-11",
+      "buyPrice": 83200,
+      "target": 95600,
+      "stop": 74800,
+      "targetPct": 15,
+      "maxHold": 6,
+      "last": 83200,
+      "profit": 0.0
+    },
+    {
+      "code": "192080",
+      "name": "더블유게임즈",
+      "grade": "BREAKOUT",
+      "buyDate": "2026-06-11",
+      "buyPrice": 74600,
+      "target": 85700,
+      "stop": 67100,
+      "targetPct": 15,
+      "maxHold": 6,
+      "last": 74600,
       "profit": 0.0
     }
   ]
