@@ -65,11 +65,25 @@ def do_swing(date_str, kst, do_buys):
     return event, do_buys
 
 
+RENDER_URL = os.environ.get("RENDER_URL", "https://stock-screener-kr.onrender.com")
+
+def keep_render_warm(date_str, hm):
+    """장중(08:50~16:00 KST)엔 Render 대시보드를 미리 깨우고 캐시를 데워둠.
+    → 사용자가 15:15에 열면 콜드스타트 없이 즉시 결과 표시. (외부 핑서비스 불필요)"""
+    if not (8 * 60 + 50 <= hm <= 16 * 60):
+        return
+    try:
+        import requests
+        requests.get(f"{RENDER_URL}/api/scan", params={"date": date_str, "market": "ALL"}, timeout=20)
+    except Exception:
+        pass
+
 def one_pass(buy_done, report_done):
     """반환 (이벤트?, did_buy, did_report)."""
     kst = now_kst()
     date_str = kst.strftime("%Y-%m-%d")
     hm = kst.hour * 60 + kst.minute
+    keep_render_warm(date_str, hm)   # 0) Render 깨우기+캐시 예열 (대시보드 즉시표시)
     # 1) 매도/손절 점검 (매 틱)
     e1 = do_momentum_sells(date_str, kst)
     e2, _ = do_swing(date_str, kst, False)   # 스윙 매도만(매수는 통합알림이 처리)
