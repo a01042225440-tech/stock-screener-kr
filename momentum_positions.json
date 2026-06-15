@@ -1,85 +1,43 @@
 {
   "positions": [
     {
-      "code": "031980",
-      "name": "피에스케이홀딩스",
-      "grade": "BREAKOUT",
-      "buyDate": "2026-06-10",
-      "buyPrice": 138700,
-      "target": 159500,
-      "stop": 124800,
-      "targetPct": 15,
-      "maxHold": 6,
-      "last": 152300,
-      "profit": 9.8
-    },
-    {
       "code": "003490",
       "name": "대한항공",
-      "grade": "TREND",
-      "buyDate": "2026-06-10",
-      "buyPrice": 25400,
-      "target": 27900,
-      "stop": 23650,
-      "targetPct": 10,
-      "maxHold": 6,
-      "last": 26600,
-      "profit": 4.7
-    },
-    {
-      "code": "383220",
-      "name": "F&F",
       "grade": "BREAKOUT",
-      "buyDate": "2026-06-11",
-      "buyPrice": 83200,
-      "target": 95600,
-      "stop": 74800,
+      "buyDate": "2026-06-15",
+      "buyPrice": 29850,
+      "target": 34300,
+      "stop": 26850,
       "targetPct": 15,
       "maxHold": 6,
-      "last": 85900,
-      "profit": 3.2
-    },
-    {
-      "code": "192080",
-      "name": "더블유게임즈",
-      "grade": "BREAKOUT",
-      "buyDate": "2026-06-11",
-      "buyPrice": 74600,
-      "target": 85700,
-      "stop": 67100,
-      "targetPct": 15,
-      "maxHold": 6,
-      "last": 71000,
-      "profit": -4.8
-<<<<<<< Updated upstream
-    },
-    {
-      "code": "055550",
-      "name": "신한지주",
-      "grade": "HUNT",
-      "buyDate": "2026-06-12",
-      "buyPrice": 99500,
-      "target": 109400,
-      "stop": 91000,
-      "targetPct": 10,
-      "maxHold": 6,
-      "last": 99500,
+      "last": 29850,
       "profit": 0.0
     },
     {
-      "code": "060980",
-      "name": "HL홀딩스",
+      "code": "204320",
+      "name": "HL만도",
+      "grade": "BREAKOUT",
+      "buyDate": "2026-06-15",
+      "buyPrice": 69500,
+      "target": 79900,
+      "stop": 62500,
+      "targetPct": 15,
+      "maxHold": 6,
+      "last": 69500,
+      "profit": 0.0
+    },
+    {
+      "code": "086790",
+      "name": "하나금융지주",
       "grade": "TREND",
-      "buyDate": "2026-06-12",
-      "buyPrice": 45950,
-      "target": 50500,
-      "stop": 41350,
+      "buyDate": "2026-06-15",
+      "buyPrice": 128700,
+      "target": 141500,
+      "stop": 115800,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 45950,
+      "last": 128700,
       "profit": 0.0
-=======
->>>>>>> Stashed changes
     }
   ]
 }
