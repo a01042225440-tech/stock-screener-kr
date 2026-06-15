@@ -43,6 +43,28 @@
       "sell": 73700,
       "profitPct": 10.0,
       "reason": "🎯 익절(+10% 도달)"
+    },
+    {
+      "strategy": "모멘텀",
+      "code": "028050",
+      "name": "삼성E&A",
+      "buyDate": "2026-06-10",
+      "sellDate": "2026-06-12",
+      "buy": 47200,
+      "sell": 51900,
+      "profitPct": 10.0,
+      "reason": "🎯 익절(+10% 도달)"
+    },
+    {
+      "strategy": "모멘텀",
+      "code": "240810",
+      "name": "원익IPS",
+      "buyDate": "2026-06-11",
+      "sellDate": "2026-06-12",
+      "buy": 141000,
+      "sell": 162100,
+      "profitPct": 15.0,
+      "reason": "🎯 익절(+15% 도달)"
     }
   ]
 }

@@ -10,8 +10,8 @@
       "stop": 124800,
       "targetPct": 15,
       "maxHold": 6,
-      "last": 133900,
-      "profit": -3.5
+      "last": 152300,
+      "profit": 9.8
     },
     {
       "code": "003490",
@@ -23,34 +23,8 @@
       "stop": 23650,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 24800,
-      "profit": -2.4
-    },
-    {
-      "code": "028050",
-      "name": "삼성E&A",
-      "grade": "TREND",
-      "buyDate": "2026-06-10",
-      "buyPrice": 47200,
-      "target": 51900,
-      "stop": 42900,
-      "targetPct": 10,
-      "maxHold": 6,
-      "last": 45550,
-      "profit": -3.5
-    },
-    {
-      "code": "240810",
-      "name": "원익IPS",
-      "grade": "BREAKOUT",
-      "buyDate": "2026-06-11",
-      "buyPrice": 141000,
-      "target": 162100,
-      "stop": 126900,
-      "targetPct": 15,
-      "maxHold": 6,
-      "last": 141000,
-      "profit": 0.0
+      "last": 26600,
+      "profit": 4.7
     },
     {
       "code": "383220",
@@ -62,8 +36,8 @@
       "stop": 74800,
       "targetPct": 15,
       "maxHold": 6,
-      "last": 83200,
-      "profit": 0.0
+      "last": 85900,
+      "profit": 3.2
     },
     {
       "code": "192080",
@@ -75,8 +49,37 @@
       "stop": 67100,
       "targetPct": 15,
       "maxHold": 6,
-      "last": 74600,
+      "last": 71000,
+      "profit": -4.8
+<<<<<<< Updated upstream
+    },
+    {
+      "code": "055550",
+      "name": "신한지주",
+      "grade": "HUNT",
+      "buyDate": "2026-06-12",
+      "buyPrice": 99500,
+      "target": 109400,
+      "stop": 91000,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 99500,
       "profit": 0.0
+    },
+    {
+      "code": "060980",
+      "name": "HL홀딩스",
+      "grade": "TREND",
+      "buyDate": "2026-06-12",
+      "buyPrice": 45950,
+      "target": 50500,
+      "stop": 41350,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 45950,
+      "profit": 0.0
+=======
+>>>>>>> Stashed changes
     }
   ]
 }
