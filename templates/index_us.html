@@ -186,8 +186,17 @@ body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkM
 
 <script>
 const TODAY = new Date().toISOString().split('T')[0];
-document.getElementById('dateInput').value = TODAY;
 document.getElementById('dateInput').max = TODAY;
+
+// 주말이면 최근 금요일로 자동 설정
+function getLastWeekday() {
+  const d = new Date();
+  const dow = d.getDay(); // 0=일, 6=토
+  if (dow === 0) d.setDate(d.getDate() - 2); // 일요일 → 금요일
+  else if (dow === 6) d.setDate(d.getDate() - 1); // 토요일 → 금요일
+  return d.toISOString().split('T')[0];
+}
+document.getElementById('dateInput').value = getLastWeekday();
 
 let pollTimer = null;
 
