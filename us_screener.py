@@ -14,30 +14,75 @@ import json, os, time
 #  종목 유니버스 (73개)
 # =============================================
 US_UNIVERSE = {
-    "AAPL":"Apple", "MSFT":"Microsoft", "NVDA":"NVIDIA", "GOOGL":"Alphabet",
-    "META":"Meta", "AMZN":"Amazon", "TSLA":"Tesla", "AMD":"AMD",
-    "AVGO":"Broadcom", "ORCL":"Oracle", "CRM":"Salesforce", "ADBE":"Adobe",
-    "NFLX":"Netflix", "QCOM":"Qualcomm", "NOW":"ServiceNow",
-    "AMAT":"Applied Mat.", "MU":"Micron", "PANW":"Palo Alto",
-    "CRWD":"CrowdStrike", "PLTR":"Palantir", "APP":"AppLovin",
-    "COIN":"Coinbase", "UBER":"Uber", "SNOW":"Snowflake",
-    "JPM":"JPMorgan", "BAC":"BofA", "GS":"Goldman", "V":"Visa",
-    "MA":"Mastercard", "AXP":"Amex", "SPGI":"S&P Global",
-    "JNJ":"J&J", "UNH":"UnitedHealth", "LLY":"Eli Lilly",
-    "ABBV":"AbbVie", "MRK":"Merck", "TMO":"Thermo Fisher",
-    "ISRG":"Intuitive Surg.", "REGN":"Regeneron", "VRTX":"Vertex",
-    "HD":"Home Depot", "WMT":"Walmart", "COST":"Costco",
-    "NKE":"Nike", "SBUX":"Starbucks", "MCD":"McDonald's",
-    "CMG":"Chipotle", "LULU":"Lululemon", "DECK":"Deckers",
-    "CAT":"Caterpillar", "DE":"Deere", "HON":"Honeywell",
-    "RTX":"RTX", "LMT":"Lockheed", "GD":"General Dynamics",
-    "XOM":"ExxonMobil", "CVX":"Chevron", "COP":"ConocoPhillips",
-    "OXY":"Occidental",
-    "DIS":"Disney", "CMCSA":"Comcast",
-    "PG":"P&G", "KO":"Coca-Cola", "PEP":"PepsiCo",
-    "AXON":"Axon", "CELH":"Celsius", "ONON":"On Running",
-    "ENPH":"Enphase", "NEE":"NextEra", "FSLR":"First Solar",
-    "SPOT":"Spotify", "DUOL":"Duolingo", "RBLX":"Roblox",
+    # ── 빅테크 / 반도체 ──
+    "AAPL":"애플", "MSFT":"마이크로소프트", "NVDA":"엔비디아", "GOOGL":"알파벳(구글)A",
+    "GOOG":"알파벳(구글)C", "META":"메타", "AMZN":"아마존", "TSLA":"테슬라",
+    "AMD":"AMD", "AVGO":"브로드컴", "ORCL":"오라클", "CRM":"세일즈포스",
+    "ADBE":"어도비", "NFLX":"넷플릭스", "QCOM":"퀄컴", "NOW":"서비스나우",
+    "AMAT":"어플라이드머티어리얼즈", "MU":"마이크론", "PANW":"팔로알토네트웍스", "CRWD":"크라우드스트라이크",
+    "PLTR":"팔란티어", "APP":"앱러빈", "COIN":"코인베이스", "UBER":"우버",
+    "SNOW":"스노우플레이크", "INTC":"인텔", "TXN":"텍사스인스트루먼트", "INTU":"인튜이트",
+    "IBM":"IBM", "CSCO":"시스코", "ACN":"액센츄어", "ADI":"아날로그디바이스",
+    "LRCX":"램리서치", "KLAC":"KLA", "SNPS":"시놉시스", "CDNS":"케이던스",
+    "MRVL":"마벨테크놀로지", "FTNT":"포티넷", "ANET":"아리스타네트웍스", "ADSK":"오토데스크",
+    "WDAY":"워크데이", "TEAM":"아틀라시안", "DDOG":"데이터독", "NET":"클라우드플레어",
+    "ZS":"지스케일러", "MDB":"몽고DB", "SMCI":"슈퍼마이크로컴퓨터", "DELL":"델테크놀로지스",
+    "HPQ":"HP", "ON":"온세미컨덕터", "MCHP":"마이크로칩", "NXPI":"NXP반도체",
+    "ROP":"로퍼테크놀로지스", "FICO":"페어아이작", "CTSH":"코그니전트", "GLW":"코닝",
+    # ── 금융 ──
+    "JPM":"JP모건체이스", "BAC":"뱅크오브아메리카", "GS":"골드만삭스", "V":"비자",
+    "MA":"마스터카드", "AXP":"아메리칸익스프레스", "SPGI":"S&P글로벌", "WFC":"웰스파고",
+    "MS":"모건스탠리", "C":"씨티그룹", "BLK":"블랙록", "SCHW":"찰스슈왑",
+    "BX":"블랙스톤", "KKR":"KKR", "PGR":"프로그레시브", "CB":"처브",
+    "ICE":"인터컨티넨탈익스체인지", "CME":"CME그룹",
+    "PYPL":"페이팔", "FIS":"피델리티내셔널", "COF":"캐피털원", "USB":"US뱅코프",
+    "PNC":"PNC파이낸셜", "AON":"에이온", "MCO":"무디스", "TFC":"트루이스트파이낸셜",
+    # ── 헬스케어 ──
+    "JNJ":"존슨앤드존슨", "UNH":"유나이티드헬스", "LLY":"일라이릴리", "ABBV":"애브비",
+    "MRK":"머크", "TMO":"써모피셔사이언티픽", "ISRG":"인튜이티브서지컬", "REGN":"리제네론",
+    "VRTX":"버텍스파마", "ABT":"애보트", "DHR":"다나허", "PFE":"화이자",
+    "AMGN":"암젠", "BMY":"브리스톨마이어스스큅", "BSX":"보스턴사이언티픽", "MDT":"메드트로닉",
+    "GILD":"길리어드사이언스", "CI":"시그나", "ELV":"엘리번스헬스", "CVS":"CVS헬스",
+    "ZTS":"조에티스", "SYK":"스트라이커", "BDX":"벡톤디킨슨", "HCA":"HCA헬스케어",
+    "MCK":"맥케슨", "IDXX":"아이덱스래버러토리스", "DXCM":"덱스콤", "HUM":"휴매나",
+    # ── 소비재 / 리테일 ──
+    "HD":"홈디포", "WMT":"월마트", "COST":"코스트코", "NKE":"나이키",
+    "SBUX":"스타벅스", "MCD":"맥도날드", "CMG":"치폴레", "LULU":"룰루레몬",
+    "DECK":"데커스아웃도어", "LOW":"로우스", "TJX":"TJX컴퍼니스", "TGT":"타깃",
+    "BKNG":"부킹홀딩스", "MAR":"메리어트", "HLT":"힐튼", "ABNB":"에어비앤비",
+    "ORLY":"오라일리오토모티브", "AZO":"오토존", "ROST":"로스스토어스", "YUM":"얌브랜즈",
+    "DPZ":"도미노피자", "EBAY":"이베이", "F":"포드", "GM":"제너럴모터스",
+    # ── 산업재 / 방산 ──
+    "CAT":"캐터필러", "DE":"디어앤드컴퍼니", "HON":"하니웰", "RTX":"RTX(레이시온)",
+    "LMT":"록히드마틴", "GD":"제너럴다이내믹스", "BA":"보잉", "GE":"GE에어로스페이스",
+    "UNP":"유니온퍼시픽", "UPS":"UPS", "FDX":"페덱스", "EMR":"에머슨일렉트릭",
+    "ETN":"이튼", "ITW":"일리노이툴웍스", "NOC":"노스럽그러먼", "MMM":"3M",
+    "PH":"파커하니핀", "CSX":"CSX", "NSC":"노퍽서던", "WM":"웨이스트매니지먼트",
+    "TDG":"트랜스다임", "CARR":"캐리어글로벌", "PCAR":"팩카", "GEV":"GE버노바",
+    # ── 에너지 ──
+    "XOM":"엑슨모빌", "CVX":"셰브론", "COP":"코노코필립스", "OXY":"옥시덴탈페트롤리엄",
+    "SLB":"슐럼버거", "EOG":"EOG리소시스", "MPC":"마라톤페트롤리엄", "PSX":"필립스66",
+    "WMB":"윌리엄스", "KMI":"킨더모건", "VLO":"발레로에너지",
+    # ── 통신 / 미디어 ──
+    "DIS":"월트디즈니", "CMCSA":"컴캐스트", "T":"AT&T", "VZ":"버라이즌",
+    "TMUS":"T모바일", "SPOT":"스포티파이", "WBD":"워너브라더스디스커버리", "TTD":"트레이드데스크",
+    # ── 필수소비재 ──
+    "PG":"프록터앤드갬블", "KO":"코카콜라", "PEP":"펩시코", "MDLZ":"몬델리즈",
+    "PM":"필립모리스", "MO":"알트리아", "CL":"콜게이트파몰리브", "KMB":"킴벌리클라크",
+    "GIS":"제너럴밀스", "KHC":"크래프트하인즈", "STZ":"컨스텔레이션브랜즈", "MNST":"몬스터음료",
+    # ── 유틸리티 / 부동산 ──
+    "NEE":"넥스트에라에너지", "DUK":"듀크에너지", "SO":"서던컴퍼니", "AEP":"아메리칸일렉트릭",
+    "D":"도미니언에너지", "PLD":"프로로지스", "AMT":"아메리칸타워", "EQIX":"에퀴닉스",
+    "O":"리얼티인컴", "SPG":"사이먼프로퍼티",
+    # ── 성장주 / 기타 ──
+    "AXON":"액손엔터프라이즈", "CELH":"셀시어스홀딩스", "ONON":"온홀딩(온러닝)", "ENPH":"엔페이즈에너지",
+    "FSLR":"퍼스트솔라", "DUOL":"듀오링고", "RBLX":"로블록스", "SHOP":"쇼피파이",
+    "XYZ":"블록(스퀘어)", "RIVN":"리비안", "DASH":"도어대시", "HOOD":"로빈후드",
+    "SOFI":"소파이테크놀로지스", "CVNA":"카바나", "DKNG":"드래프트킹스", "ROKU":"로쿠",
+    "PINS":"핀터레스트", "SNAP":"스냅", "U":"유니티소프트웨어", "TWLO":"트윌리오",
+    "OKTA":"옥타", "CRWV":"코어위브", "VST":"비스트라", "CEG":"컨스텔레이션에너지",
+    "LIN":"린데", "SHW":"셔윈윌리엄스", "APD":"에어프로덕츠", "ECL":"에코랩",
+    "FCX":"프리포트맥모란", "NUE":"뉴코어", "NEM":"뉴몬트",
 }
 
 us_scan_status = {
@@ -282,6 +327,24 @@ def screen_us_swing(df, ticker="", fund=None):
     bb_break_intraday = bool(l[i] <= bb_lower and c[i] > bb_lower)
     bb_lower_break    = bool(bb_break_close or bb_break_intraday)
 
+    # ── SWING 트리거: 볼린저 하단매수·상단매도 (한국 swing_tracker 정통 조건) ──
+    #   매수: (RSI(14)≤35 OR 볼린저%B≤15) AND 양봉 AND 종가>전일종가 AND 종가>200MA
+    #   매도(보유중 판정): BB 상한 도달(익절) / 하한 재이탈(손절) / -10% / 40일
+    rsi_now = rv     # 위에서 계산한 RSI(14)
+    pctB    = bb_pos # 위에서 계산한 %B (BB 밴드 내 위치 0~100)
+    avg_vol_5_sw = float(np.mean(v[i-4:i+1])) if i >= 4 else avg_vol_5
+
+    sw_oversold = bool(rsi_now <= 35 or pctB <= 15)       # ① 과매도(RSI≤35 또는 %B≤15)
+    sw_bullish  = bool(o[i] < c[i])                       # ② 양봉(시가<종가)
+    sw_up_close = bool(c[i] > c[i-1])                     # ③ 종가>전일종가
+    sw_uptrend  = bool(c[i] > sma200)                     # ④ 종가>200MA(장기 우상향)
+
+    swing_trigger = bool(sw_oversold and sw_bullish and sw_up_close and sw_uptrend)
+
+    # 보조 품질(점수 가산용): 강한 양봉(종가 캔들 상단 50%), 거래량 회복
+    sw_strong = bool(rng_d > 0 and (c[i] - l[i]) / rng_d >= 0.5)
+    sw_volok  = bool(avg_vol_5_sw > 0 and v[i] > avg_vol_5_sw * 1.3)
+
     # ── K 조건: 캔들 품질 ──
     body        = abs(c[i] - o[i])
     upper_wick  = h[i] - max(c[i], o[i])
@@ -303,6 +366,8 @@ def screen_us_swing(df, ticker="", fund=None):
         grade = "HUNT"
     elif trend_full and fund_ok and breakout_trigger and candle_pass:
         grade = "BREAKOUT"
+    elif swing_trigger:
+        grade = "SWING"          # 볼린저 하단매수·상단매도 (평균회귀, 정배열 불필요)
     elif trend_full and fund_ok and candle_pass:
         grade = "TREND"
     elif a_count >= 3 and candle_pass:
@@ -314,7 +379,11 @@ def screen_us_swing(df, ticker="", fund=None):
     trigger_score = 0
     if hunt_trigger:      trigger_score += 30
     if breakout_trigger:  trigger_score += 25
-    if bb_lower_break:    trigger_score += 10
+    if swing_trigger:
+        trigger_score += 30
+        if sw_strong: trigger_score += 5   # 강한 양봉 가산
+        if sw_volok:  trigger_score += 5   # 거래량 회복 가산
+    elif bb_lower_break:  trigger_score += 10
 
     target_upside = (target - c[i]) / c[i] * 100 if target > 0 and c[i] > 0 else 0
     candle_score = (int(k1_up_close) + int(k2_bullish) + int(k3_short_wick)) * 5
@@ -333,7 +402,10 @@ def screen_us_swing(df, ticker="", fund=None):
     if b3: P.append(f"B3.목표+{target_upside:.0f}%")
     if hunt_trigger:      P.append(f"🟢HUNT 눌림{retrace:.0f}%/20MA{ma20_dist:+.1f}%")
     if breakout_trigger:  P.append(f"🔴BREAKOUT 52H{proximity_52w*100:.0f}%/{vol_mult_20:.1f}x")
-    if bb_lower_break:    P.append("🟣BB하단돌파")
+    if swing_trigger:
+        _ob = f"RSI{rv:.0f}" if rv <= 35 else f"%B{bb_pos:.0f}"
+        P.append(f"🟣SWING BB하단매수({_ob}·양봉)")
+    elif bb_lower_break:  P.append("BB하단돌파")
 
     atr = calc_atr(h, l, c)
     ret_3m = (c[i] - c[max(0, i-63)]) / c[max(0, i-63)] * 100 if i >= 63 else 0
@@ -355,7 +427,11 @@ def screen_us_swing(df, ticker="", fund=None):
         "f1_first_pullback": f1_first_pullback,
         "hunt_trigger": hunt_trigger,
         "breakout_trigger": breakout_trigger,
+        "swing_trigger": swing_trigger,
         "bb_lower_break": bb_lower_break,
+        "bb_upper": round(bb_upper, 2),
+        "bb_lower": round(bb_lower, 2),
+        "bb_mid": round(bb_mid, 2),
         "k1_up_close": k1_up_close,
         "k2_bullish": k2_bullish,
         "k3_short_wick": k3_short_wick,
@@ -374,9 +450,24 @@ def screen_us_swing(df, ticker="", fund=None):
 # =============================================
 #  매매가 계산 (다음날 개장 직후 매수)
 # =============================================
-def calc_price_us(cl, lo, atr):
+def calc_price_us(cl, lo, atr, grade=None, bb_upper=0):
     if cl <= 0 or atr <= 0: return None
     buy = round(cl * 1.003, 2)           # 종가 +0.3% (개장 직후 지정가)
+
+    # SWING(볼린저 하단매수·상단매도): 목표=BB 상한선, 손절=-10%(또는 BB 하단)
+    if grade == "SWING" and bb_upper > buy:
+        sl  = round(buy * 0.90, 2)        # 재난손절 -10% (하한 재이탈은 보유중 판정)
+        t1  = round(bb_upper, 2)          # 1차 목표 = BB 상한선
+        t2  = round(bb_upper, 2)          # 2차 목표 = BB 상한선(전량매도)
+        risk = buy - sl
+        if risk <= 0: return None
+        return {
+            "buy": buy, "t1": t1, "t2": t2, "sl": sl,
+            "rr": round((t1 - buy) / risk, 2),
+            "risk_pct": round((buy - sl) / buy * 100, 1),
+            "atr": round(atr, 2),
+        }
+
     sl  = max(round(buy - 2.0 * atr, 2),
               round(lo * 0.995, 2),
               round(buy * 0.90, 2))      # 최대 -10%
@@ -432,7 +523,7 @@ def run_us_scan(date_str):
     us_scan_status["phase"]   = "analyze"
     print(f"[US SCAN] 다운로드 완료. 분석 시작...")
 
-    grade_order = {"HUNT": 0, "BREAKOUT": 1, "TREND": 2, "WATCH": 3}
+    grade_order = {"HUNT": 0, "SWING": 1, "BREAKOUT": 2, "TREND": 3, "WATCH": 4}
 
     for idx, ticker in enumerate(tickers):
         us_scan_status["progress"] = idx + 1
@@ -455,7 +546,8 @@ def run_us_scan(date_str):
             last_v  = int(df["Volume"].iloc[-1])
             support_low = float(df["Low"].iloc[max(0, len(df)-10):].min())
 
-            p = calc_price_us(last_c, last_l, r["atr"])
+            p = calc_price_us(last_c, last_l, r["atr"],
+                              grade=r["grade"], bb_upper=r.get("bb_upper", 0))
             if p is None: continue
 
             def to_krw(usd): return int(round(usd * usdkrw, -1))
@@ -495,6 +587,9 @@ def run_us_scan(date_str):
                 "ret6m":      r["ret_6m"],
                 "huntTrigger":     r["hunt_trigger"],
                 "breakoutTrigger": r["breakout_trigger"],
+                "swingTrigger":    r["swing_trigger"],
+                "bbUpper":    to_krw(r.get("bb_upper", 0)),
+                "bbLower":    to_krw(r.get("bb_lower", 0)),
                 "dataDate":   df.index[-1].strftime("%Y-%m-%d"),
             })
             us_scan_status["found"] = len(results)
