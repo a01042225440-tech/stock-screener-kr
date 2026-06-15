@@ -277,14 +277,20 @@ function renderResults(data) {
   }
 
   const ranks = ['rank-1','rank-2','rank-3','rank-n','rank-n'];
+  const gradeStyle = {
+    'HUNT':     'background:#dcfce7;color:#166534;border:1px solid #86efac',
+    'BREAKOUT': 'background:#fee2e2;color:#991b1b;border:1px solid #fca5a5',
+    'TREND':    'background:#dbeafe;color:#1e40af;border:1px solid #93c5fd',
+    'WATCH':    'background:#f3f4f6;color:#374151;border:1px solid #d1d5db',
+  };
 
   let html = `<div class="results-wrap"><table class="results-table">
     <thead><tr>
-      <th>#</th><th>종목</th>
+      <th>#</th><th>종목</th><th>등급</th>
       <th>종가(원)</th><th>등락%</th>
       <th>매수가</th><th>1차목표</th><th>2차목표</th><th>손절가</th>
       <th>R/R</th><th>리스크%</th><th>점수</th><th>RSI</th><th>거래량×</th>
-      <th>조건</th>
+      <th>3M수익</th><th>목표여력</th><th>조건</th>
     </tr></thead><tbody>`;
 
   results.forEach((s, idx) => {
@@ -295,6 +301,9 @@ function renderResults(data) {
     const scorePct = Math.min(s.momentum, 100);
     const conds = (s.conditionsMet || []).map(c =>
       `<span class="cond-tag">${c}</span>`).join('');
+    const gStyle = gradeStyle[s.grade] || gradeStyle['WATCH'];
+    const ret3mCls = (s.ret3m >= 0) ? 'chg-up' : 'chg-dn';
+    const targetCls = (s.targetUpside > 0) ? 'chg-up' : 'chg-dn';
 
     html += `<tr>
       <td><span class="rank-badge ${rc}">${idx+1}</span></td>
@@ -306,6 +315,7 @@ function renderResults(data) {
           </div>
         </div>
       </td>
+      <td><span style="padding:2px 7px;border-radius:5px;font-size:0.72rem;font-weight:700;${gStyle}">${s.grade||'-'}</span></td>
       <td>${fmt(s.close)}</td>
       <td class="${chgCls}">${chgSign}${s.changeRate?.toFixed(2)}%</td>
       <td class="price-buy">${fmt(s.buyPrice)}</td>
@@ -322,6 +332,8 @@ function renderResults(data) {
       </td>
       <td>${s.rsi?.toFixed(1)}</td>
       <td>${s.volumeRatio?.toFixed(1)}x</td>
+      <td class="${ret3mCls}">${s.ret3m != null ? (s.ret3m >= 0 ? '+' : '') + s.ret3m.toFixed(1) + '%' : '-'}</td>
+      <td class="${targetCls}">${s.targetUpside != null && s.targetUpside !== 0 ? '+' + s.targetUpside.toFixed(1) + '%' : '-'}</td>
       <td><div class="cond-wrap">${conds}</div></td>
     </tr>`;
   });
