@@ -1,4 +1,5 @@
 {
+<<<<<<< Updated upstream
   "positions": [
     {
       "code": "024110",
@@ -40,4 +41,7 @@
       "profit": 0.0
     }
   ]
+=======
+  "positions": []
+>>>>>>> Stashed changes
 }
