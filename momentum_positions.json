@@ -1,47 +1,43 @@
 {
-<<<<<<< Updated upstream
   "positions": [
     {
-      "code": "003490",
-      "name": "대한항공",
-      "grade": "BREAKOUT",
-      "buyDate": "2026-06-15",
-      "buyPrice": 29850,
-      "target": 34300,
-      "stop": 26850,
-      "targetPct": 15,
-      "maxHold": 6,
-      "last": 29850,
-      "profit": 0.0
-    },
-    {
-      "code": "204320",
-      "name": "HL만도",
-      "grade": "BREAKOUT",
-      "buyDate": "2026-06-15",
-      "buyPrice": 69500,
-      "target": 79900,
-      "stop": 62500,
-      "targetPct": 15,
-      "maxHold": 6,
-      "last": 69500,
-      "profit": 0.0
-    },
-    {
-      "code": "086790",
-      "name": "하나금융지주",
+      "code": "024110",
+      "name": "기업은행",
       "grade": "TREND",
-      "buyDate": "2026-06-15",
-      "buyPrice": 128700,
-      "target": 141500,
-      "stop": 115800,
+      "buyDate": "2026-06-16",
+      "buyPrice": 23250,
+      "target": 25550,
+      "stop": 20900,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 128700,
+      "last": 23250,
+      "profit": 0.0
+    },
+    {
+      "code": "078930",
+      "name": "GS",
+      "grade": "TREND",
+      "buyDate": "2026-06-16",
+      "buyPrice": 79000,
+      "target": 86900,
+      "stop": 71100,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 79000,
+      "profit": 0.0
+    },
+    {
+      "code": "005440",
+      "name": "현대지에프홀딩스",
+      "grade": "TREND",
+      "buyDate": "2026-06-16",
+      "buyPrice": 14320,
+      "target": 15750,
+      "stop": 12880,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 14320,
       "profit": 0.0
     }
   ]
-=======
-  "positions": []
->>>>>>> Stashed changes
 }
