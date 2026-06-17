@@ -1,47 +1,43 @@
 {
-<<<<<<< Updated upstream
   "positions": [
     {
-      "code": "024110",
-      "name": "기업은행",
+      "code": "104830",
+      "name": "원익머트리얼즈",
       "grade": "TREND",
-      "buyDate": "2026-06-16",
-      "buyPrice": 23250,
-      "target": 25550,
-      "stop": 20900,
+      "buyDate": "2026-06-17",
+      "buyPrice": 49250,
+      "target": 54150,
+      "stop": 44300,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 23250,
+      "last": 49250,
       "profit": 0.0
     },
     {
-      "code": "078930",
-      "name": "GS",
+      "code": "042660",
+      "name": "한화오션",
       "grade": "TREND",
-      "buyDate": "2026-06-16",
-      "buyPrice": 79000,
-      "target": 86900,
-      "stop": 71100,
+      "buyDate": "2026-06-17",
+      "buyPrice": 132400,
+      "target": 145600,
+      "stop": 119100,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 79000,
+      "last": 132400,
       "profit": 0.0
     },
     {
-      "code": "005440",
-      "name": "현대지에프홀딩스",
+      "code": "082740",
+      "name": "한화엔진",
       "grade": "TREND",
-      "buyDate": "2026-06-16",
-      "buyPrice": 14320,
-      "target": 15750,
-      "stop": 12880,
+      "buyDate": "2026-06-17",
+      "buyPrice": 65800,
+      "target": 72300,
+      "stop": 59200,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 14320,
+      "last": 65800,
       "profit": 0.0
     }
   ]
-=======
-  "positions": []
->>>>>>> Stashed changes
 }
