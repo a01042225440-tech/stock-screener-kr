@@ -1,47 +1,43 @@
 {
-<<<<<<< Updated upstream
   "positions": [
     {
-      "code": "104830",
-      "name": "원익머트리얼즈",
-      "grade": "TREND",
-      "buyDate": "2026-06-17",
-      "buyPrice": 49250,
-      "target": 54150,
-      "stop": 44300,
+      "code": "086790",
+      "name": "하나금융지주",
+      "grade": "HUNT",
+      "buyDate": "2026-06-18",
+      "buyPrice": 127000,
+      "target": 139700,
+      "stop": 114300,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 49250,
+      "last": 127000,
       "profit": 0.0
     },
     {
-      "code": "042660",
-      "name": "한화오션",
-      "grade": "TREND",
-      "buyDate": "2026-06-17",
-      "buyPrice": 132400,
-      "target": 145600,
-      "stop": 119100,
+      "code": "049070",
+      "name": "인탑스",
+      "grade": "HUNT",
+      "buyDate": "2026-06-18",
+      "buyPrice": 20350,
+      "target": 22350,
+      "stop": 18300,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 132400,
+      "last": 20350,
       "profit": 0.0
     },
     {
-      "code": "082740",
-      "name": "한화엔진",
-      "grade": "TREND",
-      "buyDate": "2026-06-17",
-      "buyPrice": 65800,
-      "target": 72300,
-      "stop": 59200,
+      "code": "420770",
+      "name": "기가비스",
+      "grade": "HUNT",
+      "buyDate": "2026-06-18",
+      "buyPrice": 141600,
+      "target": 155700,
+      "stop": 127400,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 65800,
+      "last": 141600,
       "profit": 0.0
     }
   ]
-=======
-  "positions": []
->>>>>>> Stashed changes
 }
