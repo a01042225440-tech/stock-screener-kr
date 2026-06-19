@@ -1,47 +1,43 @@
 {
-<<<<<<< Updated upstream
   "positions": [
     {
-      "code": "086790",
-      "name": "하나금융지주",
+      "code": "383220",
+      "name": "F&F",
       "grade": "HUNT",
-      "buyDate": "2026-06-18",
-      "buyPrice": 127000,
-      "target": 139700,
-      "stop": 114300,
+      "buyDate": "2026-06-19",
+      "buyPrice": 80300,
+      "target": 88300,
+      "stop": 72200,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 127000,
+      "last": 80300,
       "profit": 0.0
     },
     {
-      "code": "049070",
-      "name": "인탑스",
-      "grade": "HUNT",
-      "buyDate": "2026-06-18",
-      "buyPrice": 20350,
-      "target": 22350,
-      "stop": 18300,
+      "code": "000990",
+      "name": "DB하이텍",
+      "grade": "TREND",
+      "buyDate": "2026-06-19",
+      "buyPrice": 156700,
+      "target": 172300,
+      "stop": 146900,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 20350,
+      "last": 156700,
       "profit": 0.0
     },
     {
-      "code": "420770",
-      "name": "기가비스",
-      "grade": "HUNT",
-      "buyDate": "2026-06-18",
-      "buyPrice": 141600,
-      "target": 155700,
-      "stop": 127400,
+      "code": "482630",
+      "name": "삼양엔씨켐",
+      "grade": "TREND",
+      "buyDate": "2026-06-19",
+      "buyPrice": 19440,
+      "target": 21380,
+      "stop": 17490,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 141600,
+      "last": 19440,
       "profit": 0.0
     }
   ]
-=======
-  "positions": []
->>>>>>> Stashed changes
 }
