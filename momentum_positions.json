@@ -1,47 +1,43 @@
 {
-<<<<<<< Updated upstream
   "positions": [
-    {
-      "code": "383220",
-      "name": "F&F",
-      "grade": "HUNT",
-      "buyDate": "2026-06-19",
-      "buyPrice": 80300,
-      "target": 88300,
-      "stop": 72200,
-      "targetPct": 10,
-      "maxHold": 6,
-      "last": 80300,
-      "profit": 0.0
-    },
     {
       "code": "000990",
       "name": "DB하이텍",
       "grade": "TREND",
-      "buyDate": "2026-06-19",
-      "buyPrice": 156700,
-      "target": 172300,
-      "stop": 146900,
+      "buyDate": "2026-06-22",
+      "buyPrice": 173800,
+      "target": 191100,
+      "stop": 156400,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 156700,
+      "last": 173800,
       "profit": 0.0
     },
     {
-      "code": "482630",
-      "name": "삼양엔씨켐",
+      "code": "031980",
+      "name": "피에스케이홀딩스",
       "grade": "TREND",
-      "buyDate": "2026-06-19",
-      "buyPrice": 19440,
-      "target": 21380,
-      "stop": 17490,
+      "buyDate": "2026-06-22",
+      "buyPrice": 127300,
+      "target": 140000,
+      "stop": 114500,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 19440,
+      "last": 127300,
+      "profit": 0.0
+    },
+    {
+      "code": "028050",
+      "name": "삼성E&A",
+      "grade": "TREND",
+      "buyDate": "2026-06-22",
+      "buyPrice": 49900,
+      "target": 54850,
+      "stop": 44900,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 49900,
       "profit": 0.0
     }
   ]
-=======
-  "positions": []
->>>>>>> Stashed changes
 }
