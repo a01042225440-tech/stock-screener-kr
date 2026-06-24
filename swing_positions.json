@@ -5,8 +5,26 @@
       "name": "KB발해인프라",
       "buyDate": "2026-06-11",
       "buyPrice": 9900,
-      "last": 9950,
-      "profit": 0.5,
+      "last": 9850,
+      "profit": -0.5,
+      "regime": "BB"
+    },
+    {
+      "code": "001790",
+      "name": "대한제당",
+      "buyDate": "2026-06-24",
+      "buyPrice": 2475,
+      "last": 2500,
+      "profit": 1.0,
+      "regime": "BB"
+    },
+    {
+      "code": "023410",
+      "name": "유진기업",
+      "buyDate": "2026-06-24",
+      "buyPrice": 3505,
+      "last": 3505,
+      "profit": 0.0,
       "regime": "BB"
     }
   ]

@@ -1,3 +1,43 @@
 {
-  "positions": []
+  "positions": [
+    {
+      "code": "003490",
+      "name": "대한항공",
+      "grade": "HUNT",
+      "buyDate": "2026-06-24",
+      "buyPrice": 27500,
+      "target": 30250,
+      "stop": 24750,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 27500,
+      "profit": 0.0
+    },
+    {
+      "code": "010690",
+      "name": "화신",
+      "grade": "TREND",
+      "buyDate": "2026-06-24",
+      "buyPrice": 12060,
+      "target": 13260,
+      "stop": 10850,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 12060,
+      "profit": 0.0
+    },
+    {
+      "code": "482630",
+      "name": "삼양엔씨켐",
+      "grade": "TREND",
+      "buyDate": "2026-06-24",
+      "buyPrice": 19190,
+      "target": 21100,
+      "stop": 17270,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 19190,
+      "profit": 0.0
+    }
+  ]
 }
