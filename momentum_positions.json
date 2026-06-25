@@ -38,6 +38,7 @@
       "maxHold": 6,
       "last": 17630,
       "profit": -8.1
+<<<<<<< Updated upstream
     },
     {
       "code": "383220",
@@ -64,6 +65,8 @@
       "maxHold": 6,
       "last": 14810,
       "profit": 0.0
+=======
+>>>>>>> Stashed changes
     }
   ]
 }
