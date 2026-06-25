@@ -10,8 +10,8 @@
       "stop": 24750,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 27500,
-      "profit": 0.0
+      "last": 29100,
+      "profit": 5.8
     },
     {
       "code": "010690",
@@ -23,8 +23,8 @@
       "stop": 10850,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 12060,
-      "profit": 0.0
+      "last": 10930,
+      "profit": -9.4
     },
     {
       "code": "482630",
@@ -36,7 +36,33 @@
       "stop": 17270,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 19190,
+      "last": 17630,
+      "profit": -8.1
+    },
+    {
+      "code": "383220",
+      "name": "F&F",
+      "grade": "TREND",
+      "buyDate": "2026-06-25",
+      "buyPrice": 74200,
+      "target": 81600,
+      "stop": 71000,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 74200,
+      "profit": 0.0
+    },
+    {
+      "code": "005440",
+      "name": "현대지에프홀딩스",
+      "grade": "TREND",
+      "buyDate": "2026-06-25",
+      "buyPrice": 14810,
+      "target": 16290,
+      "stop": 13320,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 14810,
       "profit": 0.0
     }
   ]
