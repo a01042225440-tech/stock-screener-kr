@@ -1,72 +1,43 @@
 {
   "positions": [
     {
-      "code": "003490",
-      "name": "대한항공",
-      "grade": "HUNT",
-      "buyDate": "2026-06-24",
-      "buyPrice": 27500,
-      "target": 30250,
-      "stop": 24750,
-      "targetPct": 10,
-      "maxHold": 6,
-      "last": 29100,
-      "profit": 5.8
-    },
-    {
-      "code": "010690",
-      "name": "화신",
-      "grade": "TREND",
-      "buyDate": "2026-06-24",
-      "buyPrice": 12060,
-      "target": 13260,
-      "stop": 10850,
-      "targetPct": 10,
-      "maxHold": 6,
-      "last": 10930,
-      "profit": -9.4
-    },
-    {
-      "code": "482630",
-      "name": "삼양엔씨켐",
-      "grade": "TREND",
-      "buyDate": "2026-06-24",
-      "buyPrice": 19190,
-      "target": 21100,
-      "stop": 17270,
-      "targetPct": 10,
-      "maxHold": 6,
-      "last": 17630,
-      "profit": -8.1
-<<<<<<< Updated upstream
-    },
-    {
-      "code": "383220",
-      "name": "F&F",
-      "grade": "TREND",
-      "buyDate": "2026-06-25",
-      "buyPrice": 74200,
-      "target": 81600,
-      "stop": 71000,
-      "targetPct": 10,
-      "maxHold": 6,
-      "last": 74200,
-      "profit": 0.0
-    },
-    {
       "code": "005440",
       "name": "현대지에프홀딩스",
       "grade": "TREND",
-      "buyDate": "2026-06-25",
-      "buyPrice": 14810,
-      "target": 16290,
-      "stop": 13320,
+      "buyDate": "2026-06-26",
+      "buyPrice": 15230,
+      "target": 16750,
+      "stop": 13700,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 14810,
+      "last": 15230,
       "profit": 0.0
-=======
->>>>>>> Stashed changes
+    },
+    {
+      "code": "023530",
+      "name": "롯데쇼핑",
+      "grade": "TREND",
+      "buyDate": "2026-06-26",
+      "buyPrice": 173500,
+      "target": 190800,
+      "stop": 166500,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 173500,
+      "profit": 0.0
+    },
+    {
+      "code": "403870",
+      "name": "HPSP",
+      "grade": "TREND",
+      "buyDate": "2026-06-26",
+      "buyPrice": 52600,
+      "target": 57800,
+      "stop": 49200,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 52600,
+      "profit": 0.0
     }
   ]
 }

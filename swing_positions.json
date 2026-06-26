@@ -1,3 +1,13 @@
 {
-  "positions": []
+  "positions": [
+    {
+      "code": "241710",
+      "name": "코스메카코리아",
+      "buyDate": "2026-06-26",
+      "buyPrice": 65500,
+      "last": 66100,
+      "profit": 0.9,
+      "regime": "BB"
+    }
+  ]
 }
