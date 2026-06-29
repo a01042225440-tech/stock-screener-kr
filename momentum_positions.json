@@ -1,47 +1,43 @@
 {
-<<<<<<< Updated upstream
   "positions": [
     {
-      "code": "005440",
-      "name": "현대지에프홀딩스",
-      "grade": "TREND",
-      "buyDate": "2026-06-26",
-      "buyPrice": 15230,
-      "target": 16750,
-      "stop": 13700,
-      "targetPct": 10,
+      "code": "011560",
+      "name": "세보엠이씨",
+      "grade": "BREAKOUT",
+      "buyDate": "2026-06-29",
+      "buyPrice": 25100,
+      "target": 28850,
+      "stop": 22550,
+      "targetPct": 15,
       "maxHold": 6,
-      "last": 15230,
+      "last": 25100,
       "profit": 0.0
     },
     {
-      "code": "023530",
-      "name": "롯데쇼핑",
+      "code": "003490",
+      "name": "대한항공",
       "grade": "TREND",
-      "buyDate": "2026-06-26",
-      "buyPrice": 173500,
-      "target": 190800,
-      "stop": 166500,
+      "buyDate": "2026-06-29",
+      "buyPrice": 28300,
+      "target": 31100,
+      "stop": 25800,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 173500,
+      "last": 28300,
       "profit": 0.0
     },
     {
-      "code": "403870",
-      "name": "HPSP",
+      "code": "271560",
+      "name": "오리온",
       "grade": "TREND",
-      "buyDate": "2026-06-26",
-      "buyPrice": 52600,
-      "target": 57800,
-      "stop": 49200,
+      "buyDate": "2026-06-29",
+      "buyPrice": 137400,
+      "target": 151100,
+      "stop": 123600,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 52600,
+      "last": 137400,
       "profit": 0.0
     }
   ]
-=======
-  "positions": []
->>>>>>> Stashed changes
 }
