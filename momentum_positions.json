@@ -1,47 +1,43 @@
 {
-<<<<<<< Updated upstream
   "positions": [
     {
-      "code": "011560",
-      "name": "세보엠이씨",
-      "grade": "BREAKOUT",
-      "buyDate": "2026-06-29",
-      "buyPrice": 25100,
-      "target": 28850,
-      "stop": 22550,
-      "targetPct": 15,
+      "code": "005440",
+      "name": "현대지에프홀딩스",
+      "grade": "TREND",
+      "buyDate": "2026-06-30",
+      "buyPrice": 15860,
+      "target": 17440,
+      "stop": 14270,
+      "targetPct": 10,
       "maxHold": 6,
-      "last": 25100,
+      "last": 15860,
       "profit": 0.0
     },
     {
-      "code": "003490",
-      "name": "대한항공",
+      "code": "105560",
+      "name": "KB금융",
       "grade": "TREND",
-      "buyDate": "2026-06-29",
-      "buyPrice": 28300,
-      "target": 31100,
-      "stop": 25800,
+      "buyDate": "2026-06-30",
+      "buyPrice": 159500,
+      "target": 175400,
+      "stop": 145000,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 28300,
+      "last": 159500,
       "profit": 0.0
     },
     {
-      "code": "271560",
-      "name": "오리온",
+      "code": "161890",
+      "name": "한국콜마",
       "grade": "TREND",
-      "buyDate": "2026-06-29",
-      "buyPrice": 137400,
-      "target": 151100,
-      "stop": 123600,
+      "buyDate": "2026-06-30",
+      "buyPrice": 99500,
+      "target": 109400,
+      "stop": 89500,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 137400,
+      "last": 99500,
       "profit": 0.0
     }
   ]
-=======
-  "positions": []
->>>>>>> Stashed changes
 }
