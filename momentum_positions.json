@@ -1,47 +1,43 @@
 {
-<<<<<<< Updated upstream
   "positions": [
     {
       "code": "003490",
       "name": "대한항공",
-      "grade": "HUNT",
-      "buyDate": "2026-07-02",
-      "buyPrice": 28650,
-      "target": 31500,
-      "stop": 25800,
+      "grade": "TREND",
+      "buyDate": "2026-07-03",
+      "buyPrice": 28900,
+      "target": 31750,
+      "stop": 26000,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 28650,
+      "last": 28900,
       "profit": 0.0
     },
     {
-      "code": "161390",
-      "name": "한국타이어앤테크놀로지",
+      "code": "240810",
+      "name": "원익IPS",
       "grade": "TREND",
-      "buyDate": "2026-07-02",
-      "buyPrice": 67200,
-      "target": 73900,
-      "stop": 60400,
+      "buyDate": "2026-07-03",
+      "buyPrice": 132800,
+      "target": 146000,
+      "stop": 131200,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 67200,
+      "last": 132800,
       "profit": 0.0
     },
     {
-      "code": "105560",
-      "name": "KB금융",
+      "code": "055550",
+      "name": "신한지주",
       "grade": "TREND",
-      "buyDate": "2026-07-02",
-      "buyPrice": 165100,
-      "target": 181600,
-      "stop": 148500,
+      "buyDate": "2026-07-03",
+      "buyPrice": 107400,
+      "target": 118100,
+      "stop": 96600,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 165100,
+      "last": 107400,
       "profit": 0.0
     }
   ]
-=======
-  "positions": []
->>>>>>> Stashed changes
 }
