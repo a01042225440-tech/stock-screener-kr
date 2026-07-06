@@ -1,47 +1,43 @@
 {
-<<<<<<< Updated upstream
   "positions": [
     {
-      "code": "003490",
-      "name": "대한항공",
-      "grade": "TREND",
-      "buyDate": "2026-07-03",
-      "buyPrice": 28900,
-      "target": 31750,
-      "stop": 26000,
+      "code": "005440",
+      "name": "현대지에프홀딩스",
+      "grade": "HUNT",
+      "buyDate": "2026-07-06",
+      "buyPrice": 14940,
+      "target": 16430,
+      "stop": 13440,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 28900,
+      "last": 14940,
       "profit": 0.0
     },
     {
-      "code": "240810",
-      "name": "원익IPS",
+      "code": "000270",
+      "name": "기아",
       "grade": "TREND",
-      "buyDate": "2026-07-03",
-      "buyPrice": 132800,
-      "target": 146000,
-      "stop": 131200,
+      "buyDate": "2026-07-06",
+      "buyPrice": 160500,
+      "target": 176500,
+      "stop": 144400,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 132800,
+      "last": 160500,
       "profit": 0.0
     },
     {
-      "code": "055550",
-      "name": "신한지주",
+      "code": "010950",
+      "name": "S-Oil",
       "grade": "TREND",
-      "buyDate": "2026-07-03",
-      "buyPrice": 107400,
-      "target": 118100,
-      "stop": 96600,
+      "buyDate": "2026-07-06",
+      "buyPrice": 116700,
+      "target": 128300,
+      "stop": 105000,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 107400,
+      "last": 116700,
       "profit": 0.0
     }
   ]
-=======
-  "positions": []
->>>>>>> Stashed changes
 }
