@@ -1,0 +1,35 @@
+name: Keepalive
+
+# 목적: GitHub은 "60일간 repo 커밋 없음"이면 예약 워크플로우를 자동 비활성화한다
+# (disabled_inactivity). 매매가 뜸한 기간에 Swing Intraday Monitor가 꺼져
+# 텔레그램 알림이 끊기는 사고를 막기 위해, 매주 side 브랜치(ci-keepalive)에
+# 빈 하트비트 커밋을 남겨 repo를 '활성' 상태로 유지한다.
+# side 브랜치라 master가 안 바뀌므로 Render 재배포도 유발하지 않는다.
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # 매주 월요일 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: keepalive
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Heartbeat commit on side branch (prevents 60-day auto-disable)"
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B ci-keepalive
+          date -u +%FT%TZ > .keepalive
+          git add .keepalive
+          git commit -m "chore: keepalive $(date -u +%F)" || echo "no change"
+          git push -f origin ci-keepalive
