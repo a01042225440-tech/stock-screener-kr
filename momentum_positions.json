@@ -1,3 +1,43 @@
 {
-  "positions": []
+  "positions": [
+    {
+      "code": "403870",
+      "name": "HPSP",
+      "grade": "HUNT",
+      "buyDate": "2026-09-21",
+      "buyPrice": 54600,
+      "target": 60000,
+      "stop": 50500,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 54600,
+      "profit": 0.0
+    },
+    {
+      "code": "240810",
+      "name": "원익IPS",
+      "grade": "TREND",
+      "buyDate": "2026-09-21",
+      "buyPrice": 128500,
+      "target": 141300,
+      "stop": 115600,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 128500,
+      "profit": 0.0
+    },
+    {
+      "code": "282330",
+      "name": "BGF리테일",
+      "grade": "TREND",
+      "buyDate": "2026-09-21",
+      "buyPrice": 137700,
+      "target": 151400,
+      "stop": 136100,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 137700,
+      "profit": 0.0
+    }
+  ]
 }
