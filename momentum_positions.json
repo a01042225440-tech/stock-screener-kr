@@ -10,8 +10,8 @@
       "stop": 50500,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 54600,
-      "profit": 0.0
+      "last": 53900,
+      "profit": -1.3
     },
     {
       "code": "240810",
@@ -23,20 +23,46 @@
       "stop": 115600,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 128500,
+      "last": 129300,
+      "profit": 0.6
+    },
+    {
+      "code": "033780",
+      "name": "KT&G",
+      "grade": "TREND",
+      "buyDate": "2026-09-22",
+      "buyPrice": 177300,
+      "target": 195000,
+      "stop": 167200,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 177300,
       "profit": 0.0
     },
     {
-      "code": "282330",
-      "name": "BGF리테일",
+      "code": "005180",
+      "name": "빙그레",
       "grade": "TREND",
-      "buyDate": "2026-09-21",
-      "buyPrice": 137700,
-      "target": 151400,
-      "stop": 136100,
+      "buyDate": "2026-09-22",
+      "buyPrice": 84800,
+      "target": 93200,
+      "stop": 79500,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 137700,
+      "last": 84800,
+      "profit": 0.0
+    },
+    {
+      "code": "003550",
+      "name": "LG",
+      "grade": "TREND",
+      "buyDate": "2026-09-22",
+      "buyPrice": 116500,
+      "target": 128100,
+      "stop": 109900,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 116500,
       "profit": 0.0
     }
   ]
