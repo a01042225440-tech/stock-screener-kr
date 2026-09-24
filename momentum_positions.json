@@ -1,5 +1,4 @@
 {
-<<<<<<< Updated upstream
   "positions": [
     {
       "code": "093370",
@@ -15,33 +14,30 @@
       "profit": 0.0
     },
     {
+      "code": "403870",
+      "name": "HPSP",
+      "grade": "HUNT",
+      "buyDate": "2026-09-23",
+      "buyPrice": 55600,
+      "target": 61100,
+      "stop": 50500,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 55600,
+      "profit": 0.0
+    },
+    {
       "code": "319660",
       "name": "피에스케이",
       "grade": "TREND",
       "buyDate": "2026-09-23",
-      "buyPrice": 144600,
-      "target": 159000,
-      "stop": 130100,
+      "buyPrice": 144200,
+      "target": 158600,
+      "stop": 129700,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 144600,
-      "profit": 0.0
-    },
-    {
-      "code": "281820",
-      "name": "케이씨텍",
-      "grade": "TREND",
-      "buyDate": "2026-09-23",
-      "buyPrice": 87000,
-      "target": 95700,
-      "stop": 78300,
-      "targetPct": 10,
-      "maxHold": 6,
-      "last": 87000,
+      "last": 144200,
       "profit": 0.0
     }
   ]
-=======
-  "positions": []
->>>>>>> Stashed changes
 }
