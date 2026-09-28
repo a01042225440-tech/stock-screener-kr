@@ -1,47 +1,43 @@
 {
-<<<<<<< Updated upstream
   "positions": [
     {
-      "code": "093370",
-      "name": "후성",
+      "code": "294870",
+      "name": "IPARK현대산업개발",
       "grade": "HUNT",
-      "buyDate": "2026-09-23",
-      "buyPrice": 13940,
-      "target": 15330,
-      "stop": 12700,
+      "buyDate": "2026-09-28",
+      "buyPrice": 23750,
+      "target": 26100,
+      "stop": 23000,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 13940,
+      "last": 23750,
       "profit": 0.0
     },
     {
-      "code": "403870",
-      "name": "HPSP",
+      "code": "105560",
+      "name": "KB금융",
       "grade": "HUNT",
-      "buyDate": "2026-09-23",
-      "buyPrice": 55600,
-      "target": 61100,
-      "stop": 50500,
+      "buyDate": "2026-09-28",
+      "buyPrice": 174200,
+      "target": 191600,
+      "stop": 171100,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 55600,
+      "last": 174200,
       "profit": 0.0
     },
     {
-      "code": "319660",
-      "name": "피에스케이",
-      "grade": "TREND",
-      "buyDate": "2026-09-23",
-      "buyPrice": 144200,
-      "target": 158600,
-      "stop": 129700,
+      "code": "012630",
+      "name": "HDC",
+      "grade": "HUNT",
+      "buyDate": "2026-09-28",
+      "buyPrice": 26050,
+      "target": 28650,
+      "stop": 24550,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 144200,
+      "last": 26050,
       "profit": 0.0
     }
   ]
-=======
-  "positions": []
->>>>>>> Stashed changes
 }

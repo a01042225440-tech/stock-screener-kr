@@ -1,3 +1,13 @@
 {
-  "positions": []
+  "positions": [
+    {
+      "code": "003570",
+      "name": "SNT다이내믹스",
+      "buyDate": "2026-09-28",
+      "buyPrice": 30000,
+      "last": 29850,
+      "profit": -0.5,
+      "regime": "BB"
+    }
+  ]
 }
