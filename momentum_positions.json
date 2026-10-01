@@ -1,59 +1,43 @@
 {
   "positions": [
     {
-      "code": "012630",
-      "name": "HDC",
+      "code": "036800",
+      "name": "나이스정보통신",
       "grade": "HUNT",
-      "buyDate": "2026-09-28",
-      "buyPrice": 26050,
-      "target": 28650,
-      "stop": 24550,
+      "buyDate": "2026-10-01",
+      "buyPrice": 7890,
+      "target": 8670,
+      "stop": 7300,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 25400,
-      "profit": -2.5
-<<<<<<< Updated upstream
+      "last": 7890,
+      "profit": 0.0
     },
     {
-      "code": "010950",
-      "name": "S-Oil",
-      "grade": "HUNT",
-      "buyDate": "2026-09-30",
-      "buyPrice": 161000,
-      "target": 177100,
-      "stop": 144900,
+      "code": "319660",
+      "name": "피에스케이",
+      "grade": "TREND",
+      "buyDate": "2026-10-01",
+      "buyPrice": 160300,
+      "target": 176300,
+      "stop": 144200,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 161000,
+      "last": 160300,
       "profit": 0.0
     },
     {
       "code": "240810",
       "name": "원익IPS",
       "grade": "TREND",
-      "buyDate": "2026-09-30",
-      "buyPrice": 131200,
-      "target": 144300,
-      "stop": 118000,
+      "buyDate": "2026-10-01",
+      "buyPrice": 143000,
+      "target": 157300,
+      "stop": 128700,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 131200,
+      "last": 143000,
       "profit": 0.0
-    },
-    {
-      "code": "028670",
-      "name": "팬오션",
-      "grade": "TREND",
-      "buyDate": "2026-09-30",
-      "buyPrice": 5760,
-      "target": 6330,
-      "stop": 5560,
-      "targetPct": 10,
-      "maxHold": 6,
-      "last": 5760,
-      "profit": 0.0
-=======
->>>>>>> Stashed changes
     }
   ]
 }
