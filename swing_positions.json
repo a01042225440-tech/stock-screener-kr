@@ -1,21 +1,12 @@
 {
   "positions": [
     {
-      "code": "241710",
-      "name": "코스메카코리아",
-      "buyDate": "2026-10-01",
-      "buyPrice": 115500,
-      "last": 115200,
-      "profit": -0.3,
-      "regime": "BB"
-    },
-    {
       "code": "225570",
       "name": "넥슨게임즈",
       "buyDate": "2026-10-01",
       "buyPrice": 10860,
-      "last": 10770,
-      "profit": -0.8,
+      "last": 10680,
+      "profit": -1.7,
       "regime": "BB"
     }
   ]
