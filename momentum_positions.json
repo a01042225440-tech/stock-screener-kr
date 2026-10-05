@@ -1,17 +1,29 @@
 {
-<<<<<<< Updated upstream
   "positions": [
     {
       "code": "036800",
       "name": "나이스정보통신",
       "grade": "BREAKOUT",
       "buyDate": "2026-10-02",
-      "buyPrice": 8380,
-      "target": 9630,
-      "stop": 7540,
+      "buyPrice": 8480,
+      "target": 9750,
+      "stop": 7630,
       "targetPct": 15,
       "maxHold": 6,
-      "last": 8380,
+      "last": 8480,
+      "profit": 0.0
+    },
+    {
+      "code": "021240",
+      "name": "코웨이",
+      "grade": "HUNT",
+      "buyDate": "2026-10-02",
+      "buyPrice": 102400,
+      "target": 112600,
+      "stop": 97700,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 102400,
       "profit": 0.0
     },
     {
@@ -19,29 +31,13 @@
       "name": "GS",
       "grade": "TREND",
       "buyDate": "2026-10-02",
-      "buyPrice": 105800,
-      "target": 116300,
+      "buyPrice": 105100,
+      "target": 115600,
       "stop": 101100,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 105800,
-      "profit": 0.0
-    },
-    {
-      "code": "175330",
-      "name": "JB금융지주",
-      "grade": "TREND",
-      "buyDate": "2026-10-02",
-      "buyPrice": 28900,
-      "target": 31750,
-      "stop": 28150,
-      "targetPct": 10,
-      "maxHold": 6,
-      "last": 28900,
+      "last": 105100,
       "profit": 0.0
     }
   ]
-=======
-  "positions": []
->>>>>>> Stashed changes
 }
