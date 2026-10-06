@@ -10,8 +10,8 @@
       "stop": 7630,
       "targetPct": 15,
       "maxHold": 6,
-      "last": 8480,
-      "profit": 0.0
+      "last": 8270,
+      "profit": -2.5
     },
     {
       "code": "021240",
@@ -23,20 +23,46 @@
       "stop": 97700,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 102400,
+      "last": 100800,
+      "profit": -1.6
+    },
+    {
+      "code": "236200",
+      "name": "슈프리마",
+      "grade": "BREAKOUT",
+      "buyDate": "2026-10-06",
+      "buyPrice": 60000,
+      "target": 69000,
+      "stop": 54000,
+      "targetPct": 15,
+      "maxHold": 6,
+      "last": 60000,
       "profit": 0.0
     },
     {
       "code": "078930",
       "name": "GS",
       "grade": "TREND",
-      "buyDate": "2026-10-02",
-      "buyPrice": 105100,
-      "target": 115600,
+      "buyDate": "2026-10-06",
+      "buyPrice": 106000,
+      "target": 116600,
       "stop": 101100,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 105100,
+      "last": 106000,
+      "profit": 0.0
+    },
+    {
+      "code": "161890",
+      "name": "한국콜마",
+      "grade": "TREND",
+      "buyDate": "2026-10-06",
+      "buyPrice": 138500,
+      "target": 152300,
+      "stop": 132000,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 138500,
       "profit": 0.0
     }
   ]
