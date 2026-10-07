@@ -1,72 +1,43 @@
 {
   "positions": [
     {
-      "code": "036800",
-      "name": "나이스정보통신",
-      "grade": "BREAKOUT",
-      "buyDate": "2026-10-02",
-      "buyPrice": 8480,
-      "target": 9750,
-      "stop": 7630,
-      "targetPct": 15,
-      "maxHold": 6,
-      "last": 8270,
-      "profit": -2.5
-    },
-    {
-      "code": "021240",
-      "name": "코웨이",
+      "code": "092730",
+      "name": "네오팜",
       "grade": "HUNT",
-      "buyDate": "2026-10-02",
-      "buyPrice": 102400,
-      "target": 112600,
-      "stop": 97700,
+      "buyDate": "2026-10-07",
+      "buyPrice": 24000,
+      "target": 26400,
+      "stop": 21850,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 100800,
-      "profit": -1.6
-<<<<<<< Updated upstream
-    },
-    {
-      "code": "236200",
-      "name": "슈프리마",
-      "grade": "BREAKOUT",
-      "buyDate": "2026-10-06",
-      "buyPrice": 60000,
-      "target": 69000,
-      "stop": 54000,
-      "targetPct": 15,
-      "maxHold": 6,
-      "last": 60000,
+      "last": 24000,
       "profit": 0.0
     },
     {
-      "code": "078930",
-      "name": "GS",
+      "code": "028670",
+      "name": "팬오션",
+      "grade": "HUNT",
+      "buyDate": "2026-10-07",
+      "buyPrice": 6230,
+      "target": 6850,
+      "stop": 5600,
+      "targetPct": 10,
+      "maxHold": 6,
+      "last": 6230,
+      "profit": 0.0
+    },
+    {
+      "code": "294870",
+      "name": "IPARK현대산업개발",
       "grade": "TREND",
-      "buyDate": "2026-10-06",
-      "buyPrice": 106000,
-      "target": 116600,
-      "stop": 101100,
+      "buyDate": "2026-10-07",
+      "buyPrice": 22200,
+      "target": 24400,
+      "stop": 21450,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 106000,
+      "last": 22200,
       "profit": 0.0
-    },
-    {
-      "code": "161890",
-      "name": "한국콜마",
-      "grade": "TREND",
-      "buyDate": "2026-10-06",
-      "buyPrice": 138500,
-      "target": 152300,
-      "stop": 132000,
-      "targetPct": 10,
-      "maxHold": 6,
-      "last": 138500,
-      "profit": 0.0
-=======
->>>>>>> Stashed changes
     }
   ]
 }
