@@ -1,21 +1,12 @@
 {
   "positions": [
     {
-      "code": "225570",
-      "name": "넥슨게임즈",
-      "buyDate": "2026-10-01",
-      "buyPrice": 10860,
-      "last": 10490,
-      "profit": -3.4,
-      "regime": "BB"
-    },
-    {
       "code": "114090",
       "name": "GKL",
       "buyDate": "2026-10-07",
       "buyPrice": 8630,
-      "last": 8630,
-      "profit": 0.0,
+      "last": 8570,
+      "profit": -0.7,
       "regime": "BB"
     }
   ]
