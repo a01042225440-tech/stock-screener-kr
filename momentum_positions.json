@@ -10,8 +10,8 @@
       "stop": 21850,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 23200,
-      "profit": -3.3
+      "last": 22800,
+      "profit": -5.0
     },
     {
       "code": "028670",
@@ -23,21 +23,8 @@
       "stop": 5600,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 6090,
-      "profit": -2.2
-    },
-    {
-      "code": "294870",
-      "name": "IPARK현대산업개발",
-      "grade": "TREND",
-      "buyDate": "2026-10-07",
-      "buyPrice": 22200,
-      "target": 24400,
-      "stop": 21450,
-      "targetPct": 10,
-      "maxHold": 6,
-      "last": 21850,
-      "profit": -1.6
+      "last": 6450,
+      "profit": 3.5
     }
   ]
 }
