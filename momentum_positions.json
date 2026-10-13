@@ -10,8 +10,8 @@
       "stop": 21850,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 22800,
-      "profit": -5.0
+      "last": 22500,
+      "profit": -6.2
     },
     {
       "code": "028670",
@@ -23,8 +23,8 @@
       "stop": 5600,
       "targetPct": 10,
       "maxHold": 6,
-      "last": 6450,
-      "profit": 3.5
+      "last": 6600,
+      "profit": 5.9
     }
   ]
 }
