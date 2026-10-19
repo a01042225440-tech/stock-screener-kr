@@ -5,8 +5,13 @@
       "name": "GKL",
       "buyDate": "2026-10-07",
       "buyPrice": 8630,
+<<<<<<< Updated upstream
       "last": 8650,
       "profit": 0.2,
+=======
+      "last": 8670,
+      "profit": 0.5,
+>>>>>>> Stashed changes
       "regime": "BB"
     }
   ]
